@@ -253,6 +253,24 @@ func (d *Device) TransactOut(opcode uint16, data []byte, params ...uint32) (Resp
 	}, data)
 }
 
+// GetDeviceInfo asks the camera what it supports, returning the parsed
+// dataset and the raw bytes. It's the first thing a PTP initiator sends, and
+// only reads.
+func (d *Device) GetDeviceInfo() (DeviceInfo, []byte, error) {
+	resp, err := d.Transact(OpGetDeviceInfo)
+	if err != nil {
+		return DeviceInfo{}, nil, err
+	}
+
+	if err := resp.Err(); err != nil {
+		return DeviceInfo{}, nil, fmt.Errorf("GetDeviceInfo: %w", err)
+	}
+
+	info, err := ParseDeviceInfo(resp.Data)
+
+	return info, resp.Data, err
+}
+
 // OpenSession opens PTP session 1. A session that is already open is not an
 // error: the camera may have been left in one by a previous run.
 func (d *Device) OpenSession() error {

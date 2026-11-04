@@ -47,6 +47,41 @@ camera, and refuses to build one; see docs/PROTOCOL.md for why that matters.`,
 
 		Commands: []*cli.Command{
 			{
+				Name:  "probe",
+				Usage: "save everything the camera reports through standard PTP read requests",
+				Description: `Asks the camera what it supports (GetDeviceInfo), then reads every property
+it lists with GetDevicePropDesc or GetDevicePropValue, and saves it all to a
+file. It sends nothing else: no vendor or factory commands.
+
+Two probes taken an exact number of photos apart, compared with 'compare',
+show whether any standard property is the shutter count.`,
+				Action: cmd.Execute(cmd.Probe),
+				Flags: []cli.Flag{
+					deviceFlag,
+					traceFlag,
+					noteFlag,
+					&cli.StringFlag{
+						Name:     "out",
+						Aliases:  []string{"o"},
+						Usage:    "the `file` to save the probe in",
+						Required: true,
+					},
+				},
+			},
+			{
+				Name:      "compare",
+				Usage:     "show what changed between two probes, and what went up by the number of photos taken",
+				ArgsUsage: "<before.json> <after.json>",
+				Action:    cmd.Execute(cmd.Compare),
+				Flags: []cli.Flag{
+					&cli.IntFlag{
+						Name:  "frames",
+						Usage: "how many `photos` were taken between the two probes",
+						Value: 20,
+					},
+				},
+			},
+			{
 				Name:   "read",
 				Usage:  "read the actuation counters of the connected camera",
 				Action: cmd.Execute(cmd.Read),
