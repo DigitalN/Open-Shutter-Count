@@ -42,6 +42,14 @@ type Model struct {
 	ConfirmedOn string `json:"confirmed_on,omitempty"`
 }
 
+// noFactoryChannel lists bodies seen not to answer the factory channel. An
+// EOS R8 (seen 2026-11-04 over macOS) gave no reply to MonOpen, then stopped
+// answering USB at all, even CloseSession, until it was switched off. The
+// channel is not tried on these, so reading one can't hang it.
+var noFactoryChannel = map[uint16]string{
+	0x330c: "EOS R8",
+}
+
 // Each address map below was established differentially: read every address,
 // take an exact number of frames, read again, and keep whatever advanced by
 // exactly that number. Adding a body is the same job, and CONTRIBUTING.md

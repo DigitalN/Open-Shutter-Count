@@ -143,6 +143,15 @@ func (r *Reader) readStandardProperty(device *ptp.Device, info usb.DeviceInfo) (
 
 // readFactoryChannel reads the counters out of MPU memory.
 func (r *Reader) readFactoryChannel(device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, error) {
+	if name, refused := noFactoryChannel[info.ProductID]; refused {
+		return manufacturers.Reading{}, fmt.Errorf(
+			"the %s doesn't answer the standard shutter counter or Canon's factory channel, "+
+				"so its shutter count can't be read this way yet. The factory channel isn't tried: "+
+				"on an %s it left the camera not answering USB until it was switched off",
+			name, name,
+		)
+	}
+
 	model, known := LookupModel(info.ProductID)
 	if !known {
 		model = FallbackModel(info.ProductID)

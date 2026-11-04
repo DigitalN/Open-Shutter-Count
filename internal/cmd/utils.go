@@ -129,7 +129,8 @@ not be listed at all. Adding one is welcome; see CONTRIBUTING.md.`
 const noStillImageHint = `The camera is connected, but its USB connection is in a mode that can't be
 read, such as webcam. No commands were sent to it. Switch it to photo transfer,
 then unplug it and plug it back in. On Canon mirrorless bodies that is the
-Setup menu > Choose USB connection app > Photo Import/Remote Control.`
+Setup menu > Choose USB connection app > Photo Import/Remote Control (on the
+EOS R8, page 4 of the Setup menu).`
 
 // openDevice claims the camera, working around whatever is holding it.
 func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {

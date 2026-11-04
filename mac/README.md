@@ -6,13 +6,27 @@ ships alongside the tool.
 1. Fetch this repository with git (GitHub Desktop is fine). Copies fetched with
    git aren't quarantined, so macOS lets them run.
 2. Set up the camera: Wi-Fi and Bluetooth off, a card in, switched on, plugged
-   straight into the Mac with a data cable. Quit Image Capture, Photos and EOS
-   Utility if any of them opened.
+   straight into the Mac with a data cable (many USB-C cables only charge).
+   Quit Image Capture, Photos and EOS Utility if any of them opened.
+
+   On the EOS R8, the USB connection must be set to photo transfer: MENU >
+   Setup (wrench) > page 4 > **Choose USB connection app** > **Photo
+   Import/Remote Control**.
+
+   On an Apple silicon Mac, allow the camera when macOS asks whether to let
+   the accessory connect. A declined camera still charges but can't be seen.
 3. Double-click **Read Shutter Count.command**. A Terminal window shows the
    count. Press Return to close it.
 
 If macOS asks whether Terminal may access the folder this lives in, allow it:
 that's where the readings are saved.
+
+## EOS R8: not readable yet
+
+The R8 connects and opens a session, but refuses the standard shutter counter
+property, and gave no reply to Canon's factory channel (`MonOpen`). After that
+it stopped answering USB until it was switched off. The tool now stops before
+the factory channel on an R8 and says so, so running it can't hang the camera.
 
 ## What it saves
 
