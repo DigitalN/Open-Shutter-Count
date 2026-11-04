@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -15,14 +16,18 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/mvisonneau/openshuttercounter/internal/app"
+	"github.com/mvisonneau/openshuttercounter/internal/logs"
+	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers/canon"
 	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
 	"github.com/mvisonneau/openshuttercounter/pkg/usb"
 )
 
 // probeFile is what `probe` saves: what the camera says it supports, and
 // every property it lists, read with standard PTP read requests only
-// (GetDeviceInfo, GetDevicePropDesc, GetDevicePropValue). Two of them taken a
-// known number of frames apart show whether any property is a shutter count.
+// (GetDeviceInfo, GetDevicePropDesc, GetDevicePropValue). With --events, it
+// also holds everything a Canon body reports on its event channel. Two of them
+// taken a known number of frames apart show whether anything is a shutter
+// count.
 type probeFile struct {
 	Tool          string           `json:"tool"`
 	ToolVersion   string           `json:"tool_version"`
@@ -33,6 +38,35 @@ type probeFile struct {
 	DeviceInfoRaw string           `json:"device_info_raw"`
 	Operations    []string         `json:"operations"`
 	Properties    []probedProperty `json:"properties"`
+	Events        *probedEvents    `json:"events,omitempty"`
+}
+
+// probedEvents is what a Canon body reported on its event channel.
+type probedEvents struct {
+	// Steps says what was sent and how the camera answered.
+	Steps []string `json:"steps"`
+
+	// Replies are the GetEvent data phases, hex encoded, in order.
+	Replies []string `json:"replies"`
+
+	// Records are every record in Replies, in order.
+	Records []probedRecord `json:"records"`
+
+	Error string `json:"error,omitempty"`
+}
+
+// probedRecord is one event record.
+type probedRecord struct {
+	// Key names the record for comparing two probes: "prop 0xd167" for a
+	// property value, "allowed 0xd167" for a property's allowed values,
+	// and "event 0xc1a5 #2" for the second record of any other code.
+	Key  string `json:"key"`
+	Code uint32 `json:"code"`
+	Prop uint32 `json:"prop,omitempty"`
+
+	// Data is the record's data after its code, or after its property code
+	// for a property, hex encoded.
+	Data string `json:"data"`
 }
 
 type probedProperty struct {
@@ -82,11 +116,16 @@ func Probe(ctx context.Context, cmd *cli.Command) error {
 	file, probeErr := probe(session)
 	file.Notes = cmd.String("note")
 
+	if probeErr == nil && cmd.Bool("events") {
+		probeErr = probeEvents(ctx, session, &file)
+	}
+
 	if err := session.saveTrace(ctx); err != nil {
 		return err
 	}
 
-	if probeErr != nil {
+	// What the event channel gave before failing is still worth saving.
+	if probeErr != nil && file.Events == nil {
 		return probeErr
 	}
 
@@ -102,7 +141,51 @@ func Probe(ctx context.Context, cmd *cli.Command) error {
 	printProbe(file)
 	fmt.Printf("\n  Saved in %s\n\n", out)
 
-	return nil
+	return probeErr
+}
+
+// probeEvents reads a Canon body's event channel into file.
+func probeEvents(ctx context.Context, s *session, file *probeFile) error {
+	if s.reader.Name() != "Canon" {
+		return fmt.Errorf("--events reads Canon's event channel, and this is a %s camera", s.reader.Name())
+	}
+
+	table, err := canon.ReadEventTable(s.device, file.DeviceInfo, logs.LoggerFromContext(ctx))
+	if errors.Is(err, canon.ErrNoEventChannel) {
+		return err
+	}
+
+	events := &probedEvents{Steps: table.Steps}
+	if err != nil {
+		events.Error = err.Error()
+	}
+
+	for _, reply := range table.Replies {
+		events.Replies = append(events.Replies, hex.EncodeToString(reply))
+	}
+
+	seen := map[uint32]int{}
+
+	for _, r := range table.Records {
+		key := fmt.Sprintf("prop %#04x", r.Prop)
+
+		switch r.Code {
+		case canon.EventPropValueChanged:
+		case canon.EventAvailListChanged:
+			key = fmt.Sprintf("allowed %#04x", r.Prop)
+		default:
+			seen[r.Code]++
+			key = fmt.Sprintf("event %#04x #%d", r.Code, seen[r.Code])
+		}
+
+		events.Records = append(events.Records, probedRecord{
+			Key: key, Code: r.Code, Prop: r.Prop, Data: hex.EncodeToString(r.Data),
+		})
+	}
+
+	file.Events = events
+
+	return err
 }
 
 func probe(s *session) (probeFile, error) {
@@ -217,6 +300,57 @@ func printProbe(file probeFile) {
 
 		fmt.Printf("  %#04x  %-34s %-7s %s\n", p.Code, p.Name, p.Type, value)
 	}
+
+	if file.Events == nil {
+		return
+	}
+
+	ev := file.Events
+	fmt.Printf("\n  Canon event channel: %d records in %d replies.\n", len(ev.Records), len(ev.Replies))
+
+	if ev.Error != "" {
+		fmt.Printf("  It stopped with: %s\n", ev.Error)
+	}
+
+	fmt.Printf("  %s\n", describeD167(ev))
+}
+
+// d167Key is how property 0xD167 is keyed in a probe.
+var d167Key = fmt.Sprintf("prop %#04x", canon.PropShutterReleaseCounter)
+
+// describeD167 shows property 0xD167 as plain 32 bit words, by position. What
+// each word counts is not established, so they aren't named.
+func describeD167(ev *probedEvents) string {
+	value, ok := eventTable(ev)[d167Key]
+	if !ok {
+		return "0xd167: not reported"
+	}
+
+	raw, err := hex.DecodeString(value)
+	if err != nil || len(raw) == 0 || len(raw)%4 != 0 {
+		return "0xd167: " + value
+	}
+
+	words := make([]string, 0, len(raw)/4)
+	for i := 0; i+4 <= len(raw); i += 4 {
+		words = append(words, fmt.Sprintf("word %d: %d", i/4+1, binary.LittleEndian.Uint32(raw[i:])))
+	}
+
+	return "0xd167 " + strings.Join(words, ", ")
+}
+
+// eventTable maps each record's key to its last value.
+func eventTable(ev *probedEvents) map[string]string {
+	table := map[string]string{}
+	if ev == nil {
+		return table
+	}
+
+	for _, r := range ev.Records {
+		table[r.Key] = r.Data
+	}
+
+	return table
 }
 
 func displayValue(p probedProperty) string {
@@ -241,8 +375,17 @@ func displayValue(p probedProperty) string {
 	return p.Value
 }
 
+// target is a number of photos to look for a counter going up by.
+type target struct {
+	n     uint64
+	label string
+}
+
+// labelPhotosTaken is the target's label when only one shutter mode was used.
+const labelPhotosTaken = "photos taken"
+
 // Compare shows what changed between two probes, and whether anything went
-// up by exactly the number of frames taken between them.
+// up by exactly the number of photos taken between them.
 func Compare(_ context.Context, cmd *cli.Command) error {
 	if cmd.NArg() != 2 {
 		return errors.New("expected two probe files: before and after")
@@ -258,23 +401,78 @@ func Compare(_ context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	frames := int64(cmd.Int("frames"))
-	if frames <= 0 {
-		return errors.New("--frames must be the number of photos taken between the two probes")
+	targets, err := compareTargets(cmd.Int("frames"), cmd.Int("electronic"))
+	if err != nil {
+		return err
 	}
 
 	if before.Device.ProductID != after.Device.ProductID || before.Device.Serial != after.Device.Serial {
 		fmt.Println("\n  These two probes are from different cameras.")
 	}
 
+	labels := make([]string, len(targets))
+	for i, t := range targets {
+		labels[i] = fmt.Sprintf("%d (%s)", t.n, t.label)
+	}
+
+	fmt.Printf("\n  Looking for anything that went up by exactly %s.\n", strings.Join(labels, ", or "))
+
+	found := compareProperties(before, after, targets)
+
+	if before.Events != nil && after.Events != nil {
+		found += compareEvents(before.Events, after.Events, targets)
+	} else {
+		fmt.Print("\n  The event channel isn't in both probes, so only properties were compared.\n")
+	}
+
+	if found == 0 {
+		fmt.Printf("\n  Nothing went up by exactly %s.\n\n", strings.Join(labels, " or "))
+	} else {
+		fmt.Printf("\n  Found %d matches, marked <== above. One field can match at several widths.\n\n", found)
+	}
+
+	return nil
+}
+
+// compareTargets is what to look for: the photos taken with the shutter
+// moving, those with the electronic shutter, and all of them.
+func compareTargets(frames, electronic int) ([]target, error) {
+	if frames <= 0 {
+		return nil, errors.New("--frames must be the number of photos taken with the shutter moving")
+	}
+
+	if electronic < 0 {
+		return nil, errors.New("--electronic can't be negative")
+	}
+
+	f, e := uint64(frames), uint64(electronic)
+
+	if e == 0 {
+		return []target{{f, labelPhotosTaken}}, nil
+	}
+
+	if e == f {
+		return nil, errors.New("--frames and --electronic must differ, or a match couldn't say which it counts")
+	}
+
+	return []target{
+		{f, "photos with the shutter moving"},
+		{e, "electronic shutter photos"},
+		{f + e, "all photos"},
+	}, nil
+}
+
+// compareProperties compares the standard properties, returning how many
+// fields matched a target.
+func compareProperties(before, after probeFile, targets []target) int {
 	previous := make(map[uint16]probedProperty, len(before.Properties))
 	for _, p := range before.Properties {
 		previous[p.Code] = p
 	}
 
-	fmt.Printf("\n  Comparing %d properties, %d photos apart.\n\n", len(after.Properties), frames)
+	fmt.Printf("\n  Standard properties (%d):\n", len(after.Properties))
 
-	changed, exact := 0, 0
+	changed, found := 0, 0
 
 	for _, p := range after.Properties {
 		b, ok := previous[p.Code]
@@ -284,69 +482,167 @@ func Compare(_ context.Context, cmd *cli.Command) error {
 
 		changed++
 
-		line, isExact := describeChange(b, p, frames)
-		if isExact {
-			exact++
+		lines, hits := describeChange(b, p, targets)
+		found += hits
+
+		fmt.Printf("    %#04x  %-34s %s\n", p.Code, p.Name, lines[0])
+
+		for _, line := range lines[1:] {
+			fmt.Printf("    %6s  %-34s %s\n", "", "", line)
+		}
+	}
+
+	fmt.Printf("    %d of %d changed.\n", changed, len(after.Properties))
+
+	return found
+}
+
+// compareEvents compares two event tables record by record, returning how
+// many fields matched a target.
+func compareEvents(before, after *probedEvents, targets []target) int {
+	b, a := eventTable(before), eventTable(after)
+
+	fmt.Printf("\n  Canon event channel (%d records before, %d after):\n", len(b), len(a))
+	fmt.Printf("    before: %s\n", describeD167(before))
+	fmt.Printf("    after:  %s\n", describeD167(after))
+
+	keys := make([]string, 0, len(a))
+	for k := range a {
+		keys = append(keys, k)
+	}
+
+	slices.Sort(keys)
+
+	changed, found, onlyAfter := 0, 0, 0
+
+	for _, k := range keys {
+		old, ok := b[k]
+
+		switch {
+		case !ok:
+			onlyAfter++
+
+			continue
+		case old == a[k]:
+			continue
 		}
 
-		fmt.Printf("  %#04x  %-34s %s\n", p.Code, p.Name, line)
+		changed++
+
+		lines, hits := describeBytes(old, a[k], targets)
+		found += hits
+
+		fmt.Printf("    %-22s %s\n", k, lines[0])
+
+		for _, line := range lines[1:] {
+			fmt.Printf("    %-22s %s\n", "", line)
+		}
 	}
 
-	fmt.Printf("\n  %d of %d properties changed.\n", changed, len(after.Properties))
+	onlyBefore := 0
 
-	if exact > 0 {
-		fmt.Printf("  Found %d that went up by exactly %d: that's what a shutter count does.\n\n", exact, frames)
-	} else {
-		fmt.Printf("  Nothing went up by exactly %d, so the shutter count isn't in the\n", frames)
-		fmt.Print("  properties this camera lists for standard reads.\n\n")
+	for k := range b {
+		if _, ok := a[k]; !ok {
+			onlyBefore++
+		}
 	}
 
-	return nil
+	fmt.Printf("    %d of %d records changed; %d only before, %d only after.\n", changed, len(a), onlyBefore, onlyAfter)
+
+	return found
 }
 
 // describeChange explains how a property changed. Values of an integer type
-// are compared as numbers; anything else is searched for a 16 or 32 bit
-// little endian field that went up by exactly frames.
-func describeChange(before, after probedProperty, frames int64) (string, bool) {
+// are compared as numbers; anything else is searched byte by byte.
+func describeChange(before, after probedProperty, targets []target) ([]string, int) {
 	b, errB := hex.DecodeString(before.Value)
 	a, errA := hex.DecodeString(after.Value)
 
 	if errB != nil || errA != nil {
-		return "changed (undecodable)", false
+		return []string{"changed (undecodable)"}, 0
 	}
 
 	nb, okB := ptp.Number(before.DataType, b)
 	na, okA := ptp.Number(after.DataType, a)
 
-	if okB && okA {
-		mark := ""
-		if na-nb == frames {
-			mark = fmt.Sprintf("   <== up by exactly %d", frames)
-		}
-
-		return fmt.Sprintf("%d -> %d (%+d)%s", nb, na, na-nb, mark), na-nb == frames
+	if !okB || !okA {
+		return describeBytes(before.Value, after.Value, targets)
 	}
 
-	var hits []string
+	line := fmt.Sprintf("%d -> %d (%+d)", nb, na, na-nb)
 
-	if len(a) == len(b) {
-		for off := 0; off+2 <= len(a); off++ {
-			if int64(binary.LittleEndian.Uint16(a[off:]))-int64(binary.LittleEndian.Uint16(b[off:])) == frames {
-				hits = append(hits, fmt.Sprintf("16 bits at byte %d", off))
+	if na <= nb {
+		return []string{line}, 0
+	}
+
+	if t, ok := matchTarget(uint64(na-nb), targets); ok { //nolint:gosec // na > nb was checked above
+		return []string{fmt.Sprintf("%s   <== %s", line, t.label)}, 1
+	}
+
+	return []string{line}, 0
+}
+
+// describeBytes searches two hex encoded values for a field that went up by
+// exactly a target: at every byte offset, 2, 4 and 8 bytes wide, both byte
+// orders. The first line says how the value changed; one line per match
+// follows.
+func describeBytes(beforeHex, afterHex string, targets []target) ([]string, int) {
+	b, errB := hex.DecodeString(beforeHex)
+	a, errA := hex.DecodeString(afterHex)
+
+	if errB != nil || errA != nil {
+		return []string{"changed (undecodable)"}, 0
+	}
+
+	lines := []string{fmt.Sprintf("changed (%d -> %d bytes)", len(b), len(a))}
+
+	if len(a) != len(b) {
+		return lines, 0
+	}
+
+	orders := []struct {
+		name  string
+		order binary.ByteOrder
+	}{{"little endian", binary.LittleEndian}, {"big endian", binary.BigEndian}}
+
+	for _, width := range []int{2, 4, 8} {
+		for _, o := range orders {
+			for off := 0; off+width <= len(a); off++ {
+				vb, va := field(o.order, b[off:off+width]), field(o.order, a[off:off+width])
+				if va <= vb {
+					continue
+				}
+
+				if t, ok := matchTarget(va-vb, targets); ok {
+					lines = append(lines, fmt.Sprintf("%d bits %s at byte %d: %d -> %d   <== %s",
+						width*8, o.name, off, vb, va, t.label))
+				}
 			}
-
-			if off+4 <= len(a) &&
-				int64(binary.LittleEndian.Uint32(a[off:]))-int64(binary.LittleEndian.Uint32(b[off:])) == frames {
-				hits = append(hits, fmt.Sprintf("32 bits at byte %d", off))
-			}
 		}
 	}
 
-	if len(hits) > 0 {
-		return fmt.Sprintf("changed; up by exactly %d in: %s   <==", frames, strings.Join(hits, ", ")), true
+	return lines, len(lines) - 1
+}
+
+func field(order binary.ByteOrder, b []byte) uint64 {
+	switch len(b) {
+	case 2:
+		return uint64(order.Uint16(b))
+	case 4:
+		return uint64(order.Uint32(b))
+	default:
+		return order.Uint64(b)
+	}
+}
+
+func matchTarget(delta uint64, targets []target) (target, bool) {
+	for _, t := range targets {
+		if delta == t.n {
+			return t, true
+		}
 	}
 
-	return fmt.Sprintf("changed (%d -> %d bytes)", len(b), len(a)), false
+	return target{}, false
 }
 
 func readProbe(path string) (probeFile, error) {

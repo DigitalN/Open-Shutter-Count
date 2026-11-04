@@ -24,22 +24,24 @@ that's where the readings are saved.
 ## Finding a camera's counter
 
 For a camera the tool can't read yet, double-click **Find Shutter Counter.command**.
-It reads everything the camera reports through standard PTP read requests
-(GetDeviceInfo, then GetDevicePropDesc or GetDevicePropValue for each property
-it lists), and nothing else. Then it asks you to unplug the camera, take an
-exact number of photos (20 by default) and plug it back in, reads everything
-again, and shows what went up by exactly that number. The two probes and the
+It reads everything the camera reports: standard PTP read requests, plus, on a
+Canon, the event channel EOS Utility uses (SetRemoteMode, SetEventMode,
+GetEvent, RequestDevicePropValue). Then it asks you to unplug the camera and
+take an exact number of photos with each shutter mode, reads everything again,
+and shows what went up by exactly those numbers. The two reads and the
 comparison are saved in `readings/`.
 
-On the EOS R8, set Shutter mode to Elec. 1st-curtain for the test photos, so
-the shutter actually moves.
+On the EOS R8: 20 photos with Shutter mode set to Elec. 1st-curtain, then 7
+with Electronic. Different numbers are what let the comparison tell the two
+shutters apart.
 
 ## EOS R8: not readable yet
 
 The R8 connects and opens a session, but refuses the standard shutter counter
-property, and gave no reply to Canon's factory channel (`MonOpen`). After that
-it stopped answering USB until it was switched off. The tool now stops before
-the factory channel on an R8 and says so, so running it can't hang the camera.
+property, and doesn't list Canon's factory channel at all. When the factory
+channel (`MonOpen`) was sent anyway, it stopped answering USB until it was
+switched off. The tool now stops before the factory channel on an R8, so
+`Read Shutter Count` can't hang the camera. See `docs/R8-PROGRESS.md`.
 
 ## What it saves
 
@@ -55,7 +57,7 @@ Each run writes two files to `readings/` (not committed to git):
 | File | What it is |
 |---|---|
 | `Read Shutter Count.command` | Reads the shutter count |
-| `Find Shutter Counter.command` | Looks for where a camera keeps its count, with standard read requests only |
+| `Find Shutter Counter.command` | Looks for where a camera keeps its count: standard reads and Canon's event channel |
 | `launcher.sh` | What the two launchers share |
 | `openshuttercounter` | The tool, built from this repository by `build.sh` |
 | `libusb-1.0.dylib` | libusb 1.0.30 from the [libusb-package](https://github.com/pyocd/libusb-package) wheel on PyPI, checked against a pinned SHA-256 |

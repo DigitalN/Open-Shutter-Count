@@ -18,3 +18,4 @@ snap_*.json
 # the bundle this repository was built from, kept locally for reference
 handoff/
 canon-shutter-handoff.tar.gz
+.DS_Store

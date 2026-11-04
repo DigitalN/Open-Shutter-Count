@@ -51,15 +51,26 @@ camera, and refuses to build one; see docs/PROTOCOL.md for why that matters.`,
 				Usage: "save everything the camera reports through standard PTP read requests",
 				Description: `Asks the camera what it supports (GetDeviceInfo), then reads every property
 it lists with GetDevicePropDesc or GetDevicePropValue, and saves it all to a
-file. It sends nothing else: no vendor or factory commands.
+file. Without --events it sends nothing else: no vendor or factory commands.
+
+With --events, on a Canon body, it also reads Canon's event channel the way
+EOS Utility and libgphoto2 do: SetRemoteMode(1), SetEventMode(1), GetEvent
+until the camera has nothing more to report, and RequestDevicePropValue(0xD167)
+if that property wasn't reported. Then SetRemoteMode(0), SetRemoteMode(1) and
+SetEventMode(0), as libgphoto2 does when it stops tethering. Each is sent only
+if the camera lists it.
 
 Two probes taken an exact number of photos apart, compared with 'compare',
-show whether any standard property is the shutter count.`,
+show whether anything is the shutter count.`,
 				Action: cmd.Execute(cmd.Probe),
 				Flags: []cli.Flag{
 					deviceFlag,
 					traceFlag,
 					noteFlag,
+					&cli.BoolFlag{
+						Name:  "events",
+						Usage: "also read a Canon body's event channel (sends Canon's tethering commands)",
+					},
 					&cli.StringFlag{
 						Name:     "out",
 						Aliases:  []string{"o"},
@@ -76,8 +87,12 @@ show whether any standard property is the shutter count.`,
 				Flags: []cli.Flag{
 					&cli.IntFlag{
 						Name:  "frames",
-						Usage: "how many `photos` were taken between the two probes",
+						Usage: "how many `photos` were taken with the shutter moving (on an EOS R8, Elec. 1st-curtain)",
 						Value: 20,
+					},
+					&cli.IntFlag{
+						Name:  "electronic",
+						Usage: "how many `photos` were taken with the electronic shutter",
 					},
 				},
 			},

@@ -10,7 +10,8 @@ the R8 did, and what's next.
 ## How testing works
 
 - Claude can't reach the Mac or the camera. The maintainer runs a launcher in `mac/`
-  by double-clicking, and uploads what it saved in `mac/readings/`.
+  by double-clicking, and copies what it saved in `mac/readings/` (gitignored)
+  into `Logs/`, which is committed.
 - After any Go change, rebuild the Mac binary with `bash mac/build.sh` (works
   on Linux; reproducible; the Go linker ad-hoc signs it) and commit
   `mac/openshuttercounter` with the change. The maintainer then pulls and reruns.
@@ -25,7 +26,16 @@ the R8 did, and what's next.
   `pkg/manufacturers/canon` refuses the known write commands; keep it that way.
 - The R8 hung on `MonOpen` (the factory channel) and needed a power cycle. It's
   in `noFactoryChannel` so the tool won't send it again.
-- Standard PTP reads are fine. Ask the maintainer before sending anything else to
-  the camera, including Canon's tethering commands (0x9114/0x9115/0x9116).
+- The R8 doesn't list 0x9052/0x9053 in GetDeviceInfo. Don't send an opcode a
+  camera doesn't list.
+- Standard PTP reads are fine. The maintainer approved (2026-11-04) Canon's
+  tethering commands for reading the event channel, and only these:
+  SetRemoteMode 0x9114 (params 1, then 0 and 1 on the way out), SetEventMode
+  0x9115 (1, then 0), GetEvent 0x9116, and RequestDevicePropValue 0x9127 for
+  0xD167 only. They're in `pkg/manufacturers/canon/events.go`, sent only by
+  `probe --events`. Ask before sending anything else, including 0x9108
+  GetDeviceInfoEx.
+- No guessing in what the tool prints: a value isn't named (mechanical,
+  electronic, total) until a test proves what it counts.
 - When the camera stops answering, the maintainer switches it off and on (battery out
   if it won't switch off).
