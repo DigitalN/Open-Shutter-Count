@@ -2,7 +2,7 @@
 
 Work is on branch `claude/happy-knuth-9mtrso`. The maintainer's local copy is
 `~/Documents/GitHub/openshuttercounter`. New readings arrive as commits in
-`mac/readings/`; earlier ones are in `Logs/`.
+`mac/readings/`; earlier ones are in `research/r8/logs/`.
 
 ## What the maintainer wants
 
@@ -17,7 +17,7 @@ Readable. `Read Shutter Count` reads 0xD167 off the event channel and shows
 each count as the thousand it's in: word 3 mechanical, word 4 every photo,
 electronic the difference. The maintainer accepted that (Q18).
 
-As of the test's last photo (`Photos/_MG_1326.CR3`), and assuming word 3 rounds
+As of the test's last photo (`research/r8/photos/_MG_1326.CR3`), and assuming word 3 rounds
 up as word 4 does: mechanical 1,001 to 1,020, electronic 20,250 to 20,269,
 total exactly 21,270. The window is narrow because word 3 stepped during the
 20 Elec. 1st-curtain test photos. A plain read can't know that, so it shows
@@ -46,7 +46,7 @@ How word 3 and word 4 were identified:
 - In the right mode: `04a9:330c`, "Canon Digital Camera". Interface 0 still
   image (bulk in 0x81, bulk out 0x02, interrupt 0x83); interface 1 vendor
   specific 0xff/0xf0 (bulk 0x84/0x05).
-- GetDeviceInfo (`Logs/2026-11-04_13-38-11-probe-before.json`): firmware
+- GetDeviceInfo (`research/r8/logs/2026-11-04_13-38-11-probe-before.json`): firmware
   3-1.5.0, vendor extension ID 6 (not Canon's 0x0b), 152 operations, 5
   properties.
   - Lists 0x9114 SetRemoteMode, 0x9115 SetEventMode, 0x9116 GetEvent and 0x9127
@@ -55,9 +55,9 @@ How word 3 and word 4 were identified:
     no answer and hung the camera until a power cycle. The 90D (DIGIC 8) did
     the same in upstream issue #4.
   - Standard properties: 0xD402, 0xD407, 0xD406, 0xD303, 0x5001. None moved
-    across 20 photos (`Logs/2026-11-04_13-38-11-probe.txt`).
+    across 20 photos (`research/r8/logs/2026-11-04_13-38-11-probe.txt`).
 - GetDevicePropValue(0xD1AC): 0x2005 OperationNotSupported.
-- `Photos/_MG_1326.CR3`, the test's last photo (camera clock 13:29:28, 4 s
+- `research/r8/photos/_MG_1326.CR3`, the test's last photo (camera clock 13:29:28, 4 s
   before the after probe; the camera's clock is UTC-7). Its main maker notes
   (CMT3) have no CameraInfo. Canon's timed metadata track (CTMD) does: record
   type 8 is a MakerNotes TIFF whose tag 0x000d CameraInfo is 4,608 bytes, and

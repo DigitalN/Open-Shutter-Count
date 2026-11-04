@@ -124,7 +124,7 @@ const noDeviceHint = `no camera found. Check that:
   - USB 2 ports are noticeably more reliable than USB 3 with these bodies
 
 If your camera is from a manufacturer this build does not know yet, it will
-not be listed at all. Adding one is welcome; see CONTRIBUTING.md.`
+not be listed at all. Adding one is welcome; see docs/CONTRIBUTING.md.`
 
 const noStillImageHint = `The camera is connected, but its USB connection is in a mode that can't be
 read, such as webcam. No commands were sent to it. Switch it to photo transfer,

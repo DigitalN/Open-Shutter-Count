@@ -139,6 +139,6 @@ const modelsFooter = `
 
     openshuttercounter --trace mycamera.json
 
-  CONTRIBUTING.md explains what to do with it.
+  docs/CONTRIBUTING.md explains what to do with it.
 
 `

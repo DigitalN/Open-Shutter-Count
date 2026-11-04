@@ -17,7 +17,7 @@ import (
 //
 // These are the only ones sent here. The event channel is read with them and
 // nothing else, so adding one means asking the maintainer first; see
-// CLAUDE.md.
+// .claude/CLAUDE.md.
 const (
 	OpEOSSetRemoteMode          uint16 = 0x9114
 	OpEOSSetEventMode           uint16 = 0x9115

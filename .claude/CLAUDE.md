@@ -4,14 +4,23 @@ A fork of mvisonneau/openshuttercounter, which the original author has stopped
 working on. The goal here is reading the shutter count of the maintainer's Canon EOS R8
 on their Mac (MacBookPro18,1, M1 Pro, macOS 27.2) without using Terminal.
 
-Read [docs/R8-PROGRESS.md](docs/R8-PROGRESS.md) first: what's been done, what
+Read [docs/R8-PROGRESS.md](../docs/R8-PROGRESS.md) first: what's been done, what
 the R8 did, and what's next.
+
+## Layout
+
+- The top level is kept for what a user needs: `Read Shutter Count.command`,
+  the README and LICENSE, plus what Go and the tooling need there.
+- `mac/`: the Mac binary, libusb, `launcher.sh`, `Find Shutter Counter.command`.
+- `docs/`: CONTRIBUTING.md, PROTOCOL.md (5D Mark IV factory channel),
+  R8-PROGRESS.md.
+- `research/r8/`: the maintainer's readings and the test photo.
 
 ## How testing works
 
-- Claude can't reach the Mac or the camera. The maintainer runs a launcher in `mac/`
-  by double-clicking, and commits and pushes what it saved in `mac/readings/`.
-  Readings from before that are in `Logs/`.
+- Claude can't reach the Mac or the camera. The maintainer double-clicks a
+  launcher, and commits and pushes what it saved in `mac/readings/`. Readings
+  so far are in `research/r8/logs/`.
 - After any Go change, rebuild the Mac binary with `bash mac/build.sh` (works
   on Linux; reproducible; the Go linker ad-hoc signs it) and commit
   `mac/openshuttercounter` with the change. The maintainer then pulls and reruns.

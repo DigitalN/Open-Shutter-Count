@@ -56,7 +56,7 @@ openshuttercounter decode after.json  --only 9052,9053
 If every counter advanced by exactly the number of frames you took, that is a
 confirmed camera. Open a pull request adding it to the model list for its
 manufacturer — for Canon that is
-[`pkg/manufacturers/canon/models.go`](pkg/manufacturers/canon/models.go) —
+[`pkg/manufacturers/canon/models.go`](../pkg/manufacturers/canon/models.go) —
 attaching both traces and saying how many frames you took:
 
 ```go
@@ -89,7 +89,7 @@ naming it in one place:
    open PTP session and the USB device it belongs to, and returns a
    `manufacturers.Reading`.
 2. Add it to the registry in
-   [`internal/cmd/utils.go`](internal/cmd/utils.go).
+   [`internal/cmd/utils.go`](../internal/cmd/utils.go).
 
 Everything else — claiming the USB interface, PTP framing, tracing, output,
 JSON, the CLI — is already shared and needs no changes.

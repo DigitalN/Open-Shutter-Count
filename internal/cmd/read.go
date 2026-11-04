@@ -179,7 +179,7 @@ const unconfirmedNotice = `
 
   If every counter moved by exactly the number of frames you took, that is a
   confirmed camera. Send both files along and it goes in the supported list.
-  CONTRIBUTING.md has the details.
+  docs/CONTRIBUTING.md has the details.
 `
 
 // spacedHex makes a raw reply readable.

@@ -23,7 +23,7 @@ those that do not are read through their manufacturer's own channel.
 Running it with no command reads the connected camera.
 
 If your camera is not recognised, running with --trace produces a file that is
-enough for somebody else to confirm support for it. See CONTRIBUTING.md.
+enough for somebody else to confirm support for it. See docs/CONTRIBUTING.md.
 
 This tool only ever reads. It will not send any command that writes to the
 camera, and refuses to build one; see docs/PROTOCOL.md for why that matters.`,

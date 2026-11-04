@@ -1,11 +1,44 @@
-# Shared by the .command launchers in this folder; not run on its own.
+# Shared by the .command launchers; not run on its own.
 #
 # Set $here to this folder before sourcing it. It sets $tool, $readings and
-# $stamp, and defines start, run and finish. Set $log before calling start.
+# $stamp, and defines check_setup, start, run and finish. Set $log before
+# calling start.
 
 tool="$here/openshuttercounter"
 readings="$here/readings"
 stamp="$(date +%Y-%m-%d_%H-%M-%S)"
+
+# check_setup asks whether the camera is set up, and stops if it isn't.
+# Nothing has been sent to the camera at this point.
+check_setup() {
+    clear
+    cat <<'SETUP'
+Before reading, set up the camera:
+
+  1. USB connection set to photo transfer:
+       MENU > Setup (wrench) > Choose USB connection app >
+       Photo Import/Remote Control
+     (On the EOS R8 it's on page 4 of the Setup menu.)
+  2. Wi-Fi and Bluetooth off.
+  3. A card in, and the camera switched on.
+  4. Plugged straight into this Mac with a data cable, not a hub. Allow it
+     if macOS asks whether the accessory may connect.
+  5. Image Capture, Photos and EOS Utility closed.
+
+SETUP
+
+    local answer
+    read -r -p "Have you done all of that? (y/n) " answer
+
+    case "$answer" in
+        [yY]*) ;;
+        *)
+            echo
+            echo "Do those first, then double-click this again."
+            finish 1
+            ;;
+    esac
+}
 
 # start checks the Mac and the tool, then begins $log with the title given,
 # the macOS version and the USB devices macOS can see.
@@ -19,7 +52,7 @@ start() {
 
     if [ ! -x "$tool" ]; then
         echo "The tool is missing from $here."
-        echo "Fetch the repository again, or run mac/build.sh."
+        echo "Download the repository again, or run mac/build.sh."
         finish 1
     fi
 

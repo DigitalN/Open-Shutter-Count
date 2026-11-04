@@ -176,7 +176,7 @@ func (r *Reader) readFactoryChannel(device *ptp.Device, info usb.DeviceInfo) (ma
 
 		r.logger.Warn("this body is not in the list of confirmed cameras, so the values below are a guess",
 			zap.String("product_id", fmt.Sprintf("%04x", info.ProductID)),
-			zap.String("what_would_help", "run with --trace and open an issue; see CONTRIBUTING.md"),
+			zap.String("what_would_help", "run with --trace and open an issue; see docs/CONTRIBUTING.md"),
 		)
 	}
 

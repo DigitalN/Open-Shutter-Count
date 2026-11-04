@@ -37,6 +37,7 @@ ask_count() {
     esac
 }
 
+check_setup
 start "Find Shutter Counter"
 
 echo "Step 1 of 2: reading everything the camera reports..."

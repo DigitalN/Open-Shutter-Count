@@ -52,7 +52,7 @@ var noFactoryChannel = map[uint16]string{
 
 // Each address map below was established differentially: read every address,
 // take an exact number of frames, read again, and keep whatever advanced by
-// exactly that number. Adding a body is the same job, and CONTRIBUTING.md
+// exactly that number. Adding a body is the same job, and docs/CONTRIBUTING.md
 // walks through it.
 //
 // On the 5D Mark IV, MPU 0x1198 also answers, in 32 bytes, but is an error log
