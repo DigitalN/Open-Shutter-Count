@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 	"unsafe"
@@ -24,6 +26,28 @@ import (
 // through a runtime FFI than a flat C API. Going through ImageCaptureCore
 // instead, which would remove the dependency altogether, is noted as future
 // work in the README.
+
+// bundledLibusbNames are looked for next to the executable first, so a copy
+// of libusb shipped alongside the binary (see mac/) works without Homebrew.
+var bundledLibusbNames = []string{"libusb-1.0.dylib", "libusb-1.0.0.dylib"}
+
+// libusbSearchPath is every place libusb is looked for, in order: beside the
+// executable, then the system-wide candidates below.
+func libusbSearchPath() []string {
+	var paths []string
+
+	if exe, err := os.Executable(); err == nil {
+		if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = resolved
+		}
+
+		for _, name := range bundledLibusbNames {
+			paths = append(paths, filepath.Join(filepath.Dir(exe), name))
+		}
+	}
+
+	return append(paths, libusbCandidates...)
+}
 
 // libusbCandidates are searched in order. The first entry lets dyld apply its
 // own search rules; the rest cover Homebrew on Apple silicon, Homebrew on
@@ -100,7 +124,7 @@ func loadLibusb() (*libusbAPI, uintptr, error) {
 
 		var err error
 
-		for _, candidate := range libusbCandidates {
+		for _, candidate := range libusbSearchPath() {
 			if handle, err = purego.Dlopen(candidate, purego.RTLD_NOW|purego.RTLD_GLOBAL); err == nil {
 				break
 			}

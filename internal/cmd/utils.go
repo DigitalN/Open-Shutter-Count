@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
@@ -138,22 +139,46 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		return nil, err
 	}
 
-	// macOS hands every camera to ptpcamerad the moment it appears. Stop it
-	// and try once more; launchd brings it back when we are done.
+	// macOS hands every camera to ptpcamerad the moment it appears, and
+	// launchd can start it again straight away, so stop it and retry a few
+	// times. launchd brings it back for good once we are done.
 	if runtime.GOOS == "darwin" {
 		logger.Warn("the camera is held by another process, stopping ptpcamerad and retrying")
 
-		if err := usb.ReleaseSystemCameraDaemon(ctx); err != nil {
-			logger.Debug("could not stop ptpcamerad", zap.Error(err))
-		}
+		for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
+			if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
+				logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
+			}
 
-		if device, retryErr := usb.Open(info); retryErr == nil {
-			return device, nil
+			// Give the daemon a moment to exit and let go of the device.
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(darwinRetryDelay):
+			}
+
+			device, err = usb.Open(info)
+			if err == nil {
+				return device, nil
+			}
+
+			logger.Debug("the camera is still busy", zap.Int("attempt", attempt), zap.Error(err))
+
+			if !errors.Is(err, usb.ErrBusy) {
+				return nil, err
+			}
 		}
 	}
 
 	return nil, fmt.Errorf("%w\n%s", err, busyHint())
 }
+
+// How often, and how far apart, opening a busy camera is retried on macOS
+// after stopping ptpcamerad.
+const (
+	darwinOpenAttempts = 5
+	darwinRetryDelay   = 300 * time.Millisecond
+)
 
 func busyHint() string {
 	switch runtime.GOOS {

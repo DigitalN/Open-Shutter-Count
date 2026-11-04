@@ -138,7 +138,9 @@ systemctl --user mask gvfs-gphoto2-volume-monitor
 
 ### macOS
 
-USB access goes through libusb, loaded at runtime:
+On an Apple silicon Mac, [`mac/`](mac/README.md) has a ready-to-run copy with
+libusb included: double-click `Read Shutter Count.command`. Otherwise, USB
+access goes through libusb, loaded at runtime:
 
 ```bash
 brew install libusb
