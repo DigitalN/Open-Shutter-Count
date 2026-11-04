@@ -66,4 +66,4 @@ formatters:
       sections:
         - standard
         - default
-        - prefix(github.com/mvisonneau)
+        - prefix(github.com/DigitalN)

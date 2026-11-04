@@ -1,10 +1,15 @@
 ---
 name: release
 
+# Publishing a release on GitHub (Releases > Draft a new release, with a new
+# tag like v1.0.0) builds the downloads and attaches them to it.
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  release:
+    types:
+      - published
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -13,19 +18,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
-        with:
-          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6
         with:
-          # Follow go.mod rather than a pinned version: the tool
-          # dependencies raise the required toolchain from time to time, and
-          # setup-go pins GOTOOLCHAIN=local, so a hardcoded version here
-          # silently stops matching.
           go-version-file: go.mod
 
-      - name: Run goreleaser
-        run: make release
+      - name: Test
+        run: go test ./...
+
+      - name: Build
+        run: bash .github/release.sh
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+          VERSION: ${{ github.event.release.tag_name }}
+
+      - name: Attach to the release
+        run: gh release upload "$TAG" dist/* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}

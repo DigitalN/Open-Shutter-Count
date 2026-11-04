@@ -6,7 +6,9 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 	"unsafe"
@@ -24,6 +26,28 @@ import (
 // through a runtime FFI than a flat C API. Going through ImageCaptureCore
 // instead, which would remove the dependency altogether, is noted as future
 // work in the README.
+
+// bundledLibusbNames are looked for next to the executable first, so a copy
+// of libusb shipped alongside the binary (see mac/) works without Homebrew.
+var bundledLibusbNames = []string{"libusb-1.0.dylib", "libusb-1.0.0.dylib"}
+
+// libusbSearchPath is every place libusb is looked for, in order: beside the
+// executable, then the system-wide candidates below.
+func libusbSearchPath() []string {
+	var paths []string
+
+	if exe, err := os.Executable(); err == nil {
+		if resolved, err := filepath.EvalSymlinks(exe); err == nil {
+			exe = resolved
+		}
+
+		for _, name := range bundledLibusbNames {
+			paths = append(paths, filepath.Join(filepath.Dir(exe), name))
+		}
+	}
+
+	return append(paths, libusbCandidates...)
+}
 
 // libusbCandidates are searched in order. The first entry lets dyld apply its
 // own search rules; the rest cover Homebrew on Apple silicon, Homebrew on
@@ -100,7 +124,7 @@ func loadLibusb() (*libusbAPI, uintptr, error) {
 
 		var err error
 
-		for _, candidate := range libusbCandidates {
+		for _, candidate := range libusbSearchPath() {
 			if handle, err = purego.Dlopen(candidate, purego.RTLD_NOW|purego.RTLD_GLOBAL); err == nil {
 				break
 			}
@@ -160,6 +184,8 @@ func (a *libusbAPI) err(op string, rc int32) error {
 	switch rc {
 	case libusbErrorBusy, libusbErrorAccess:
 		return fmt.Errorf("%s: %s: %w", op, a.errorName(rc), ErrBusy)
+	case libusbErrorTimeout:
+		return fmt.Errorf("%s: %s: %w", op, a.errorName(rc), ErrTimeout)
 	default:
 		return fmt.Errorf("%s: %s (%d)", op, a.errorName(rc), rc)
 	}
@@ -315,6 +341,26 @@ func (d *darwinDevice) Close() error {
 	return nil
 }
 
+// ResetPTP sends the still image class Device Reset request (PIMA 15740 USB
+// annex, bRequest 0x66), which closes any session the camera has open and
+// drops whatever transaction it was in the middle of.
+func (d *darwinDevice) ResetPTP() error {
+	const (
+		requestTypeClassInterfaceOut uint8  = 0x21
+		requestDeviceReset           uint8  = 0x66
+		controlTimeoutMS             uint32 = 1000
+	)
+
+	//nolint:gosec // interface numbers come from a uint8 descriptor field
+	rc := d.api.controlTransfer(d.handle, requestTypeClassInterfaceOut, requestDeviceReset,
+		0, uint16(d.iface), nil, 0, controlTimeoutMS)
+	if rc < 0 {
+		return d.api.err("libusb_control_transfer (PTP device reset)", rc)
+	}
+
+	return nil
+}
+
 // configure reads the configuration descriptor over the control endpoint,
 // picks the PTP interface and claims it.
 //
@@ -332,9 +378,16 @@ func (d *darwinDevice) configure() error {
 		return fmt.Errorf("parsing configuration descriptor: %w", err)
 	}
 
-	iface, ok := cfg.PTPInterface()
+	// Unlike Linux, macOS enumeration can't filter on the still image class
+	// without opening every device, so the check happens here. Falling back
+	// to any bulk pair, as PTPInterface does, sent PTP into a camera's
+	// vendor pipe when it was in another USB mode, so it isn't done here.
+	d.info.Interfaces = cfg.Summary()
+
+	iface, ok := cfg.StillImageInterface()
 	if !ok {
-		return fmt.Errorf("%s exposes no still image interface", d.info.Path)
+		return fmt.Errorf("%s: %w%s; it offers:%s",
+			d.info.Path, ErrNoStillImage, d.otherConfigurations(), d.info.Interfaces)
 	}
 
 	epIn, okIn := iface.BulkIn()
@@ -360,7 +413,29 @@ func (d *darwinDevice) configure() error {
 		)
 	}
 
+	// Whatever had the camera before us, usually ptpcamerad, leaves its
+	// endpoints in a state that can make the camera ignore our first
+	// command. Clearing both endpoints resets them at both ends, and is
+	// harmless when nothing was wrong.
+	_ = d.ClearHalt()
+
 	return nil
+}
+
+// otherConfigurations notes when the device has configurations besides the
+// first, the only one checked, so a report shows whether PTP might be there.
+func (d *darwinDevice) otherConfigurations() string {
+	raw, err := d.descriptor(descriptorTypeDevice, 18)
+	if err != nil {
+		return ""
+	}
+
+	desc, err := ParseDeviceDescriptor(raw)
+	if err != nil || desc.NumConfigurations <= 1 {
+		return ""
+	}
+
+	return fmt.Sprintf(" (only the first of its %d configurations was checked)", desc.NumConfigurations)
 }
 
 // configDescriptor fetches configuration descriptor zero: nine bytes first to

@@ -1,9 +1,8 @@
 NAME          := openshuttercounter
 COVERAGE_FILE := coverage.out
-REPOSITORY    := mvisonneau/$(NAME)
+REPOSITORY    := DigitalN/$(NAME)
 
 GOLANGCI_LINT := go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-GORELEASER    := go tool github.com/goreleaser/goreleaser/v2
 
 # Building the linter once lets it be re-run under a different GOOS. `go tool`
 # would cross compile the linter itself instead of the code under it.
@@ -62,22 +61,6 @@ build-all: ## Cross compile every supported target, to check the backends still 
 	GOOS=darwin  GOARCH=arm64 go build -o /dev/null ./cmd/$(NAME)
 	GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/$(NAME)
 	GOOS=windows GOARCH=386   go build -o /dev/null ./cmd/$(NAME)
-
-.PHONY: release
-release: ## Build & release the binaries
-	$(GORELEASER) release --clean
-
-.PHONY: snapshot
-snapshot: ## Build the release artifacts without publishing anything
-	$(GORELEASER) release --snapshot --clean
-
-.PHONY: autocomplete-scripts
-autocomplete-scripts: ## Download CLI autocompletion scripts
-	rm -rf helpers/autocomplete
-	mkdir -p helpers/autocomplete
-	go run ./cmd/$(NAME) completion bash > helpers/autocomplete/bash
-	go run ./cmd/$(NAME) completion fish > helpers/autocomplete/fish
-	go run ./cmd/$(NAME) completion zsh  > helpers/autocomplete/zsh
 
 .PHONY: clean
 clean: ## Remove build artefacts

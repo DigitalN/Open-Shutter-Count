@@ -7,17 +7,18 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 
-	"github.com/mvisonneau/openshuttercounter/internal/app"
-	"github.com/mvisonneau/openshuttercounter/internal/logs"
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers/canon"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/trace"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/internal/app"
+	"github.com/DigitalN/openshuttercounter/internal/logs"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers/canon"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/trace"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // registry lists the manufacturers this build can read.
@@ -123,7 +124,13 @@ const noDeviceHint = `no camera found. Check that:
   - USB 2 ports are noticeably more reliable than USB 3 with these bodies
 
 If your camera is from a manufacturer this build does not know yet, it will
-not be listed at all. Adding one is welcome; see CONTRIBUTING.md.`
+not be listed at all. Adding one is welcome; see docs/CONTRIBUTING.md.`
+
+const noStillImageHint = `The camera is connected, but its USB connection is in a mode that can't be
+read, such as webcam. No commands were sent to it. Switch it to photo transfer,
+then unplug it and plug it back in. On Canon mirrorless bodies that is the
+Setup menu > Choose USB connection app > Photo Import/Remote Control (on the
+EOS R8, page 4 of the Setup menu).`
 
 // openDevice claims the camera, working around whatever is holding it.
 func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
@@ -134,26 +141,54 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		return device, nil
 	}
 
+	if errors.Is(err, usb.ErrNoStillImage) {
+		return nil, fmt.Errorf("%w\n\n%s", err, noStillImageHint)
+	}
+
 	if !errors.Is(err, usb.ErrBusy) {
 		return nil, err
 	}
 
-	// macOS hands every camera to ptpcamerad the moment it appears. Stop it
-	// and try once more; launchd brings it back when we are done.
+	// macOS hands every camera to ptpcamerad the moment it appears, and
+	// launchd can start it again straight away, so stop it and retry a few
+	// times. launchd brings it back for good once we are done.
 	if runtime.GOOS == "darwin" {
 		logger.Warn("the camera is held by another process, stopping ptpcamerad and retrying")
 
-		if err := usb.ReleaseSystemCameraDaemon(ctx); err != nil {
-			logger.Debug("could not stop ptpcamerad", zap.Error(err))
-		}
+		for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
+			if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
+				logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
+			}
 
-		if device, retryErr := usb.Open(info); retryErr == nil {
-			return device, nil
+			// Give the daemon a moment to exit and let go of the device.
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(darwinRetryDelay):
+			}
+
+			device, err = usb.Open(info)
+			if err == nil {
+				return device, nil
+			}
+
+			logger.Debug("the camera is still busy", zap.Int("attempt", attempt), zap.Error(err))
+
+			if !errors.Is(err, usb.ErrBusy) {
+				return nil, err
+			}
 		}
 	}
 
 	return nil, fmt.Errorf("%w\n%s", err, busyHint())
 }
+
+// How often, and how far apart, opening a busy camera is retried on macOS
+// after stopping ptpcamerad.
+const (
+	darwinOpenAttempts = 5
+	darwinRetryDelay   = 300 * time.Millisecond
+)
 
 func busyHint() string {
 	switch runtime.GOOS {
@@ -234,12 +269,6 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 		}
 	}
 
-	if err := s.device.OpenSession(); err != nil {
-		s.close()
-
-		return nil, err
-	}
-
 	// The identity is only fully known once the interface is open, since
 	// some backends read the descriptors on the way in.
 	s.info = s.device.Info()
@@ -247,7 +276,52 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 		s.recorder.Describe(s.info)
 	}
 
+	logger.Debug("claimed the camera",
+		zap.String("manufacturer", s.info.Manufacturer),
+		zap.String("product", s.info.Product),
+		zap.String("interfaces", s.info.Interfaces),
+	)
+
+	if err := openPTPSession(logger, s.device, transport); err != nil {
+		// A trace of a camera that never answered is still worth having.
+		if traceErr := s.saveTrace(ctx); traceErr != nil {
+			logger.Debug("saving the trace", zap.Error(traceErr))
+		}
+
+		s.close()
+
+		return nil, err
+	}
+
 	return s, nil
+}
+
+// openPTPSession opens the PTP session, resetting the camera and trying once
+// more if it doesn't answer. A camera taken over from another process can
+// still be in that process's session or transaction and ignore a new one.
+func openPTPSession(logger *zap.Logger, device *ptp.Device, transport usb.Device) error {
+	err := device.OpenSession()
+	if err == nil || !errors.Is(err, usb.ErrTimeout) {
+		return err
+	}
+
+	logger.Warn("the camera didn't answer; resetting it and trying again", zap.Error(err))
+
+	if resetter, ok := transport.(usb.Resetter); ok {
+		if resetErr := resetter.ResetPTP(); resetErr != nil {
+			logger.Debug("PTP device reset", zap.Error(resetErr))
+		}
+	}
+
+	if clearErr := device.ClearHalt(); clearErr != nil {
+		logger.Debug("clearing the endpoints", zap.Error(clearErr))
+	}
+
+	if err = device.OpenSession(); err != nil {
+		return fmt.Errorf("the camera didn't answer, even after a reset: %w", err)
+	}
+
+	return nil
 }
 
 // saveTrace writes the recording out, if one was asked for.

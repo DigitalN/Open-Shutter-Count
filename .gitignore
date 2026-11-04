@@ -3,8 +3,15 @@ vendor
 .bin
 openshuttercounter
 !cmd/openshuttercounter
+!mac/openshuttercounter
 helpers
 coverage.out
+
+# A run's logs. Traces and probes (.json) hold the camera's serial number, so
+# only the .txt logs can be committed.
+mac/readings/*
+!mac/readings/*.txt
+.DS_Store
 
 # capture and snapshot artefacts from a research session
 *.pcap

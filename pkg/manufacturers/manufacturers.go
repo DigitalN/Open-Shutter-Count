@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // CounterSpec describes a counter a model is known to expose.
@@ -58,6 +58,11 @@ type Counter struct {
 	Location string `json:"location,omitempty"`
 	Value    uint32 `json:"value"`
 
+	// Range marks a counter the camera only gives to within a range: it is
+	// somewhere from Min to Value.
+	Range bool   `json:"range,omitempty"`
+	Min   uint32 `json:"min,omitempty"`
+
 	// Raw is the untouched reply, which is what somebody working out a new
 	// body's layout actually needs to see.
 	Raw []byte `json:"raw,omitempty"`
@@ -87,6 +92,9 @@ type Reading struct {
 	RatedLife uint32 `json:"rated_life,omitempty"`
 
 	Counters []Counter `json:"counters"`
+
+	// Note is shown under the counters, to say how to read them.
+	Note string `json:"note,omitempty"`
 }
 
 // Reader reads actuation counters from one manufacturer's cameras.

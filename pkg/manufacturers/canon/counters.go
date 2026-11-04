@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
 )
 
 // PropShutterCounter is the PTP device property Canon exposed as a shutter

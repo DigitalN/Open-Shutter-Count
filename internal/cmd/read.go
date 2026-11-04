@@ -9,8 +9,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 type readOutput struct {
@@ -33,12 +33,15 @@ type readingOutput struct {
 	Confirmed    bool   `json:"confirmed"`
 	Method       string `json:"method"`
 	RatedLife    uint32 `json:"rated_life,omitempty"`
+	Note         string `json:"note,omitempty"`
 }
 
 type counterOutput struct {
 	Label    string `json:"label"`
 	Location string `json:"location,omitempty"`
 	Value    uint32 `json:"value"`
+	Range    bool   `json:"range,omitempty"`
+	Min      uint32 `json:"min,omitempty"`
 	Raw      string `json:"raw,omitempty"`
 	Error    string `json:"error,omitempty"`
 }
@@ -82,6 +85,7 @@ func buildOutput(info usb.DeviceInfo, reading manufacturers.Reading, withRaw boo
 			Confirmed:    reading.Confirmed,
 			Method:       reading.Method,
 			RatedLife:    reading.RatedLife,
+			Note:         reading.Note,
 		},
 		Counters: make([]counterOutput, 0, len(reading.Counters)),
 	}
@@ -91,6 +95,8 @@ func buildOutput(info usb.DeviceInfo, reading manufacturers.Reading, withRaw boo
 			Label:    c.Label,
 			Location: c.Location,
 			Value:    c.Value,
+			Range:    c.Range,
+			Min:      c.Min,
 		}
 
 		if withRaw && len(c.Raw) > 0 {
@@ -120,6 +126,10 @@ func render(cmd *cli.Command, out readOutput) error {
 
 	for _, c := range out.Counters {
 		value := humanInt(c.Value)
+		if c.Range {
+			value = humanInt(c.Min) + " to " + humanInt(c.Value)
+		}
+
 		if c.Error != "" {
 			value = "unavailable"
 		}
@@ -129,7 +139,7 @@ func render(cmd *cli.Command, out readOutput) error {
 			where = "   (" + c.Location + ")"
 		}
 
-		fmt.Printf("  %-22s %12s%s\n", c.Label, value, where)
+		fmt.Printf("  %-22s %16s%s\n", c.Label, value, where)
 
 		if c.Raw != "" {
 			fmt.Printf("  %-22s raw: %s\n", "", spacedHex(c.Raw))
@@ -140,10 +150,14 @@ func render(cmd *cli.Command, out readOutput) error {
 		}
 	}
 
-	if len(out.Counters) > 0 && out.Reading.RatedLife > 0 && out.Counters[0].Error == "" {
+	if len(out.Counters) > 0 && out.Reading.RatedLife > 0 && out.Counters[0].Error == "" && !out.Counters[0].Range {
 		used := float64(out.Counters[0].Value) / float64(out.Reading.RatedLife) * 100
 
 		fmt.Printf("\n  Rated life %s actuations - %.1f%% used\n", humanInt(out.Reading.RatedLife), used)
+	}
+
+	if out.Reading.Note != "" {
+		fmt.Printf("\n%s\n", out.Reading.Note)
 	}
 
 	if !out.Reading.Confirmed {
@@ -165,7 +179,7 @@ const unconfirmedNotice = `
 
   If every counter moved by exactly the number of frames you took, that is a
   confirmed camera. Send both files along and it goes in the supported list.
-  CONTRIBUTING.md has the details.
+  docs/CONTRIBUTING.md has the details.
 `
 
 // spacedHex makes a raw reply readable.

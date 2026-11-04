@@ -7,9 +7,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // How a reading was obtained, reported so that anyone comparing two readings
@@ -92,6 +92,19 @@ func (r *Reader) Models() []manufacturers.Model {
 		})
 	}
 
+	for id, m := range eventModels {
+		out = append(out, manufacturers.Model{
+			Name:        m.Name,
+			ProductID:   id,
+			Confirmed:   true,
+			ConfirmedOn: m.ConfirmedOn,
+			Counters: []manufacturers.CounterSpec{
+				{Label: "Mechanical shutter, in thousands", Location: "0xd167 word 3"},
+				{Label: "All photos, in thousands", Location: "0xd167 word 4"},
+			},
+		})
+	}
+
 	return out
 }
 
@@ -101,6 +114,11 @@ func (r *Reader) Models() []manufacturers.Model {
 // reason to go anywhere near the factory channel, and every camera older than
 // roughly DIGIC 6 does answer it.
 func (r *Reader) Read(_ context.Context, device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, error) {
+	// Bodies read through 0xD167 never fall back to the factory channel.
+	if model, ok := eventModels[info.ProductID]; ok && !r.factoryOnly {
+		return r.readReleaseCounter(device, info, model)
+	}
+
 	if !r.factoryOnly {
 		if reading, ok := r.readStandardProperty(device, info); ok {
 			return reading, nil
@@ -143,13 +161,22 @@ func (r *Reader) readStandardProperty(device *ptp.Device, info usb.DeviceInfo) (
 
 // readFactoryChannel reads the counters out of MPU memory.
 func (r *Reader) readFactoryChannel(device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, error) {
+	if name, refused := noFactoryChannel[info.ProductID]; refused {
+		return manufacturers.Reading{}, fmt.Errorf(
+			"the %s doesn't answer the standard shutter counter or Canon's factory channel, "+
+				"so its shutter count can't be read this way yet. The factory channel isn't tried: "+
+				"on an %s it left the camera not answering USB until it was switched off",
+			name, name,
+		)
+	}
+
 	model, known := LookupModel(info.ProductID)
 	if !known {
 		model = FallbackModel(info.ProductID)
 
 		r.logger.Warn("this body is not in the list of confirmed cameras, so the values below are a guess",
 			zap.String("product_id", fmt.Sprintf("%04x", info.ProductID)),
-			zap.String("what_would_help", "run with --trace and open an issue; see CONTRIBUTING.md"),
+			zap.String("what_would_help", "run with --trace and open an issue; see docs/CONTRIBUTING.md"),
 		)
 	}
 

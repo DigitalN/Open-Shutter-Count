@@ -9,9 +9,9 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers/canon"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/trace"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers/canon"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/trace"
 )
 
 // opcodeNames annotates the transcript. Only the opcodes that matter here are
