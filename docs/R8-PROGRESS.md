@@ -116,10 +116,12 @@ How word 3 and word 4 were identified:
 
 ## Next
 
-1. The maintainer runs `Read Shutter Count.command` on the R8 and pushes the
-   `.txt` log: the 0xD167 read hasn't run on the camera yet.
+1. Done (2026-11-04 15:39): `Read Shutter Count.command` read the R8 through
+   0xD167: mechanical 1,001 to 2,000, electronic 19,001 to 20,999, all photos
+   21,001 to 22,000. The raw bytes matched the event channel test.
 2. A small UI for reading the count, designed in another chat. The first
-   release waits for it.
+   release waits for it. `openshuttercounter --json` gives each count's range
+   (`min` and `value`).
 3. Open: an exact mechanical count (see Status); reporting this to
    libgphoto2; whether other R bodies lay 0xD167 out the same way.
 
@@ -132,3 +134,6 @@ How word 3 and word 4 were identified:
 - The maintainer is deleting the old branches `claude/loving-goldberg-zwh734`
   (it still has readings with the camera's serial) and
   `claude/quirky-bell-cl8670`, and detaching the GitHub fork if it shows one.
+- On macOS, if another app (the Camera Shutter Count app, on the maintainer's
+  Mac) is using the camera, ptpcamerad holds it and won't exit when stopped.
+  The tool then names the app to quit; see `darwinBusyHint`.
