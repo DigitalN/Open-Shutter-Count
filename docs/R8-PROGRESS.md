@@ -116,12 +116,19 @@ How word 3 and word 4 were identified:
 
 ## Next
 
-1. Done: event channel test, photo total, words identified, R8 read built.
-2. Maintainer runs `Read Shutter Count.command` to check it on the camera.
-3. Open: an exact mechanical count (see Status); reporting this upstream or
-   to libgphoto2; whether other R bodies lay 0xD167 out the same way.
+1. The maintainer runs `Read Shutter Count.command` on the R8 and pushes the
+   `.txt` log: the 0xD167 read hasn't run on the camera yet.
+2. A small UI for reading the count, designed in another chat. The first
+   release waits for it.
+3. Open: an exact mechanical count (see Status); reporting this to
+   libgphoto2; whether other R bodies lay 0xD167 out the same way.
 
 ## Loose ends
 
 - The Terminal window closing after Return hasn't been confirmed working.
 - No pull request has been opened, and nothing has been reported upstream.
+- `mac/openshuttercounter` stays committed so a branch can be tested by
+  pulling it (Q31).
+- The maintainer is deleting the old branches `claude/loving-goldberg-zwh734`
+  (it still has readings with the camera's serial) and
+  `claude/quirky-bell-cl8670`, and detaching the GitHub fork if it shows one.
