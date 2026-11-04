@@ -10,8 +10,8 @@ the R8 did, and what's next.
 ## How testing works
 
 - Claude can't reach the Mac or the camera. The maintainer runs a launcher in `mac/`
-  by double-clicking, and copies what it saved in `mac/readings/` (gitignored)
-  into `Logs/`, which is committed.
+  by double-clicking, and commits and pushes what it saved in `mac/readings/`.
+  Readings from before that are in `Logs/`.
 - After any Go change, rebuild the Mac binary with `bash mac/build.sh` (works
   on Linux; reproducible; the Go linker ad-hoc signs it) and commit
   `mac/openshuttercounter` with the change. The maintainer then pulls and reruns.

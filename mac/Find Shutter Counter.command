@@ -18,8 +18,8 @@ after="$readings/$stamp-probe-after.json"
 
 failed() {
     echo
-    echo "That didn't work. Send the files in the readings folder starting with"
-    echo "$stamp."
+    echo "That didn't work. Commit and push the files in mac/readings starting"
+    echo "with $stamp."
     finish 1
 }
 
@@ -73,6 +73,6 @@ run probe --events --out "$after" --trace "$readings/$stamp-probe-after-trace.js
 echo "Comparison:" >> "$log"
 run compare "$before" "$after" --frames "$frames" --electronic "$electronic" || failed
 
-echo "Send me the files in the readings folder starting with $stamp."
+echo "Commit and push the files in mac/readings starting with $stamp."
 
 finish 0

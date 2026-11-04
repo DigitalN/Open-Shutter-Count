@@ -45,7 +45,8 @@ switched off. The tool now stops before the factory channel on an R8, so
 
 ## What it saves
 
-Each run writes two files to `readings/` (not committed to git):
+Each run writes two files to `readings/`, which git picks up so they can be
+committed and pushed:
 
 - `<date>.txt`: what was printed, the macOS version, the USB devices seen, and
   debug logs.

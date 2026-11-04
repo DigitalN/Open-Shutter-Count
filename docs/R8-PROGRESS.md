@@ -1,7 +1,8 @@
 # EOS R8 progress
 
 Work is on branch `claude/happy-knuth-9mtrso`. The maintainer's local copy is
-`~/Documents/GitHub/openshuttercounter`. Readings they've sent are in `Logs/`.
+`~/Documents/GitHub/openshuttercounter`. New readings arrive as commits in
+`mac/readings/`; earlier ones are in `Logs/`.
 
 ## What the maintainer wants
 
@@ -61,8 +62,8 @@ running it.
 
 ## Next
 
-1. Maintainer runs `Find Shutter Counter.command` and sends the
-   `*-probe*` files.
+1. Maintainer runs `Find Shutter Counter.command` and pushes the
+   `*-probe*` files in `mac/readings/`.
 2. If any event record field went up by exactly 20 or 7: that's an exact
    counter. Confirm with a second run at different numbers (e.g. 13 and 4),
    then make `Read Shutter Count` show it.

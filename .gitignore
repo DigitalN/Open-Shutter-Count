@@ -4,7 +4,6 @@ vendor
 openshuttercounter
 !cmd/openshuttercounter
 !mac/openshuttercounter
-mac/readings/
 helpers
 coverage.out
 
