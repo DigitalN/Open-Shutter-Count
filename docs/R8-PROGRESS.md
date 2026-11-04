@@ -38,6 +38,23 @@ thousand. Which word counts what is still open; see Next.
   - Standard properties: 0xD402, 0xD407, 0xD406, 0xD303, 0x5001. None moved
     across 20 photos (`Logs/2026-11-04_13-38-11-probe.txt`).
 - GetDevicePropValue(0xD1AC): 0x2005 OperationNotSupported.
+- `Photos/_MG_1326.CR3`, the test's last photo (camera clock 13:29:28, 4 s
+  before the after probe; the camera's clock is UTC-7). Its main maker notes
+  (CMT3) have no CameraInfo. Canon's timed metadata track (CTMD) does: record
+  type 8 is a MakerNotes TIFF whose tag 0x000d CameraInfo is 4,608 bytes, and
+  u32 LE at 0x0d29 is 21,270. camerashuttercount's result page shows the same
+  21,270 for that photo and calls it the total, electronic included.
+  - 0xD167 word 4 (22000) is that total rounded up to a thousand, and it didn't
+    move while the total went from 21,243 to 21,270. Not proven until it steps
+    to 23000 when the total passes 22,000.
+  - So word 3 (2000) counts mechanical or electronic. If it rounds up like word
+    4: mechanical 1,001 to 1,020 now (electronic 20,250 to 20,269), or
+    electronic 1,001 to 1,007 (mechanical 20,263 to 20,269).
+  - Nothing else in that CameraInfo matches either; one photo can't show a
+    counter, so a diff across several photos would be needed.
+- camerashuttercount's R8 page shows a sample as mechanical "≤26,000" and
+  electronic "~6,000", in 1,000-shot steps: what word 3 as mechanical, rounded
+  up, and word 4 minus word 3 would give. That's their reading, not proof.
 - Event channel (2026-11-04_14-25-17): SetRemoteMode, SetEventMode and the
   exit sequence all answered OK. The first GetEvent gave 15,468 bytes, 324
   records; after the photos, 40,544 bytes, 909 records. The second GetEvent
