@@ -36,7 +36,7 @@ var noteFlag = &cli.StringFlag{
 
 var factoryOnlyFlag = &cli.BoolFlag{
 	Name:  "factory-only",
-	Usage: "skip the standard shutter counter property and use the maker specific channel",
+	Usage: "skip the standard shutter counter property and use Canon's factory channel (EOS 5D Mark IV only)",
 }
 
 var allDevicesFlag = &cli.BoolFlag{

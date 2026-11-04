@@ -4,27 +4,50 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
 	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
+// ErrReported means the command failed and has already said why, in its JSON
+// output. Nothing more should be printed; the exit status should say it
+// failed.
+var ErrReported = errors.New("the failure was reported in the output")
+
+// readOutput is what `read --json` prints, failed or not. The camera's serial
+// number isn't in it.
 type readOutput struct {
-	Device   deviceOutput    `json:"device"`
-	Reading  readingOutput   `json:"reading"`
-	Counters []counterOutput `json:"counters"`
+	Device   *deviceOutput   `json:"device,omitempty"`
+	Camera   *cameraOutput   `json:"camera,omitempty"`
+	Reading  *readingOutput  `json:"reading,omitempty"`
+	Counters []counterOutput `json:"counters,omitempty"`
+
+	// Steps says what was sent to the camera and what it answered.
+	Steps []string `json:"steps,omitempty"`
+
+	Error *errorOutput `json:"error,omitempty"`
 }
 
 type deviceOutput struct {
 	VendorID  string `json:"vendor_id"`
 	ProductID string `json:"product_id"`
 	Product   string `json:"product,omitempty"`
-	Serial    string `json:"serial,omitempty"`
 	Path      string `json:"path"`
+}
+
+// cameraOutput is what the camera said about itself in GetDeviceInfo.
+type cameraOutput struct {
+	Manufacturer string   `json:"manufacturer,omitempty"`
+	Model        string   `json:"model,omitempty"`
+	Firmware     string   `json:"firmware,omitempty"`
+	Operations   []string `json:"operations"`
 }
 
 type readingOutput struct {
@@ -46,16 +69,44 @@ type counterOutput struct {
 	Error    string `json:"error,omitempty"`
 }
 
+// errorOutput says why a read failed. Kind is one of the errorKinds.
+type errorOutput struct {
+	Kind    string `json:"kind"`
+	Message string `json:"message"`
+	Hint    string `json:"hint,omitempty"`
+}
+
+// What kind of failure a read was, for the app to say what to do about it.
+const (
+	kindNoCamera       = "no_camera"
+	kindSeveralCameras = "several_cameras"
+	kindWrongUSBMode   = "wrong_usb_mode"
+	kindBusy           = "busy"
+	kindNotSupported   = "not_supported"
+	kindNoAnswer       = "no_answer"
+	kindFailed         = "failed"
+)
+
 // Read reports the actuation counters of the connected camera.
 func Read(ctx context.Context, cmd *cli.Command) error {
 	session, err := openSession(ctx, cmd)
 	if err != nil {
-		return err
+		out := readOutput{}
+		if session != nil {
+			out.Device, out.Steps = describeUSB(session.info), session.steps
+		}
+
+		return fail(cmd, out, err)
 	}
 
 	defer session.close()
 
-	reading, readErr := session.reader.Read(ctx, session.device, session.info)
+	camera, readErr := session.deviceInfo()
+
+	var reading manufacturers.Reading
+	if readErr == nil {
+		reading, readErr = session.reader.Read(ctx, session.device, session.info, camera)
+	}
 
 	// The trace is worth keeping even when the read failed. A trace of a
 	// camera that did not answer is exactly what makes a bug report useful.
@@ -63,23 +114,74 @@ func Read(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
+	out := buildOutput(session.info, camera, reading, cmd.Bool("raw"))
+	out.Steps = slices.Concat(session.steps, reading.Steps)
+
 	if readErr != nil {
-		return readErr
+		out.Reading, out.Counters = nil, nil
+
+		return fail(cmd, out, readErr)
 	}
 
-	return render(cmd, buildOutput(session.info, reading, cmd.Bool("raw")))
+	return render(cmd, out)
 }
 
-func buildOutput(info usb.DeviceInfo, reading manufacturers.Reading, withRaw bool) readOutput {
+// fail reports a failed read. With --json it goes in the output, which then
+// says what kind of failure it was.
+func fail(cmd *cli.Command, out readOutput, err error) error {
+	if !cmd.Bool("json") {
+		return err
+	}
+
+	out.Error = &errorOutput{Kind: errorKind(err), Message: err.Error()}
+
+	if hinted, ok := errors.AsType[hintedError](err); ok {
+		out.Error.Message, out.Error.Hint = hinted.err.Error(), hinted.hint
+	}
+
+	if out.Error.Kind == kindNoCamera {
+		out.Error.Message, out.Error.Hint = "no camera found", noDeviceHint
+	}
+
+	if err := printJSON(out); err != nil {
+		return err
+	}
+
+	return ErrReported
+}
+
+func errorKind(err error) string {
+	switch {
+	case errors.As(err, new(noDeviceError)):
+		return kindNoCamera
+	case errors.Is(err, errSeveralCameras):
+		return kindSeveralCameras
+	case errors.Is(err, usb.ErrNoStillImage):
+		return kindWrongUSBMode
+	case errors.Is(err, usb.ErrBusy):
+		return kindBusy
+	case errors.Is(err, manufacturers.ErrNotSupported):
+		return kindNotSupported
+	case errors.Is(err, usb.ErrTimeout):
+		return kindNoAnswer
+	default:
+		return kindFailed
+	}
+}
+
+func describeUSB(info usb.DeviceInfo) *deviceOutput {
+	return &deviceOutput{
+		VendorID:  fmt.Sprintf("%04x", info.VendorID),
+		ProductID: fmt.Sprintf("%04x", info.ProductID),
+		Product:   info.Product,
+		Path:      info.Path,
+	}
+}
+
+func buildOutput(info usb.DeviceInfo, camera ptp.DeviceInfo, reading manufacturers.Reading, withRaw bool) readOutput {
 	out := readOutput{
-		Device: deviceOutput{
-			VendorID:  fmt.Sprintf("%04x", info.VendorID),
-			ProductID: fmt.Sprintf("%04x", info.ProductID),
-			Product:   info.Product,
-			Serial:    info.Serial,
-			Path:      info.Path,
-		},
-		Reading: readingOutput{
+		Device: describeUSB(info),
+		Reading: &readingOutput{
 			Manufacturer: reading.Manufacturer,
 			Model:        reading.Model,
 			Confirmed:    reading.Confirmed,
@@ -88,6 +190,19 @@ func buildOutput(info usb.DeviceInfo, reading manufacturers.Reading, withRaw boo
 			Note:         reading.Note,
 		},
 		Counters: make([]counterOutput, 0, len(reading.Counters)),
+	}
+
+	if camera.Model != "" || len(camera.Operations) > 0 {
+		out.Camera = &cameraOutput{
+			Manufacturer: camera.Manufacturer,
+			Model:        camera.Model,
+			Firmware:     camera.DeviceVersion,
+			Operations:   make([]string, 0, len(camera.Operations)),
+		}
+
+		for _, op := range camera.Operations {
+			out.Camera.Operations = append(out.Camera.Operations, fmt.Sprintf("%#04x", op))
+		}
 	}
 
 	for _, c := range reading.Counters {
@@ -113,12 +228,16 @@ func buildOutput(info usb.DeviceInfo, reading manufacturers.Reading, withRaw boo
 	return out
 }
 
+func printJSON(v any) error {
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+
+	return encoder.Encode(v)
+}
+
 func render(cmd *cli.Command, out readOutput) error {
 	if cmd.Bool("json") {
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "  ")
-
-		return encoder.Encode(out)
+		return printJSON(out)
 	}
 
 	fmt.Printf("\n  %s %s  (USB %s:%s)\n\n",
@@ -161,7 +280,7 @@ func render(cmd *cli.Command, out readOutput) error {
 	}
 
 	if !out.Reading.Confirmed {
-		fmt.Print(unconfirmedNotice)
+		fmt.Printf(untestedNotice, out.Reading.Model)
 	}
 
 	fmt.Println()
@@ -169,16 +288,12 @@ func render(cmd *cli.Command, out readOutput) error {
 	return nil
 }
 
-const unconfirmedNotice = `
-  Nobody has confirmed these numbers on this camera yet, so treat them as a
-  guess. Confirming takes about ten minutes and needs nothing but the camera:
+const untestedNotice = `
+  Not fully tested on the %s. If these numbers look wrong, please send
+  a trace, and say how many photos the camera has taken if you know:
 
-    openshuttercounter --trace before.json
-    # take an exact number of frames, say 20
-    openshuttercounter --trace after.json --note "20 frames between traces"
+    openshuttercounter --trace mycamera.json
 
-  If every counter moved by exactly the number of frames you took, that is a
-  confirmed camera. Send both files along and it goes in the supported list.
   docs/CONTRIBUTING.md has the details.
 `
 

@@ -101,10 +101,21 @@ func TestLookupModel(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestFallbackModelIsNotClaimedAsConfirmed(t *testing.T) {
-	m := FallbackModel(0x1234)
-	assert.False(t, m.Confirmed)
-	assert.NotEmpty(t, m.Counters)
+func TestIsRFBody(t *testing.T) {
+	// Model names as GetDeviceInfo gives them, from libgphoto2's camera dumps.
+	for _, model := range []string{
+		"Canon EOS R", "Canon EOS RP", "Canon EOS R8", "Canon EOS R6m2", "Canon EOS R6 Mark III",
+		"Canon EOS R50 V", "Canon EOS R100", "Canon EOS R1", "Canon EOS R5 C",
+	} {
+		assert.True(t, IsRFBody(model), model)
+	}
+
+	for _, model := range []string{
+		"Canon EOS Rebel T6", "Canon EOS Rebel T7i", "Canon EOS 90D", "Canon EOS M50m2",
+		"Canon EOS 5D Mark IV", "Canon EOS Ra", "Canon PowerShot G7 X Mark III", "",
+	} {
+		assert.False(t, IsRFBody(model), model)
+	}
 }
 
 func mustHex(t *testing.T, s string) []byte {

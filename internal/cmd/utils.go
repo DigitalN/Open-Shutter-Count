@@ -87,8 +87,8 @@ func selectDevice(reg *manufacturers.Registry, selector string) (usb.DeviceInfo,
 		}
 
 		return usb.DeviceInfo{}, fmt.Errorf(
-			"%d cameras are connected; pick one with --device: %s",
-			len(devices), strings.Join(names, ", "),
+			"%w: %d are connected; pick one with --device: %s",
+			errSeveralCameras, len(devices), strings.Join(names, ", "),
 		)
 	}
 }
@@ -109,14 +109,36 @@ func matchesSelector(d usb.DeviceInfo, selector string) bool {
 	}
 }
 
+// errSeveralCameras means more than one camera is connected and none was
+// picked.
+var errSeveralCameras = errors.New("more than one camera")
+
 // noDeviceError carries the guidance shown when nothing is plugged in. It is a
 // type rather than errors.New because the text is several sentences of help,
 // which is exactly what a one line error message is not meant to be.
 type noDeviceError struct{}
 
-func (noDeviceError) Error() string { return noDeviceHint }
+func (noDeviceError) Error() string { return "no camera found. " + noDeviceHint }
 
-const noDeviceHint = `no camera found. Check that:
+// hintedError is an error with what to do about it, which the app shows on
+// its own. Error gives both.
+type hintedError struct {
+	err  error
+	hint string
+}
+
+func (e hintedError) Error() string { return e.err.Error() + "\n\n" + e.hint }
+func (e hintedError) Unwrap() error { return e.err }
+
+func withHint(err error, hint string) error {
+	if hint == "" {
+		return err
+	}
+
+	return hintedError{err: err, hint: hint}
+}
+
+const noDeviceHint = `Check that:
   - the camera is switched on and connected directly, not through a hub
   - the cable is a data cable rather than charge only
   - built-in Wi-Fi is fully disabled: on many bodies it disables the USB port
@@ -142,7 +164,7 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	}
 
 	if errors.Is(err, usb.ErrNoStillImage) {
-		return nil, fmt.Errorf("%w\n\n%s", err, noStillImageHint)
+		return nil, withHint(err, noStillImageHint)
 	}
 
 	if !errors.Is(err, usb.ErrBusy) {
@@ -150,7 +172,7 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	}
 
 	if runtime.GOOS != "darwin" {
-		return nil, fmt.Errorf("%w\n%s", err, busyHint())
+		return nil, withHint(err, busyHint())
 	}
 
 	// macOS hands every camera to ptpcamerad the moment it appears, and
@@ -180,7 +202,7 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	logger.Debug("what has the camera open",
 		zap.Stringers("owners", owners), zap.String("ioreg", summary), zap.Error(ownersErr))
 
-	return nil, fmt.Errorf("%w\n\n%s", err, darwinBusyHint(owners))
+	return nil, withHint(err, darwinBusyHint(owners))
 }
 
 // openWhileFree tries to open the camera every darwinPollInterval for up to
@@ -265,6 +287,9 @@ type session struct {
 	reader   manufacturers.Reader
 	recorder *trace.Recorder
 
+	// steps says what was sent to the camera and how it answered.
+	steps []string
+
 	tracePath string
 	close     func()
 }
@@ -273,6 +298,11 @@ type session struct {
 //
 // When --trace is given, every container exchanged from this point on is
 // recorded, including the ones sent while working out what the camera is.
+// The trace leaves out the camera's serial number, and anything else known
+// to identify it or its owner.
+//
+// If a camera was picked but couldn't be opened, the session returned with
+// the error says which camera it was, and has nothing to close.
 func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 	logger := logs.LoggerFromContext(ctx)
 	reg := registry(logger, cmd.Bool("factory-only"))
@@ -282,9 +312,11 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 		return nil, err
 	}
 
+	failed := &session{info: info, close: func() {}}
+
 	reader, err := reg.For(info)
 	if err != nil {
-		return nil, err
+		return failed, err
 	}
 
 	logger.Debug("opening device",
@@ -295,7 +327,7 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 
 	transport, err := openDevice(ctx, info)
 	if err != nil {
-		return nil, err
+		return failed, err
 	}
 
 	opts := []ptp.Option{ptp.WithLogger(logger)}
@@ -303,7 +335,7 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 	s := &session{info: info, reader: reader, tracePath: cmd.String("trace")}
 
 	if s.tracePath != "" {
-		s.recorder = trace.NewRecorder(app.Version)
+		s.recorder = trace.NewRecorder(app.Version, canon.ScrubEvents, trace.ScrubProperties(canon.IdentifyingProperties...))
 		s.recorder.Annotate(cmd.String("note"))
 		opts = append(opts, ptp.WithRecorder(s.recorder))
 	}
@@ -334,6 +366,8 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 	)
 
 	if err := openPTPSession(logger, s.device, transport); err != nil {
+		s.steps = append(s.steps, "OpenSession: "+err.Error())
+
 		// A trace of a camera that never answered is still worth having.
 		if traceErr := s.saveTrace(ctx); traceErr != nil {
 			logger.Debug("saving the trace", zap.Error(traceErr))
@@ -341,10 +375,29 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 
 		s.close()
 
-		return nil, err
+		failed.steps = s.steps
+
+		return failed, err
 	}
 
+	s.steps = append(s.steps, "OpenSession: OK")
+
 	return s, nil
+}
+
+// deviceInfo asks the camera what it is and what it supports.
+func (s *session) deviceInfo() (ptp.DeviceInfo, error) {
+	info, _, err := s.device.GetDeviceInfo()
+	if err != nil {
+		s.steps = append(s.steps, "GetDeviceInfo: "+err.Error())
+
+		return info, err
+	}
+
+	s.steps = append(s.steps, fmt.Sprintf("GetDeviceInfo: OK, %s, firmware %s, %d operations",
+		info.Model, info.DeviceVersion, len(info.Operations)))
+
+	return info, nil
 }
 
 // openPTPSession opens the PTP session, resetting the camera and trying once

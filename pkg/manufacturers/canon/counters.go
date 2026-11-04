@@ -1,6 +1,7 @@
 package canon
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -26,24 +27,32 @@ const minCounterReply = 3
 // body, and it is worth trying first: it is a standard property read, it needs
 // no vendor opcodes, and when it answers there is nothing more to do.
 func LegacyShutterCounter(dev *ptp.Device) (uint32, error) {
+	count, _, err := legacyShutterCounter(dev)
+
+	return count, err
+}
+
+// legacyShutterCounter is LegacyShutterCounter, also giving the response code.
+// The code is zero when the camera didn't answer at all.
+func legacyShutterCounter(dev *ptp.Device) (uint32, uint16, error) {
 	resp, err := dev.Transact(ptp.OpGetDevicePropValue, uint32(PropShutterCounter))
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	switch resp.Code {
 	case ptp.RCOK:
 	case ptp.RCOperationNotSupported, ptp.RCDevicePropNotSupported, ptp.RCParameterNotSupported:
-		return 0, ErrLegacyCounterUnsupported
+		return 0, resp.Code, ErrLegacyCounterUnsupported
 	default:
-		return 0, resp.Err()
+		return 0, resp.Code, resp.Err()
 	}
 
 	if len(resp.Data) < 4 {
-		return 0, fmt.Errorf("legacy counter returned %d bytes, expected 4", len(resp.Data))
+		return 0, resp.Code, fmt.Errorf("legacy counter returned %d bytes, expected 4", len(resp.Data))
 	}
 
-	return uint32(resp.Data[0]) | uint32(resp.Data[1])<<8 | uint32(resp.Data[2])<<16 | uint32(resp.Data[3])<<24, nil
+	return binary.LittleEndian.Uint32(resp.Data), resp.Code, nil
 }
 
 // DecodeCounter turns an MPU reply into a counter value.

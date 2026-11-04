@@ -1,6 +1,6 @@
 package canon
 
-import "fmt"
+import "regexp"
 
 // VendorID is Canon Inc.'s USB vendor ID.
 const VendorID uint16 = 0x04a9
@@ -42,14 +42,11 @@ type Model struct {
 	ConfirmedOn string `json:"confirmed_on,omitempty"`
 }
 
-// noFactoryChannel lists bodies seen not to answer the factory channel. An
-// EOS R8 (seen 2026-11-04 over macOS) gave no reply to MonOpen, then stopped
-// answering USB at all, even CloseSession, until it was switched off. The
-// channel is not tried on these, so reading one can't hang it.
-var noFactoryChannel = map[uint16]string{
-	0x330c: "EOS R8",
-}
-
+// The factory channel is only sent to the bodies below. An EOS R8 (seen
+// 2026-11-04 over macOS) gave no reply to MonOpen, then stopped answering USB
+// at all, even CloseSession, until it was switched off; it doesn't list 0x9052
+// or 0x9053. A 90D hung the same way in upstream issue #4.
+//
 // Each address map below was established differentially: read every address,
 // take an exact number of frames, read again, and keep whatever advanced by
 // exactly that number. Adding a body is the same job, and docs/CONTRIBUTING.md
@@ -92,19 +89,20 @@ func LookupModel(productID uint16) (Model, bool) {
 	return Model{}, false
 }
 
-// FallbackModel is what to try on a body with no entry of its own.
-//
-// The channel itself is very likely the same across DIGIC 6 and newer bodies,
-// but the addresses are not guaranteed to be, so a reading obtained this way
-// is a hypothesis until somebody with that body has checked it against a known
-// frame count. Trying is harmless either way: MonReadAndGetData only reads.
-func FallbackModel(productID uint16) Model {
-	reference := models[0]
+// rfBody matches an RF mount body's name in GetDeviceInfo: "EOS R" followed by
+// a number (EOS R8, R6m2, R100, R50 V), by "P" (EOS RP), or by nothing (the EOS
+// R). It doesn't match the Rebel DSLRs. The USB product name can't be used:
+// the R8's is "Canon Digital Camera".
+var rfBody = regexp.MustCompile(`\bEOS R(?:\d|P\b|\s|$)`)
 
-	return Model{
-		Name:      fmt.Sprintf("unrecognised Canon body (USB %04x:%04x)", VendorID, productID),
-		ProductID: productID,
-		Counters:  reference.Counters,
-		Confirmed: false,
-	}
+// IsRFBody reports whether a GetDeviceInfo model name is an RF mount body.
+func IsRFBody(model string) bool {
+	return rfBody.MatchString(model)
+}
+
+// tested are the bodies whose readings were worked out on the body itself.
+// Any other camera that reads is labelled as not fully tested.
+var tested = map[string]bool{
+	"EOS 5D Mark IV": true,
+	"EOS R8":         true,
 }

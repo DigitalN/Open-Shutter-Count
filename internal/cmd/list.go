@@ -33,10 +33,7 @@ func List(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "  ")
-
-		return encoder.Encode(devices)
+		return printJSON(listOutput(reg, devices))
 	}
 
 	if len(devices) == 0 {
@@ -56,6 +53,26 @@ func List(ctx context.Context, cmd *cli.Command) error {
 	fmt.Println()
 
 	return nil
+}
+
+// listedDevice is one device in `list --json`, named as describeDevice names
+// it, with its serial number left out.
+type listedDevice struct {
+	usb.DeviceInfo
+
+	Name string `json:"name"`
+}
+
+func listOutput(reg *manufacturers.Registry, devices []usb.DeviceInfo) []listedDevice {
+	out := make([]listedDevice, 0, len(devices))
+
+	for _, d := range devices {
+		name := describeDevice(reg, d)
+		d.Serial = ""
+		out = append(out, listedDevice{DeviceInfo: d, Name: name})
+	}
+
+	return out
 }
 
 // describeDevice names a device as helpfully as it can: what the camera calls
@@ -132,10 +149,10 @@ func Models(ctx context.Context, cmd *cli.Command) error {
 
 const modelsFooter = `
   Older bodies need no entry here: they still answer the standard PTP shutter
-  counter property, which is tried first on every camera.
+  counter property, which is tried first on every camera. Other RF bodies are
+  read the way the EOS R8 is, and the reading says it's not fully tested.
 
-  A camera missing from this list may well work anyway. Run it, and whether it
-  worked or not, a trace makes the answer useful to everyone else:
+  Whether it worked or not, a trace makes the answer useful to everyone else:
 
     openshuttercounter --trace mycamera.json
 

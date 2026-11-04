@@ -2,8 +2,10 @@ package canon
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -20,7 +22,7 @@ const (
 	MethodStandardProperty = "ptp-property-0xd1ac"
 
 	// MethodFactoryChannel is the maker specific channel that reaches the
-	// MPU's own memory, which is the only route on DIGIC 6 and newer.
+	// MPU's own memory. Only the EOS 5D Mark IV is read this way.
 	MethodFactoryChannel = "canon-factory-channel"
 )
 
@@ -71,7 +73,7 @@ func (r *Reader) VendorID() uint16 { return VendorID }
 // Models implements manufacturers.Reader.
 func (r *Reader) Models() []manufacturers.Model {
 	known := Models()
-	out := make([]manufacturers.Model, 0, len(known))
+	out := make([]manufacturers.Model, 0, len(known)+len(eventModels))
 
 	for _, m := range known {
 		counters := make([]manufacturers.CounterSpec, 0, len(m.Counters))
@@ -92,10 +94,10 @@ func (r *Reader) Models() []manufacturers.Model {
 		})
 	}
 
-	for id, m := range eventModels {
+	for _, m := range eventModels {
 		out = append(out, manufacturers.Model{
 			Name:        m.Name,
-			ProductID:   id,
+			ProductID:   m.ProductID,
 			Confirmed:   true,
 			ConfirmedOn: m.ConfirmedOn,
 			Counters: []manufacturers.CounterSpec{
@@ -108,115 +110,154 @@ func (r *Reader) Models() []manufacturers.Model {
 	return out
 }
 
-// Read implements manufacturers.Reader.
+// Read implements manufacturers.Reader. It tries, in order:
 //
-// The standard property is tried first. When a body answers it there is no
-// reason to go anywhere near the factory channel, and every camera older than
-// roughly DIGIC 6 does answer it.
-func (r *Reader) Read(_ context.Context, device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, error) {
-	// Bodies read through 0xD167 never fall back to the factory channel.
-	if model, ok := eventModels[info.ProductID]; ok && !r.factoryOnly {
-		return r.readReleaseCounter(device, info, model)
-	}
+//  1. the standard shutter counter property, 0xD1AC, on any body;
+//  2. the factory channel, on the EOS 5D Mark IV only;
+//  3. property 0xD167 on the event channel, on RF bodies, spotted by the
+//     model name in GetDeviceInfo and sent only the commands they list.
+//
+// Anything else gets manufacturers.ErrNotSupported, having been sent nothing
+// but the standard property read.
+func (r *Reader) Read(
+	_ context.Context, device *ptp.Device, info usb.DeviceInfo, camera ptp.DeviceInfo,
+) (manufacturers.Reading, error) {
+	reading := manufacturers.Reading{Manufacturer: r.Name(), Model: modelName(camera, info)}
 
 	if !r.factoryOnly {
-		if reading, ok := r.readStandardProperty(device, info); ok {
-			return reading, nil
+		found, err := r.readStandardProperty(device, camera, &reading)
+		if found || err != nil {
+			return reading, err
 		}
 	}
 
-	return r.readFactoryChannel(device, info)
+	if model, ok := LookupModel(info.ProductID); ok {
+		return reading, r.readFactoryChannel(device, model, &reading)
+	}
+
+	if r.factoryOnly {
+		return reading, fmt.Errorf("the factory channel is only read on the %s, not the %s",
+			strings.Join(factoryModelNames(), ", "), reading.Model)
+	}
+
+	if IsRFBody(camera.Model) {
+		reading.Steps = append(reading.Steps, fmt.Sprintf("%q is an RF body: reading 0xd167 off the event channel", camera.Model))
+
+		return reading, r.readReleaseCounter(device, camera, &reading)
+	}
+
+	reading.Steps = append(reading.Steps,
+		fmt.Sprintf("%q isn't the EOS 5D Mark IV or an RF body: nothing else is tried", camera.Model))
+
+	return reading, fmt.Errorf("%w: the %s doesn't answer the standard shutter count property, "+
+		"and only the EOS 5D Mark IV and RF bodies are read any other way", manufacturers.ErrNotSupported, reading.Model)
 }
 
-// readStandardProperty tries PTP property 0xD1AC. The boolean reports whether
-// the camera carries it at all; a body that does not is the expected case here
-// and is not an error.
-func (r *Reader) readStandardProperty(device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, bool) {
-	count, err := LegacyShutterCounter(device)
+// readStandardProperty tries PTP property 0xD1AC. found reports whether the
+// camera answered it; a body that doesn't is the expected case. err is set
+// only when the camera stopped answering.
+func (r *Reader) readStandardProperty(device *ptp.Device, camera ptp.DeviceInfo, reading *manufacturers.Reading) (bool, error) {
+	name := fmt.Sprintf("GetDevicePropValue(%#04x)", PropShutterCounter)
+
+	if !camera.Supports(ptp.OpGetDevicePropValue) {
+		reading.Steps = append(reading.Steps, name+": not sent, the camera doesn't list GetDevicePropValue")
+
+		return false, nil
+	}
+
+	count, code, err := legacyShutterCounter(device)
 
 	switch {
 	case err == nil:
 	case errors.Is(err, ErrLegacyCounterUnsupported):
+		reading.Steps = append(reading.Steps, name+": "+ptp.ResponseName(code))
 		r.logger.Debug("the standard shutter counter property is absent, as expected on DIGIC 6 and newer")
 
-		return manufacturers.Reading{}, false
-	default:
-		// Anything other than a clean "not supported" is still worth
-		// noting, but it leaves the factory channel worth trying.
-		r.logger.Debug("the standard shutter counter probe failed", zap.Error(err))
+		return false, nil
+	case code != 0:
+		// Refused some other way. Not worth giving up on the camera for.
+		reading.Steps = append(reading.Steps, name+": "+err.Error())
 
-		return manufacturers.Reading{}, false
+		return false, nil
+	default:
+		reading.Steps = append(reading.Steps, name+": "+err.Error())
+
+		return false, fmt.Errorf("%s: %w", name, err)
 	}
 
-	return manufacturers.Reading{
-		Manufacturer: r.Name(),
-		Model:        modelName(info),
-		Confirmed:    true,
-		Method:       MethodStandardProperty,
-		Counters: []manufacturers.Counter{
-			{Label: "Shutter actuations", Value: count},
-		},
-	}, true
+	reading.Steps = append(reading.Steps, fmt.Sprintf("%s: OK, %d", name, count))
+	reading.Confirmed = tested[reading.Model]
+	reading.Method = MethodStandardProperty
+	reading.Counters = []manufacturers.Counter{{Label: "Shutter actuations", Location: "0xd1ac", Value: count}}
+
+	return true, nil
 }
 
 // readFactoryChannel reads the counters out of MPU memory.
-func (r *Reader) readFactoryChannel(device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, error) {
-	if name, refused := noFactoryChannel[info.ProductID]; refused {
-		return manufacturers.Reading{}, fmt.Errorf(
-			"the %s doesn't answer the standard shutter counter or Canon's factory channel, "+
-				"so its shutter count can't be read this way yet. The factory channel isn't tried: "+
-				"on an %s it left the camera not answering USB until it was switched off",
-			name, name,
-		)
-	}
-
-	model, known := LookupModel(info.ProductID)
-	if !known {
-		model = FallbackModel(info.ProductID)
-
-		r.logger.Warn("this body is not in the list of confirmed cameras, so the values below are a guess",
-			zap.String("product_id", fmt.Sprintf("%04x", info.ProductID)),
-			zap.String("what_would_help", "run with --trace and open an issue; see docs/CONTRIBUTING.md"),
-		)
-	}
-
-	name := model.Name
-	if known && info.Product != "" {
-		name = info.Product
-	}
+func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, reading *manufacturers.Reading) error {
+	reading.Steps = append(reading.Steps, "the "+model.Name+" is read through the factory channel")
 
 	readings, err := ReadModel(device, model)
+
+	for _, c := range readings {
+		step := fmt.Sprintf("MonReadAndGetData(%#04x, %d): ", c.Counter.Address, c.Counter.Length)
+		if c.Err != nil {
+			step += c.Err.Error()
+		} else {
+			step += hex.EncodeToString(c.Raw)
+		}
+
+		reading.Steps = append(reading.Steps, step)
+	}
+
 	if err != nil {
-		return manufacturers.Reading{}, err
+		reading.Steps = append(reading.Steps, "factory channel: "+err.Error())
+
+		return err
 	}
 
-	out := manufacturers.Reading{
-		Manufacturer: r.Name(),
-		Model:        name,
-		Confirmed:    model.Confirmed,
-		Method:       MethodFactoryChannel,
-		RatedLife:    model.RatedLife,
-		Counters:     make([]manufacturers.Counter, 0, len(readings)),
+	if reading.Model == "" || strings.HasPrefix(reading.Model, "Canon camera") {
+		reading.Model = model.Name
 	}
 
-	for _, reading := range readings {
-		out.Counters = append(out.Counters, manufacturers.Counter{
-			Label:    reading.Counter.Label,
-			Location: fmt.Sprintf("MPU %#04x", reading.Counter.Address),
-			Value:    reading.Value,
-			Raw:      reading.Raw,
-			Err:      reading.Err,
+	reading.Confirmed = model.Confirmed && tested[model.Name]
+	reading.Method = MethodFactoryChannel
+	reading.RatedLife = model.RatedLife
+	reading.Counters = make([]manufacturers.Counter, 0, len(readings))
+
+	for _, c := range readings {
+		reading.Counters = append(reading.Counters, manufacturers.Counter{
+			Label:    c.Counter.Label,
+			Location: fmt.Sprintf("MPU %#04x", c.Counter.Address),
+			Value:    c.Value,
+			Raw:      c.Raw,
+			Err:      c.Err,
 		})
 	}
 
-	return out, nil
+	return nil
 }
 
-// modelName prefers what the camera calls itself over anything we assume.
-func modelName(info usb.DeviceInfo) string {
-	if info.Product != "" {
-		return info.Product
+// factoryModelNames are the bodies the factory channel is sent to.
+func factoryModelNames() []string {
+	names := make([]string, 0, len(models))
+	for _, m := range models {
+		names = append(names, m.Name)
 	}
 
-	return "Canon camera"
+	return names
+}
+
+// modelName is what the camera calls itself in GetDeviceInfo, less "Canon ",
+// or failing that its USB product name.
+func modelName(camera ptp.DeviceInfo, info usb.DeviceInfo) string {
+	if name := strings.TrimSpace(strings.TrimPrefix(camera.Model, "Canon ")); name != "" {
+		return name
+	}
+
+	if info.Product != "" && info.Product != "Canon Digital Camera" {
+		return strings.TrimPrefix(info.Product, "Canon ")
+	}
+
+	return fmt.Sprintf("Canon camera (USB %04x:%04x)", info.VendorID, info.ProductID)
 }

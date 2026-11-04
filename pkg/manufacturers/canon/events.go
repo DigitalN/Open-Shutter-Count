@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/trace"
 )
 
 // Canon's EOS tethering operations. EOS Utility, Lightroom and libgphoto2 send
@@ -296,4 +297,44 @@ func isRefusal(err error) bool {
 	var refusal *ptp.ResponseError
 
 	return errors.As(err, &refusal)
+}
+
+// IdentifyingProperties are the Canon EOS properties that identify the camera
+// or its owner, as libgphoto2's ptp.h names them: Owner 0xD115,
+// CameraNickname 0xD125, SerialNumber 0xD1AF (not the one GetDeviceInfo
+// gives), Artist 0xD1D0 and Copyright 0xD1D1. A trace has them blanked.
+var IdentifyingProperties = []uint16{0xd115, 0xd125, 0xd1af, 0xd1d0, 0xd1d1}
+
+// ScrubEvents is a trace.Scrubber for GetEvent replies. It blanks, in place,
+// the values of IdentifyingProperties, with an x for every byte that isn't
+// NUL, and returns what they were.
+func ScrubEvents(opcode uint16, _ []uint32, data []byte) []string {
+	if opcode != OpEOSGetEvent {
+		return nil
+	}
+
+	var found []string
+
+	for off := 0; len(data)-off >= recordHeaderLen; {
+		size := int(binary.LittleEndian.Uint32(data[off:]))
+		code := binary.LittleEndian.Uint32(data[off+4:])
+
+		if size < recordHeaderLen || size > len(data)-off {
+			break
+		}
+
+		const propHeader = recordHeaderLen + 4
+
+		if code == EventPropValueChanged && size >= propHeader {
+			prop := binary.LittleEndian.Uint32(data[off+recordHeaderLen:])
+
+			if prop <= 0xffff && slices.Contains(IdentifyingProperties, uint16(prop)) {
+				found = append(found, trace.BlankBytes(data[off+propHeader:off+size]))
+			}
+		}
+
+		off += size
+	}
+
+	return found
 }

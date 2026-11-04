@@ -16,14 +16,21 @@ func NewApp() *cli.Command {
 		HideHelpCommand:       true,
 		EnableShellCompletion: true,
 
-		Description: `Reads the shutter and mirror actuation counters straight off the camera over
-USB. Cameras that answer the standard PTP counter property are read that way;
-those that do not are read through their manufacturer's own channel.
+		Description: `Reads the shutter actuation counters straight off a Canon camera over USB.
+Every body is first asked the standard PTP counter property, which older ones
+answer. The EOS 5D Mark IV is then read through Canon's factory channel, and
+RF bodies (EOS R, RP, R8 and the like) through Canon's event channel, the way
+EOS Utility talks to them. Anything else can't be read yet, and is sent
+nothing more.
+
+Only the EOS R8 and the EOS 5D Mark IV are tested. A reading from any other
+body says it's not fully tested.
 
 Running it with no command reads the connected camera.
 
-If your camera is not recognised, running with --trace produces a file that is
-enough for somebody else to confirm support for it. See docs/CONTRIBUTING.md.
+Running with --trace produces a file that is enough for somebody else to work
+out a camera it can't read, or check one it can. It leaves out the camera's
+serial number. See docs/CONTRIBUTING.md.
 
 This tool only ever reads. It will not send any command that writes to the
 camera, and refuses to build one; see docs/PROTOCOL.md for why that matters.`,

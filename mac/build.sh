@@ -1,7 +1,9 @@
 #!/bin/bash
-# Rebuilds the two binaries in this folder:
+# Rebuilds the two binaries in this folder, which the Open Shutter Count app
+# bundles:
 #
-#   openshuttercounter   the tool, for Apple silicon Macs
+#   openshuttercounter   the tool, for Apple silicon Macs, with app/version.py's
+#                        version
 #   libusb-1.0.dylib     libusb 1.0.30, from the libusb-package wheel on PyPI
 #                        (github.com/pyocd/libusb-package), checked against a
 #                        pinned SHA-256
@@ -14,7 +16,12 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(dirname "$here")"
 
-version="${VERSION:-0.0.0-dev}"
+# The version is app/version.py's, the one the app inside a release has.
+version="${VERSION:-$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' "$root/app/version.py")}"
+if [ -z "$version" ]; then
+    echo "couldn't read VERSION from app/version.py" >&2
+    exit 1
+fi
 
 libusb_wheel_url="https://files.pythonhosted.org/packages/52/6f/26de4e9f858ab50e87931f0be268f3c1bbfce33e8584add60da857632142/libusb_package-1.0.30.0-py3-none-macosx_11_0_arm64.whl"
 libusb_wheel_sha256="4ad25f8d254bbbdd234446d5580b24d62d59bb0e690d8090457dac347f044437"
