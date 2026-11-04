@@ -32,8 +32,8 @@ the R8 did, and what's next.
   tethering commands for reading the event channel, and only these:
   SetRemoteMode 0x9114 (params 1, then 0 and 1 on the way out), SetEventMode
   0x9115 (1, then 0), GetEvent 0x9116, and RequestDevicePropValue 0x9127 for
-  0xD167 only. They're in `pkg/manufacturers/canon/events.go`, sent only by
-  `probe --events`. Ask before sending anything else, including 0x9108
+  0xD167 only. They're in `pkg/manufacturers/canon/events.go`, sent by
+  `probe --events` and by a read of a body in `eventModels` (the R8). Ask before sending anything else, including 0x9108
   GetDeviceInfoEx.
 - No guessing in what the tool prints: a value isn't named (mechanical,
   electronic, total) until a test proves what it counts.

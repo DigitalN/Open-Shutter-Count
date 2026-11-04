@@ -13,10 +13,29 @@ tools already read it.
 
 ## Status (2026-11-04)
 
-`probe --events` works on the R8. The first event channel test
-(`mac/readings/2026-11-04_14-25-17-probe*`, 20 Elec. 1st-curtain then 7
-Electronic photos) found no exact counter, but 0xD167 word 3 crossed a
-thousand. Which word counts what is still open; see Next.
+Readable. `Read Shutter Count` reads 0xD167 off the event channel and shows
+each count as the thousand it's in: word 3 mechanical, word 4 every photo,
+electronic the difference. The maintainer accepted that (Q18).
+
+As of the test's last photo (`Photos/_MG_1326.CR3`), and assuming word 3 rounds
+up as word 4 does: mechanical 1,001 to 1,020, electronic 20,250 to 20,269,
+total exactly 21,270. The window is narrow because word 3 stepped during the
+20 Elec. 1st-curtain test photos. A plain read can't know that, so it shows
+1,001 to 2,000.
+
+Making the mechanical count exact would mean up to about 1,000 Elec.
+1st-curtain photos to reach word 3's next step. The maintainer said not for
+now (Q19).
+
+How word 3 and word 4 were identified:
+- Word 4 is every photo. A photo's total (mechanical plus electronic) is
+  21,270. If word 4 (22000) counted one shutter only, it and word 3 (2000)
+  would add to more than 22,000 under any rounding. Only rounding up turns
+  21,270 into 22,000.
+- Word 3 is mechanical. The alternative, electronic, would put about 20,000
+  photos on the mechanical shutter, and the maintainer has shot mostly
+  Electronic, using the shutter only when the camera was new.
+- camerashuttercount's R8 page reads them the same way.
 
 ## What the R8 has shown
 
@@ -94,14 +113,10 @@ thousand. Which word counts what is still open; see Next.
 
 ## Next
 
-1. Done: event channel test. No exact counter; 0xD167 word 3 crossed 1,000
-   to 2,000.
-2. Asked the maintainer: push four photos from that test (first and last of
-   each shutter mode) so their maker notes can be read. The exact total
-   (CameraInfo 0x0d29) says which 0xD167 word fits, and the rest of the
-   CameraInfo block may hold separate counters exiftool doesn't decode.
-3. If that doesn't settle it: Electronic photos in batches until a word steps
-   up (at most about 1,000, no shutter wear). Not yet put to the maintainer.
+1. Done: event channel test, photo total, words identified, R8 read built.
+2. Maintainer runs `Read Shutter Count.command` to check it on the camera.
+3. Open: an exact mechanical count (see Status); reporting this upstream or
+   to libgphoto2; whether other R bodies lay 0xD167 out the same way.
 
 ## Loose ends
 

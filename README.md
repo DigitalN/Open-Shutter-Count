@@ -55,6 +55,7 @@ been confirmed by somebody holding it.
 |---|---|
 | Canon protocol and framing | Confirmed on an EOS 5D Mark IV, firmware 1.2.1 |
 | Canon MPU address map | Confirmed on the same body, over an exact count of 20 frames |
+| Canon EOS R8 | Read through Canon's event channel (property 0xD167), in steps of 1,000; see docs/R8-PROGRESS.md |
 | Cameras that answer the standard PTP property | Should work on any make; tried first on every camera |
 | Other Canon bodies | Very likely the same channel, but the addresses are unconfirmed |
 | Other manufacturers | Not implemented yet |

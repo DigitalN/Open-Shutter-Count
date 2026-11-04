@@ -35,13 +35,21 @@ On the EOS R8: 20 photos with Shutter mode set to Elec. 1st-curtain, then 7
 with Electronic. Different numbers are what let the comparison tell the two
 shutters apart.
 
-## EOS R8: not readable yet
+## EOS R8
 
-The R8 connects and opens a session, but refuses the standard shutter counter
-property, and doesn't list Canon's factory channel at all. When the factory
-channel (`MonOpen`) was sent anyway, it stopped answering USB until it was
-switched off. The tool now stops before the factory channel on an R8, so
-`Read Shutter Count` can't hang the camera. See `docs/R8-PROGRESS.md`.
+`Read Shutter Count` reads the R8 through Canon's event channel, the way EOS
+Utility talks to it. The camera keeps its counts in thousands, rounded up, so
+it shows which thousand each is in:
+
+```
+  Mechanical shutter       1,001 to 2,000   (0xd167 word 3)
+  Electronic shutter     19,001 to 20,999   (word 4 less word 3)
+  All photos             21,001 to 22,000   (0xd167 word 4)
+```
+
+A photo's own metadata holds the exact total. The R8 doesn't list Canon's
+factory channel, and hung when it was sent anyway, so the tool never sends it
+to an R8. See `docs/R8-PROGRESS.md`.
 
 ## What it saves
 

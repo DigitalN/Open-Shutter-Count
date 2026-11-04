@@ -92,6 +92,19 @@ func (r *Reader) Models() []manufacturers.Model {
 		})
 	}
 
+	for id, m := range eventModels {
+		out = append(out, manufacturers.Model{
+			Name:        m.Name,
+			ProductID:   id,
+			Confirmed:   true,
+			ConfirmedOn: m.ConfirmedOn,
+			Counters: []manufacturers.CounterSpec{
+				{Label: "Mechanical shutter, in thousands", Location: "0xd167 word 3"},
+				{Label: "All photos, in thousands", Location: "0xd167 word 4"},
+			},
+		})
+	}
+
 	return out
 }
 
@@ -101,6 +114,11 @@ func (r *Reader) Models() []manufacturers.Model {
 // reason to go anywhere near the factory channel, and every camera older than
 // roughly DIGIC 6 does answer it.
 func (r *Reader) Read(_ context.Context, device *ptp.Device, info usb.DeviceInfo) (manufacturers.Reading, error) {
+	// Bodies read through 0xD167 never fall back to the factory channel.
+	if model, ok := eventModels[info.ProductID]; ok && !r.factoryOnly {
+		return r.readReleaseCounter(device, info, model)
+	}
+
 	if !r.factoryOnly {
 		if reading, ok := r.readStandardProperty(device, info); ok {
 			return reading, nil
