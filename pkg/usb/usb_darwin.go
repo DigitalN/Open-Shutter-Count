@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 	"unsafe"
@@ -290,10 +291,7 @@ func open(info DeviceInfo) (Device, error) {
 		}
 
 		if rc := api.openDevice(dev, &handle); rc != libusbSuccess {
-			return nil, fmt.Errorf(
-				"%w (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)",
-				api.err("libusb_open", rc),
-			)
+			return nil, api.err("libusb_open", rc)
 		}
 
 		break
@@ -407,10 +405,7 @@ func (d *darwinDevice) configure() error {
 	_ = d.api.autoDetachDriver(d.handle, 1)
 
 	if rc := d.api.claimInterface(d.handle, d.iface); rc != libusbSuccess {
-		return fmt.Errorf(
-			"%w (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)",
-			d.api.err("libusb_claim_interface", rc),
-		)
+		return d.api.err("libusb_claim_interface", rc)
 	}
 
 	// Whatever had the camera before us, usually ptpcamerad, leaves its
@@ -558,4 +553,17 @@ func clampInt32(v int64) int32 {
 	default:
 		return int32(v)
 	}
+}
+
+// deviceOwners asks ioreg which processes have the device open, leaving out
+// this one: libusb may have the device open even when claiming it failed.
+func deviceOwners(ctx context.Context, info DeviceInfo) ([]Owner, string, error) {
+	out, err := exec.CommandContext(ctx, "ioreg", "-r", "-c", "IOUSBHostDevice", "-l", "-w0").Output()
+	if err != nil {
+		return nil, "", fmt.Errorf("running ioreg: %w", err)
+	}
+
+	owners, block := ParseIORegOwners(string(out), info.VendorID, info.ProductID)
+
+	return slices.DeleteFunc(owners, func(o Owner) bool { return o.PID == os.Getpid() }), block, nil
 }

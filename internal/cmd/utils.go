@@ -149,46 +149,87 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		return nil, err
 	}
 
+	if runtime.GOOS != "darwin" {
+		return nil, fmt.Errorf("%w\n%s", err, busyHint())
+	}
+
 	// macOS hands every camera to ptpcamerad the moment it appears, and
-	// launchd can start it again straight away, so stop it and retry a few
-	// times. launchd brings it back for good once we are done.
-	if runtime.GOOS == "darwin" {
-		logger.Warn("the camera is held by another process, stopping ptpcamerad and retrying")
+	// launchd starts it again as soon as an app asks for a camera. So stop
+	// it, then try to open the camera every few milliseconds until it comes
+	// back. launchd brings it back for good once we are done.
+	logger.Info("the camera is held by another process, stopping ptpcamerad and retrying")
 
-		for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
-			if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
-				logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
-			}
+	for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
+		if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
+			logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
+		}
 
-			// Give the daemon a moment to exit and let go of the device.
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(darwinRetryDelay):
-			}
+		device, err = openWhileFree(ctx, info)
+		if err == nil {
+			return device, nil
+		}
 
-			device, err = usb.Open(info)
-			if err == nil {
-				return device, nil
-			}
+		logger.Debug("the camera is still busy", zap.Int("attempt", attempt), zap.Error(err))
 
-			logger.Debug("the camera is still busy", zap.Int("attempt", attempt), zap.Error(err))
-
-			if !errors.Is(err, usb.ErrBusy) {
-				return nil, err
-			}
+		if !errors.Is(err, usb.ErrBusy) {
+			return nil, err
 		}
 	}
 
-	return nil, fmt.Errorf("%w\n%s", err, busyHint())
+	owners, listing, ownersErr := usb.DeviceOwners(ctx, info)
+	logger.Debug("what has the camera open",
+		zap.Stringers("owners", owners), zap.String("ioreg", listing), zap.Error(ownersErr))
+
+	return nil, fmt.Errorf("%w\n\n%s", err, darwinBusyHint(owners))
 }
 
-// How often, and how far apart, opening a busy camera is retried on macOS
-// after stopping ptpcamerad.
+// openWhileFree tries to open the camera every darwinPollInterval for up to
+// darwinRetryDelay, to catch it between ptpcamerad exiting and coming back.
+func openWhileFree(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
+	deadline := time.Now().Add(darwinRetryDelay)
+
+	for {
+		device, err := usb.Open(info)
+		if err == nil || !errors.Is(err, usb.ErrBusy) || time.Now().After(deadline) {
+			return device, err
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(darwinPollInterval):
+		}
+	}
+}
+
+// How often opening a busy camera is retried on macOS after stopping
+// ptpcamerad, for how long each time, and how often within that.
 const (
 	darwinOpenAttempts = 5
-	darwinRetryDelay   = 300 * time.Millisecond
+	darwinRetryDelay   = 500 * time.Millisecond
+	darwinPollInterval = 20 * time.Millisecond
 )
+
+// darwinBusyHint says what to do about whatever has the camera.
+func darwinBusyHint(owners []usb.Owner) string {
+	var apps []string
+
+	for _, o := range owners {
+		if o.Name != "ptpcamerad" {
+			apps = append(apps, o.Name)
+		}
+	}
+
+	if len(apps) > 0 {
+		return strings.Join(apps, " and ") + ` has the camera. Quit it, unplug the camera, plug it back
+in, and try again.`
+	}
+
+	return `macOS's camera service (ptpcamerad) keeps taking the camera back, which
+usually means an app is asking for it: Photos, Image Capture, Preview,
+Lightroom, EOS Utility or another camera app. Quit them, unplug the camera,
+plug it back in, and try again.`
+}
 
 func busyHint() string {
 	switch runtime.GOOS {
@@ -196,9 +237,6 @@ func busyHint() string {
 		return `On desktop Linux gvfs claims cameras on sight. Release it with:
   gio mount -u gphoto2://
   systemctl --user mask gvfs-gphoto2-volume-monitor`
-	case "darwin":
-		return `macOS gives cameras to ptpcamerad. Release it with:
-  killall ptpcamerad`
 	case "windows":
 		return "Close any other software that may have opened the camera."
 	default:

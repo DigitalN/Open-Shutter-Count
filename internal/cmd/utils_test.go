@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,4 +49,15 @@ func TestMatchesSelector(t *testing.T) {
 func TestSpacedHex(t *testing.T) {
 	assert.Equal(t, "00 66 00 00 f2 00", spacedHex("00660000f200"))
 	assert.Empty(t, spacedHex(""))
+}
+
+func TestDarwinBusyHintNamesTheApp(t *testing.T) {
+	hint := darwinBusyHint([]usb.Owner{{PID: 589, Name: "ptpcamerad"}, {PID: 777, Name: "Some Camera App"}})
+	assert.True(t, strings.HasPrefix(hint, "Some Camera App has the camera."), hint)
+}
+
+func TestDarwinBusyHintBlamesPtpcameradsClients(t *testing.T) {
+	for _, owners := range [][]usb.Owner{nil, {{PID: 589, Name: "ptpcamerad"}}} {
+		assert.Contains(t, darwinBusyHint(owners), "keeps taking the camera back")
+	}
 }

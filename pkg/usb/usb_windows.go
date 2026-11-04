@@ -295,3 +295,5 @@ func (d *windowsDevice) transfer(p []byte, timeout time.Duration, write bool) (i
 // device interface is shared, and whatever else has it open is an application
 // the user can close.
 func releaseSystemCameraDaemon(_ context.Context) error { return nil }
+
+func deviceOwners(_ context.Context, _ DeviceInfo) ([]Owner, string, error) { return nil, "", nil }

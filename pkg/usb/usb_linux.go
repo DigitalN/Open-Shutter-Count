@@ -432,3 +432,5 @@ func (d *linuxDevice) bulk(endpoint uint8, p []byte, timeout time.Duration) (int
 // userspace processes such as gvfs rather than by a system daemon we can stop,
 // and the interface claim reports that case to the user instead.
 func releaseSystemCameraDaemon(_ context.Context) error { return nil }
+
+func deviceOwners(_ context.Context, _ DeviceInfo) ([]Owner, string, error) { return nil, "", nil }
