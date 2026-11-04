@@ -94,10 +94,22 @@ def test_another_rf_body_says_its_not_fully_tested(fixture):
     assert s["detail"] == "Not fully tested on the EOS R6; if these numbers look wrong, please send the log."
 
 
+def test_an_ef_body_and_a_90d_read_as_not_fully_tested(fixture):
+    ef = summarize(fixture("read-80d.json"))
+    assert ef["ok"] and not ef["tested"]
+    assert ef["detail"].startswith("Not fully tested on the EOS 80D")
+    assert [c["label"] for c in ef["counters"]] == ["Shutter actuations", "Mirror actuations", "Total counter"]
+    assert ef["counters"][0]["text"] == "26,354"
+
+    d90 = summarize(fixture("read-90d.json"))
+    assert d90["ok"] and not d90["tested"]
+    assert d90["counters"][0]["text"] == "1 to 1,000"
+
+
 def test_a_camera_that_cant_be_read_yet(fixture):
-    s = summarize(fixture("read-90d.json"))
+    s = summarize(fixture("read-powershot.json"))
     assert not s["ok"]
-    assert s["headline"] == "Can't read the EOS 90D yet"
+    assert s["headline"] == "Can't read the PowerShot G7 X Mark III yet"
     assert "save the log" in s["detail"]
 
 

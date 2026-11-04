@@ -28,8 +28,9 @@ type eventModel struct {
 	ConfirmedOn string
 }
 
-// eventModels lists the RF bodies whose 0xD167 words are established. Every
-// other RF body is read the same way and labelled as not fully tested. The
+// eventModels lists the bodies whose 0xD167 words are established. Every other
+// body that lists the event channel is read the same way and labelled as not
+// fully tested. The
 // product ID only names the body in the device list.
 //
 // On the EOS R8 (2026-11-04, firmware 1.5.0, docs/R8-PROGRESS.md): word 4 is
@@ -103,24 +104,16 @@ const releaseCounterNote = `  The camera keeps these counts in thousands, rounde
   which thousand each is in. A photo's own metadata holds the exact total.`
 
 // readReleaseCounter reads 0xD167 off the event channel. On a body other than
-// the tested ones, a camera that doesn't list the event channel, or doesn't
-// report 0xD167 in the R8's layout, is one that can't be read yet.
+// the tested ones, a camera that doesn't report 0xD167 in the R8's layout is
+// one that can't be read yet.
 func (r *Reader) readReleaseCounter(device *ptp.Device, camera ptp.DeviceInfo, reading *manufacturers.Reading) error {
 	isTested := tested[reading.Model]
-
-	notYet := func(err error) error {
-		if isTested {
-			return err
-		}
-
-		return fmt.Errorf("%w: %w", manufacturers.ErrNotSupported, err)
-	}
 
 	table, err := ReadEventTable(device, camera, r.logger)
 	reading.Steps = append(reading.Steps, table.Steps...)
 
 	if errors.Is(err, ErrNoEventChannel) {
-		return notYet(err)
+		return notYet(reading.Model, err)
 	}
 
 	if err != nil {
@@ -129,14 +122,14 @@ func (r *Reader) readReleaseCounter(device *ptp.Device, camera ptp.DeviceInfo, r
 
 	raw, ok := table.Property(PropShutterReleaseCounter)
 	if !ok {
-		return notYet(errNoReleaseCounter)
+		return notYet(reading.Model, errNoReleaseCounter)
 	}
 
 	reading.Steps = append(reading.Steps, "0xd167: "+hex.EncodeToString(raw))
 
 	counts, err := DecodeReleaseCounter(raw)
 	if err != nil {
-		return notYet(err)
+		return notYet(reading.Model, err)
 	}
 
 	counter := func(label, location string, rng Range) manufacturers.Counter {

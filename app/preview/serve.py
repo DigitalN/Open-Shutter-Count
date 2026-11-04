@@ -27,7 +27,8 @@ import version  # noqa: E402
 MARKER = "<script>\n'use strict';"
 
 RESULTS = {
-    "r8": "read-r8.json", "untested": "read-r6.json", "not-supported": "read-90d.json",
+    "r8": "read-r8.json", "untested": "read-r6.json", "ef": "read-80d.json", "90d": "read-90d.json",
+    "not-supported": "read-powershot.json",
     "busy": "read-busy.json", "wrong-mode": "read-wrong-usb-mode.json", "no-camera": "read-no-camera.json",
     "no-answer": "read-no-answer.json",
 }

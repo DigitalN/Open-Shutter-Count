@@ -113,30 +113,111 @@ func TestAnotherRFBodyWithoutThePropertyCantBeReadYet(t *testing.T) {
 	assert.NotEmpty(t, reading.Steps, "a failed read still says what it did")
 }
 
-func TestAnRFBodyThatDoesntListTheEventChannelIsSentNothingMore(t *testing.T) {
+func TestA90DIsReadThroughTheEventChannel(t *testing.T) {
+	// An EF body that, like the R8, lists the event channel and not the
+	// factory channel (libgphoto2's 90D dump). It hung on MonOpen upstream.
 	info := r8Info
-	info.Model = "Canon EOS R100"
-	info.Operations = []uint16{ptp.OpGetDeviceInfo, ptp.OpGetDevicePropValue}
+	info.Model = "Canon EOS 90D"
 
-	cam := eventCamera(t, r8D167)
+	cam := eventCamera(t, []byte{0x10, 0, 0, 0, 0x01, 0, 0, 0, 0xe8, 0x03, 0, 0, 0xe8, 0x03, 0, 0})
 
-	_, err := read(t, cam, 0x3340, info)
-	require.ErrorIs(t, err, manufacturers.ErrNotSupported)
-	assert.Equal(t, []string{askD1AC}, cam.commands)
+	reading, err := read(t, cam, 0x3295, info)
+	require.NoError(t, err)
+	assert.Equal(t, MethodEventChannel, reading.Method)
+	assert.False(t, reading.Confirmed)
 }
 
-func TestOtherBodiesAreOnlyAskedTheStandardProperty(t *testing.T) {
-	for _, model := range []string{"Canon EOS 90D", "Canon EOS M50m2", "Canon EOS Rebel T6", "Canon PowerShot G7 X Mark III"} {
+func TestABodyThatListsNeitherChannelIsOnlyAskedTheStandardProperty(t *testing.T) {
+	for _, model := range []string{"Canon EOS R100", "Canon EOS 750D", "Canon PowerShot G7 X Mark III"} {
 		info := r8Info
 		info.Model = model
+		info.Operations = []uint16{ptp.OpGetDeviceInfo, ptp.OpGetDevicePropValue}
 
 		cam := eventCamera(t, r8D167)
 
-		reading, err := read(t, cam, 0x3295, info)
+		reading, err := read(t, cam, 0x3340, info)
 		require.ErrorIs(t, err, manufacturers.ErrNotSupported, model)
 		assert.Equal(t, []string{askD1AC}, cam.commands, model)
 		assert.Contains(t, err.Error(), reading.Model)
 	}
+}
+
+// factoryCamera answers the factory channel's MonOpen with monOpen, then each
+// read with the next reply, and the standard property and event channel as
+// the R8 does.
+func factoryCamera(t *testing.T, monOpen uint16, replies ...[]byte) *camera {
+	t.Helper()
+
+	sent, received := 0, 0
+	inner := eventCamera(t, r8D167)
+
+	return &camera{answer: func(op uint16, params []uint32) ([]byte, uint16) {
+		switch op {
+		case OpFactorySend:
+			sent++
+			if sent == 1 {
+				return nil, monOpen
+			}
+
+			return nil, ptp.RCOK
+		case OpFactoryRecv:
+			received++
+			if received > len(replies) {
+				return nil, ptp.RCGeneralError
+			}
+
+			return replies[received-1], ptp.RCOK
+		}
+
+		return inner.answer(op, params)
+	}}
+}
+
+// efInfo is an EF DSLR that lists the factory channel and the event channel,
+// as libgphoto2's 80D dump shows.
+var efInfo = ptp.DeviceInfo{
+	Model: "Canon EOS 80D",
+	Operations: []uint16{
+		ptp.OpGetDeviceInfo, ptp.OpGetDevicePropValue, OpFactorySend, OpFactoryRecv,
+		OpEOSSetRemoteMode, OpEOSSetEventMode, OpEOSGetEvent, OpEOSRequestDevicePropValue,
+	},
+}
+
+func TestAnEFBodyThatListsTheFactoryChannelIsReadThere(t *testing.T) {
+	cam := factoryCamera(t, ptp.RCOK,
+		[]byte{0x00, 0x66, 0, 0, 0, 0, 0, 0xf2, 0, 0},
+		[]byte{0x00, 0x66, 0, 0, 0, 0, 0, 0, 0xf2, 0},
+		[]byte{0x00, 0x67, 0, 0, 0, 0, 0, 0, 0, 0x01})
+
+	reading, err := read(t, cam, 0x3294, efInfo)
+	require.NoError(t, err)
+
+	assert.Equal(t, "EOS 80D", reading.Model)
+	assert.Equal(t, MethodFactoryChannel, reading.Method)
+	assert.False(t, reading.Confirmed, "the 5D Mark IV's addresses are a guess on an 80D")
+	assert.Equal(t, uint32(0x66f2), reading.Counters[0].Value)
+	assert.Zero(t, reading.RatedLife, "the 5D Mark IV's rating isn't the 80D's")
+	assert.NotContains(t, cam.commands, getEvent, "the event channel isn't needed")
+}
+
+func TestTheEventChannelIsTriedWhenTheFactoryChannelGivesNothing(t *testing.T) {
+	for name, cam := range map[string]*camera{
+		"MonOpen refused":     factoryCamera(t, ptp.RCOperationNotSupported),
+		"no counter answered": factoryCamera(t, ptp.RCOK),
+	} {
+		reading, err := read(t, cam, 0x3294, efInfo)
+		require.NoError(t, err, name)
+		assert.Equal(t, MethodEventChannel, reading.Method, name)
+		assert.Contains(t, reading.Steps, "the factory channel gave no counts: trying the event channel", name)
+	}
+}
+
+func TestAFactoryChannelThatGivesNothingWithNoEventChannelCantBeReadYet(t *testing.T) {
+	info := efInfo
+	info.Operations = []uint16{ptp.OpGetDeviceInfo, ptp.OpGetDevicePropValue, OpFactorySend, OpFactoryRecv}
+
+	_, err := read(t, factoryCamera(t, ptp.RCOK), 0x3294, info)
+	require.ErrorIs(t, err, manufacturers.ErrNotSupported)
 }
 
 func TestTheStandardPropertyWinsWhenAnswered(t *testing.T) {
@@ -214,7 +295,7 @@ func TestThe5DMarkIVIsReadThroughTheFactoryChannel(t *testing.T) {
 	assert.Len(t, sent, 5, "MonOpen, three reads and MonClose")
 }
 
-func TestFactoryOnlyRefusesBodiesOtherThanThe5DMarkIV(t *testing.T) {
+func TestFactoryOnlyRefusesBodiesThatDontListIt(t *testing.T) {
 	cam := eventCamera(t, r8D167)
 
 	_, err := New(WithFactoryOnly(true)).Read(context.Background(), ptp.New(cam),

@@ -4,9 +4,10 @@ The most useful thing you can contribute is a reading from your own camera —
 whether or not it worked.
 
 Right now two bodies have been tested by someone holding them: the EOS R8 and the
-EOS 5D Mark IV. Other RF bodies are read the way the R8 is, and older ones that
-answer the standard shutter count property are read too, but each of those
-readings is labelled not fully tested. Everything else can't be read yet. The
+EOS 5D Mark IV. Other bodies are read the way one of those is, by what they
+list (see "What it sends" in [USAGE.md](USAGE.md)), and older ones that answer
+the standard shutter count property are read too, but each of those readings is
+labelled not fully tested. Everything else can't be read yet. The
 only way that changes is people running this on their own gear and saying what
 happened.
 

@@ -110,15 +110,21 @@ func (r *Reader) Models() []manufacturers.Model {
 	return out
 }
 
-// Read implements manufacturers.Reader. It tries, in order:
+// Read implements manufacturers.Reader. What's sent depends on what the camera
+// lists in GetDeviceInfo, not on its name or mount:
 //
-//  1. the standard shutter counter property, 0xD1AC, on any body;
-//  2. the factory channel, on the EOS 5D Mark IV only;
-//  3. property 0xD167 on the event channel, on RF bodies, spotted by the
-//     model name in GetDeviceInfo and sent only the commands they list.
+//  1. the standard shutter counter property, 0xD1AC, which bodies up to about
+//     DIGIC 5 answer;
+//  2. Canon's factory channel, on the EOS 5D Mark IV, and on any body that lists
+//     0x9052 and 0x9053 (EF DSLRs up to about DIGIC 7), read at the 5D Mark
+//     IV's addresses;
+//  3. property 0xD167 on the event channel, on any body that lists it (RF
+//     bodies, the 90D, newer EOS M), read the way the EOS R8 lays it out. A body
+//     that lists both is tried here when the factory channel gave nothing.
 //
 // Anything else gets manufacturers.ErrNotSupported, having been sent nothing
-// but the standard property read.
+// but the standard property read. Only the EOS R8 and the EOS 5D Mark IV are
+// marked tested.
 func (r *Reader) Read(
 	_ context.Context, device *ptp.Device, info usb.DeviceInfo, camera ptp.DeviceInfo,
 ) (manufacturers.Reading, error) {
@@ -131,26 +137,69 @@ func (r *Reader) Read(
 		}
 	}
 
-	if model, ok := LookupModel(info.ProductID); ok {
-		return reading, r.readFactoryChannel(device, model, &reading)
-	}
+	model, known := LookupModel(info.ProductID)
+	factory := known || ListsFactoryChannel(camera)
+	events := ListsEventChannel(camera)
 
-	if r.factoryOnly {
-		return reading, fmt.Errorf("the factory channel is only read on the %s, not the %s",
-			strings.Join(factoryModelNames(), ", "), reading.Model)
-	}
+	switch {
+	case factory:
+		if !known {
+			model = GuessModel(info.ProductID)
+		}
 
-	if IsRFBody(camera.Model) {
-		reading.Steps = append(reading.Steps, fmt.Sprintf("%q is an RF body: reading 0xd167 off the event channel", camera.Model))
+		err := r.readFactoryChannel(device, model, &reading)
+
+		// Only a factory channel that answered but gave nothing is worth
+		// following with the event channel: a camera that has stopped
+		// answering won't answer that either.
+		gaveNothing := isRefusal(err) || errors.Is(err, errNoCounters)
+		if err == nil || r.factoryOnly || !events || !gaveNothing {
+			return reading, err
+		}
+
+		reading.Steps = append(reading.Steps, "the factory channel gave no counts: trying the event channel")
+		reading.Counters, reading.RatedLife = nil, 0
 
 		return reading, r.readReleaseCounter(device, camera, &reading)
+	case r.factoryOnly:
+		return reading, fmt.Errorf("the %s doesn't list Canon's factory channel (0x9052 and 0x9053), so it isn't sent",
+			reading.Model)
+	case events:
+		reading.Steps = append(reading.Steps, "it lists Canon's event channel: reading 0xd167")
+
+		return reading, r.readReleaseCounter(device, camera, &reading)
+	default:
+		reading.Steps = append(reading.Steps, "it lists neither Canon's factory channel nor its event channel: nothing else is sent")
+
+		return reading, fmt.Errorf("%w: the %s doesn't answer the standard shutter count property, "+
+			"and lists neither Canon's factory channel nor its event channel", manufacturers.ErrNotSupported, reading.Model)
+	}
+}
+
+// ListsFactoryChannel reports whether a camera lists both of the factory
+// channel's opcodes. The EOS R8 and the 90D don't, and both hung when MonOpen
+// was sent anyway.
+func ListsFactoryChannel(camera ptp.DeviceInfo) bool {
+	return camera.Supports(OpFactorySend) && camera.Supports(OpFactoryRecv)
+}
+
+// ListsEventChannel reports whether a camera lists what reading its event
+// channel needs. ReadEventTable checks again before sending anything.
+func ListsEventChannel(camera ptp.DeviceInfo) bool {
+	return camera.Supports(OpEOSSetRemoteMode) && camera.Supports(OpEOSSetEventMode) && camera.Supports(OpEOSGetEvent)
+}
+
+// errNoCounters means the factory channel opened but no counter could be read.
+var errNoCounters = errors.New("the factory channel gave none of the counters")
+
+// notYet marks a failure on an untested body as one that can't be read yet:
+// the way it was read is a guess there, so the log is what's needed.
+func notYet(model string, err error) error {
+	if tested[model] {
+		return err
 	}
 
-	reading.Steps = append(reading.Steps,
-		fmt.Sprintf("%q isn't the EOS 5D Mark IV or an RF body: nothing else is tried", camera.Model))
-
-	return reading, fmt.Errorf("%w: the %s doesn't answer the standard shutter count property, "+
-		"and only the EOS 5D Mark IV and RF bodies are read any other way", manufacturers.ErrNotSupported, reading.Model)
+	return fmt.Errorf("%w: %w", manufacturers.ErrNotSupported, err)
 }
 
 // readStandardProperty tries PTP property 0xD1AC. found reports whether the
@@ -195,14 +244,22 @@ func (r *Reader) readStandardProperty(device *ptp.Device, camera ptp.DeviceInfo,
 
 // readFactoryChannel reads the counters out of MPU memory.
 func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, reading *manufacturers.Reading) error {
-	reading.Steps = append(reading.Steps, "the "+model.Name+" is read through the factory channel")
+	if model.Confirmed {
+		reading.Steps = append(reading.Steps, "the "+model.Name+" is read through the factory channel")
+	} else {
+		reading.Steps = append(reading.Steps, fmt.Sprintf(
+			"it lists Canon's factory channel: reading it at the %s's MPU addresses", models[0].Name))
+	}
 
 	readings, err := ReadModel(device, model)
+
+	failed := 0
 
 	for _, c := range readings {
 		step := fmt.Sprintf("MonReadAndGetData(%#04x, %d): ", c.Counter.Address, c.Counter.Length)
 		if c.Err != nil {
 			step += c.Err.Error()
+			failed++
 		} else {
 			step += hex.EncodeToString(c.Raw)
 		}
@@ -213,14 +270,22 @@ func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, reading *ma
 	if err != nil {
 		reading.Steps = append(reading.Steps, "factory channel: "+err.Error())
 
+		if isRefusal(err) {
+			return notYet(reading.Model, err)
+		}
+
 		return err
 	}
 
-	if reading.Model == "" || strings.HasPrefix(reading.Model, "Canon camera") {
-		reading.Model = model.Name
+	if failed == len(readings) {
+		return notYet(reading.Model, errNoCounters)
 	}
 
-	reading.Confirmed = model.Confirmed && tested[model.Name]
+	if model.Confirmed && strings.HasPrefix(reading.Model, "Canon camera") {
+		reading.Model = model.Name // GetDeviceInfo gave no name
+	}
+
+	reading.Confirmed = model.Confirmed && tested[reading.Model]
 	reading.Method = MethodFactoryChannel
 	reading.RatedLife = model.RatedLife
 	reading.Counters = make([]manufacturers.Counter, 0, len(readings))
@@ -236,16 +301,6 @@ func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, reading *ma
 	}
 
 	return nil
-}
-
-// factoryModelNames are the bodies the factory channel is sent to.
-func factoryModelNames() []string {
-	names := make([]string, 0, len(models))
-	for _, m := range models {
-		names = append(names, m.Name)
-	}
-
-	return names
 }
 
 // modelName is what the camera calls itself in GetDeviceInfo, less "Canon ",

@@ -62,12 +62,17 @@ camera. The checklist is in docs/DEVELOPMENT.md.
 
 - Never send a command that writes to the camera, and never sweep opcodes.
   `pkg/manufacturers/canon` refuses the known write commands; keep it that way.
-- The reading rule (`canon.Reader.Read`): 0xD1AC on any Canon body, then the
-  factory channel on the EOS 5D Mark IV only (by USB product ID), then the event
-  channel on RF bodies (by the model name in GetDeviceInfo, `canon.IsRFBody`).
-  Anything else gets "can't be read yet" and is sent nothing more.
-- The R8 hung on `MonOpen` (the factory channel) and needed a power cycle. The
-  factory channel is only sent to the bodies in `models` (the 5D Mark IV).
+- The reading rule (`canon.Reader.Read`), by what the camera lists in
+  GetDeviceInfo: 0xD1AC on any Canon body; then the factory channel on the 5D
+  Mark IV (by USB product ID) and on bodies that list 0x9052 and 0x9053 (EF
+  DSLRs, at the 5D Mark IV's addresses); otherwise the event channel on bodies
+  that list it (RF bodies, the 90D, newer EOS M). A body that lists both is
+  tried on the event channel if the factory channel gives nothing. Anything
+  else gets "can't be read yet" and is sent nothing more. The maintainer chose
+  this EF/RF split on 2026-11-04 (APP-PLAN.md).
+- The R8 hung on `MonOpen` (the factory channel) and needed a power cycle, and
+  a 90D did the same upstream. Neither lists 0x9052/0x9053, so the factory
+  channel is only sent to bodies that list it, and the 5D Mark IV.
 - The R8 doesn't list 0x9052/0x9053 in GetDeviceInfo. Don't send an opcode a
   camera doesn't list.
 - Standard PTP reads are fine. The maintainer approved (2026-11-04) Canon's
@@ -75,9 +80,10 @@ camera. The checklist is in docs/DEVELOPMENT.md.
   SetRemoteMode 0x9114 (params 1, then 0 and 1 on the way out), SetEventMode
   0x9115 (1, then 0), GetEvent 0x9116, and RequestDevicePropValue 0x9127 for
   0xD167 only. They're in `pkg/manufacturers/canon/events.go`, sent by
-  `probe --events` and by a read of an RF body. The maintainer approved
-  extending them from the R8 to every RF body on 2026-11-04 (APP-PLAN.md), and
-  each is sent only if the camera lists it. Ask before sending anything else,
+  `probe --events` and by a read of a body that lists them. The maintainer
+  approved extending them from the R8 to RF bodies, then to any Canon body that
+  lists them (the 90D, EOS M), on 2026-11-04, and each is sent only if the
+  camera lists it. Ask before sending anything else,
   including 0x9108 GetDeviceInfoEx.
 - No guessing in what the tool prints, except where the guess is labelled as
   not fully tested: a value isn't named (mechanical, electronic, total) as fact

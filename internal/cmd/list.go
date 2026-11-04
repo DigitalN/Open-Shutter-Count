@@ -149,8 +149,9 @@ func Models(ctx context.Context, cmd *cli.Command) error {
 
 const modelsFooter = `
   Older bodies need no entry here: they still answer the standard PTP shutter
-  counter property, which is tried first on every camera. Other RF bodies are
-  read the way the EOS R8 is, and the reading says it's not fully tested.
+  counter property, which is tried first on every camera. Other bodies are read
+  the way the 5D Mark IV or the R8 is, by what they list, and the reading says
+  it's not fully tested.
 
   Whether it worked or not, a trace makes the answer useful to everyone else:
 

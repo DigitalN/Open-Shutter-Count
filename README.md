@@ -18,7 +18,8 @@ Free and open source.
 |---|---|
 | Canon EOS R8 | Mechanical, electronic and all photos, each to within a thousand: the camera only keeps them that way. Tested. |
 | Canon EOS 5D Mark IV | Exact shutter and mirror counts. Tested. |
-| Other RF bodies (EOS R, RP, R6, R50 and so on) | Read the way the R8 is, and labelled not fully tested |
+| Other EF DSLRs that list Canon's factory channel (7D Mark II, 5DS R, 80D, 77D and so on) | Read the way the 5D Mark IV is, and labelled not fully tested |
+| RF bodies, and newer bodies that report the R8's counter (90D, EOS M50 Mark II, M6 Mark II) | Read the way the R8 is, and labelled not fully tested |
 | Older Canon bodies that answer the standard shutter count | Read, and labelled not fully tested |
 | Anything else | Can't be read yet. Save the log and open an issue, and it can be worked out. |
 

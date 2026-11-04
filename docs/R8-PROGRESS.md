@@ -132,8 +132,11 @@ How word 3 and word 4 were identified:
 
 - The Terminal window closing after Return (`Find Shutter Counter.command`)
   hasn't been confirmed working.
-- Other RF bodies are now read the R8's way, labelled not fully tested. Their
-  logs will show whether they lay 0xD167 out the same way.
+- Other bodies that list the event channel (RF bodies, the 90D, newer EOS M)
+  are now read the R8's way, labelled not fully tested. Their logs will show
+  whether they lay 0xD167 out the same way. libgphoto2's EOS M100 dump has
+  word 3 as 0xffffffff, which the decoder refuses, so the M100 ends as "can't
+  read yet".
 - No pull request has been opened, and nothing has been reported upstream.
 - `mac/openshuttercounter` stays committed, so building the app on the Mac
   needs only Python (Q31).

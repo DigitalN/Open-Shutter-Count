@@ -3,7 +3,7 @@
 // ?s=<scenario>, one of:
 //   checking downloading blocked failed dev     the update step
 //   setup waiting help reading                  the steps before the result
-//   r8 untested not-supported busy wrong-mode no-camera no-answer   result screens
+//   r8 untested ef 90d not-supported busy wrong-mode no-camera no-answer   result screens
 // Add &theme=dark or &theme=light to force one. Buttons move through the steps the way
 // the app does: Continue waits two seconds, finds an R8 and reads it.
 // window.__state.calls is every API call the page made.

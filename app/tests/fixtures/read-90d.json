@@ -21,14 +21,50 @@
       "0x9127"
     ]
   },
+  "reading": {
+    "manufacturer": "Canon",
+    "model": "EOS 90D",
+    "confirmed": false,
+    "method": "canon-event-channel-0xd167",
+    "note": "  The camera keeps these counts in thousands, rounded up, so it can only say\n  which thousand each is in. A photo's own metadata holds the exact total."
+  },
+  "counters": [
+    {
+      "label": "Mechanical shutter",
+      "location": "0xd167 word 3",
+      "value": 1000,
+      "range": true,
+      "min": 1,
+      "raw": "1000000001000000e8030000e8030000"
+    },
+    {
+      "label": "Electronic shutter",
+      "location": "word 4 less word 3",
+      "value": 999,
+      "range": true,
+      "raw": "1000000001000000e8030000e8030000"
+    },
+    {
+      "label": "All photos",
+      "location": "0xd167 word 4",
+      "value": 1000,
+      "range": true,
+      "min": 1,
+      "raw": "1000000001000000e8030000e8030000"
+    }
+  ],
   "steps": [
     "OpenSession: OK",
     "GetDeviceInfo: OK, Canon EOS 90D, firmware 3-1.5.0, 9 operations",
     "GetDevicePropValue(0xd1ac): OperationNotSupported",
-    "\"Canon EOS 90D\" isn't the EOS 5D Mark IV or an RF body: nothing else is tried"
-  ],
-  "error": {
-    "kind": "not_supported",
-    "message": "this camera can't be read yet: the EOS 90D doesn't answer the standard shutter count property, and only the EOS 5D Mark IV and RF bodies are read any other way"
-  }
+    "it lists Canon's event channel: reading 0xd167",
+    "SetRemoteMode(1): OK",
+    "SetEventMode(1): OK",
+    "GetEvent: 82 bytes, 3 records",
+    "GetEvent: 8 bytes, 0 records",
+    "SetRemoteMode(0): OK",
+    "SetRemoteMode(1): OK",
+    "SetEventMode(0): OK",
+    "0xd167: 1000000001000000e8030000e8030000"
+  ]
 }

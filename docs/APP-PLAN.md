@@ -62,6 +62,20 @@ reads.
 
 ### Reading rule (Go changes)
 
+Changed by the maintainer on 2026-11-04, after the build: split EF bodies from
+RF ones rather than singling out the 5D Mark IV. It's now decided by what the
+camera lists, which libgphoto2's camera dumps show lines up with that split
+while keeping the factory channel away from the 90D:
+
+1. Any Canon body: 0xD1AC first.
+2. A body that lists 0x9052 and 0x9053 (the 5D Mark IV, and EF DSLRs up to
+   about DIGIC 7): the factory channel, at the 5D Mark IV's addresses.
+3. A body that lists the event channel (RF bodies, the 90D, newer EOS M): 0xD167
+   the R8's way. The maintainer approved this for non-RF bodies the same day.
+4. Anything else: "can't read this camera yet, please send the log".
+
+Only the R8 and the 5D Mark IV say tested. The rule as first agreed:
+
 1. Any Canon body: the standard count property (0xD1AC) first.
 2. EOS 5D Mark IV: the factory channel, as it works today.
 3. RF bodies: the R8 way (0xD167 off the event channel), sent only if the camera

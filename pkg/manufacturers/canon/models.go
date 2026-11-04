@@ -1,6 +1,6 @@
 package canon
 
-import "regexp"
+import "fmt"
 
 // VendorID is Canon Inc.'s USB vendor ID.
 const VendorID uint16 = 0x04a9
@@ -42,10 +42,12 @@ type Model struct {
 	ConfirmedOn string `json:"confirmed_on,omitempty"`
 }
 
-// The factory channel is only sent to the bodies below. An EOS R8 (seen
-// 2026-11-04 over macOS) gave no reply to MonOpen, then stopped answering USB
-// at all, even CloseSession, until it was switched off; it doesn't list 0x9052
-// or 0x9053. A 90D hung the same way in upstream issue #4.
+// The factory channel is only sent to the bodies below, and to bodies that list
+// 0x9052 and 0x9053 (GuessModel). An EOS R8 (seen 2026-11-04 over macOS) gave
+// no reply to MonOpen, then stopped answering USB at all, even CloseSession,
+// until it was switched off; it doesn't list 0x9052 or 0x9053. A 90D hung the
+// same way in upstream issue #4, and libgphoto2's 90D dump doesn't list them
+// either.
 //
 // Each address map below was established differentially: read every address,
 // take an exact number of frames, read again, and keep whatever advanced by
@@ -89,20 +91,24 @@ func LookupModel(productID uint16) (Model, bool) {
 	return Model{}, false
 }
 
-// rfBody matches an RF mount body's name in GetDeviceInfo: "EOS R" followed by
-// a number (EOS R8, R6m2, R100, R50 V), by "P" (EOS RP), or by nothing (the EOS
-// R). It doesn't match the Rebel DSLRs. The USB product name can't be used:
-// the R8's is "Canon Digital Camera".
-var rfBody = regexp.MustCompile(`\bEOS R(?:\d|P\b|\s|$)`)
-
-// IsRFBody reports whether a GetDeviceInfo model name is an RF mount body.
-func IsRFBody(model string) bool {
-	return rfBody.MatchString(model)
-}
-
 // tested are the bodies whose readings were worked out on the body itself.
 // Any other camera that reads is labelled as not fully tested.
 var tested = map[string]bool{
 	"EOS 5D Mark IV": true,
 	"EOS R8":         true,
+}
+
+// GuessModel is what a body that lists the factory channel but has no map of
+// its own is read with: the 5D Mark IV's addresses. The channel itself is very
+// likely the same across these bodies, but the addresses aren't known to be, so
+// the reading says it's not fully tested. MonReadAndGetData only reads.
+func GuessModel(productID uint16) Model {
+	reference := models[0]
+
+	return Model{
+		Name:      fmt.Sprintf("Canon body (USB %04x:%04x)", VendorID, productID),
+		ProductID: productID,
+		Counters:  reference.Counters,
+		Confirmed: false,
+	}
 }

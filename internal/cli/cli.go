@@ -18,10 +18,10 @@ func NewApp() *cli.Command {
 
 		Description: `Reads the shutter actuation counters straight off a Canon camera over USB.
 Every body is first asked the standard PTP counter property, which older ones
-answer. The EOS 5D Mark IV is then read through Canon's factory channel, and
-RF bodies (EOS R, RP, R8 and the like) through Canon's event channel, the way
-EOS Utility talks to them. Anything else can't be read yet, and is sent
-nothing more.
+answer. Then, by what the camera lists: Canon's factory channel on EF DSLRs
+that list it (the EOS 5D Mark IV's way), or Canon's event channel, the way EOS
+Utility talks to the camera, on RF bodies and others that list it (the EOS
+R8's way). Anything else can't be read yet, and is sent nothing more.
 
 Only the EOS R8 and the EOS 5D Mark IV are tested. A reading from any other
 body says it's not fully tested.

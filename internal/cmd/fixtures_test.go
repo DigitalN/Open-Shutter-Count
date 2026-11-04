@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -113,31 +114,46 @@ func eventList(records ...[]byte) []byte {
 	return append(out, 8, 0, 0, 0, 0, 0, 0, 0)
 }
 
-// rfCamera is an RF body that answers like the maintainer's EOS R8, reporting
-// d167 on its event channel, along with its serial number and owner.
-func rfCamera(t *testing.T, model string, productID uint16, d167 []byte) (*scriptedCamera, ptp.DeviceInfo) {
+// Which of Canon's channels a scripted camera lists.
+var (
+	eventChannel = []uint16{
+		canon.OpEOSSetRemoteMode, canon.OpEOSSetEventMode, canon.OpEOSGetEvent, canon.OpEOSRequestDevicePropValue,
+	}
+	factoryChannel = []uint16{canon.OpFactorySend, canon.OpFactoryRecv}
+)
+
+// fakeCamera is a Canon body that answers like the maintainer's EOS R8 does,
+// listing the channels given. Its event channel reports d167 along with its
+// serial number and owner; its factory channel answers each read with the next
+// of mpu.
+func fakeCamera(
+	t *testing.T, model string, productID uint16, channels []uint16, d167 []byte, mpu ...[]byte,
+) *scriptedCamera {
 	t.Helper()
 
 	info := ptp.DeviceInfo{
 		StandardVersion: 100, VendorExtensionID: 6, VendorExtensionVersion: 100,
 		Manufacturer: "Canon.Inc", Model: model, DeviceVersion: "3-1.5.0", SerialNumber: fakeSerial,
-		Operations: []uint16{
+		Operations: append([]uint16{
 			ptp.OpGetDeviceInfo, ptp.OpOpenSession, ptp.OpCloseSession, ptp.OpGetDevicePropDesc, ptp.OpGetDevicePropValue,
-			canon.OpEOSSetRemoteMode, canon.OpEOSSetEventMode, canon.OpEOSGetEvent, canon.OpEOSRequestDevicePropValue,
-		},
+		}, channels...),
 	}
 
 	raw, err := info.MarshalBinary()
 	require.NoError(t, err)
 
-	events := 0
+	events, reads := 0, 0
 
-	cam := &scriptedCamera{
+	return &scriptedCamera{
 		info: usb.DeviceInfo{
 			Path: fakePath, Bus: 1, Address: 2, VendorID: canon.VendorID, ProductID: productID,
 			Product: "Canon Digital Camera", Serial: fakeUSBSerial,
 		},
 		answer: func(op uint16) ([]byte, uint16) {
+			if !info.Supports(op) {
+				t.Fatalf("the %s was sent %#04x, which it doesn't list", model, op)
+			}
+
 			switch op {
 			case ptp.OpGetDeviceInfo:
 				return raw, ptp.RCOK
@@ -154,15 +170,18 @@ func rfCamera(t *testing.T, model string, productID uint16, d167 []byte) (*scrip
 					eventRecord(canon.EventPropValueChanged, 0xd115, []byte(fakeOwner+"\x00")),
 					eventRecord(canon.EventPropValueChanged, canon.PropShutterReleaseCounter, d167),
 				), ptp.RCOK
-			case canon.OpFactorySend, canon.OpFactoryRecv:
-				t.Fatalf("the factory channel was sent %#04x", op)
+			case canon.OpFactoryRecv:
+				reads++
+				if reads > len(mpu) {
+					return nil, ptp.RCGeneralError
+				}
+
+				return mpu[reads-1], ptp.RCOK
 			}
 
 			return nil, ptp.RCOK
 		},
 	}
-
-	return cam, info
 }
 
 // readFixture reads a scripted camera the way Read does, recording a trace.
@@ -197,17 +216,33 @@ func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
 var r8D167 = []byte{0x10, 0, 0, 0, 0x01, 0, 0, 0, 0xd0, 0x07, 0, 0, 0xf0, 0x55, 0, 0}
 
 func TestAppFixtures(t *testing.T) {
-	r8, r8Info := rfCamera(t, "Canon EOS R8", 0x330c, r8D167)
+	thousand := []byte{0x10, 0, 0, 0, 0x01, 0, 0, 0, 0xe8, 0x03, 0, 0, 0xe8, 0x03, 0, 0}
+
+	r8 := fakeCamera(t, "Canon EOS R8", 0x330c, eventChannel, r8D167)
 	r8Out, r8Trace := readFixture(t, r8)
 	require.Nil(t, r8Out.Error)
 
-	r6, _ := rfCamera(t, "Canon EOS R6", 0x32f5, []byte{0x10, 0, 0, 0, 0x01, 0, 0, 0, 0xe8, 0x03, 0, 0, 0xe8, 0x03, 0, 0})
-	r6Out, _ := readFixture(t, r6)
+	// libgphoto2's R6 and 90D dumps: 1000 and 1000. The 90D is an EF body
+	// that lists the event channel and not the factory channel.
+	r6Out, _ := readFixture(t, fakeCamera(t, "Canon EOS R6", 0x32f5, eventChannel, thousand))
 	require.Nil(t, r6Out.Error)
 
-	d90, _ := rfCamera(t, "Canon EOS 90D", 0x3295, nil)
-	d90Out, d90Trace := readFixture(t, d90)
-	require.NotNil(t, d90Out.Error)
+	d90Out, _ := readFixture(t, fakeCamera(t, "Canon EOS 90D", 0x3295, eventChannel, thousand))
+	require.Nil(t, d90Out.Error)
+
+	// An EF body that lists the factory channel, as libgphoto2's 80D dump
+	// does, read at the 5D Mark IV's addresses. The replies are the 5D Mark
+	// IV's, from docs/PROTOCOL.md.
+	d80 := fakeCamera(t, "Canon EOS 80D", 0x3294, slices.Concat(factoryChannel, eventChannel), nil,
+		[]byte{0x00, 0x66, 0, 0, 0, 0, 0, 0xf2, 0, 0},
+		[]byte{0x00, 0x66, 0, 0, 0, 0, 0, 0, 0xf2, 0},
+		[]byte{0x00, 0x67, 0, 0, 0, 0, 0, 0, 0, 0x01})
+	d80Out, d80Trace := readFixture(t, d80)
+	require.Nil(t, d80Out.Error)
+
+	powershot := fakeCamera(t, "Canon PowerShot G7 X Mark III", 0x32f4, nil, nil)
+	powershotOut, powershotTrace := readFixture(t, powershot)
+	require.NotNil(t, powershotOut.Error)
 
 	device := describeUSB(r8.info)
 	failed := func(err error) readOutput {
@@ -227,16 +262,17 @@ func TestAppFixtures(t *testing.T) {
 		"read-r8.json":             r8Out,
 		"read-r6.json":             r6Out,
 		"read-90d.json":            d90Out,
+		"read-80d.json":            d80Out,
+		"read-powershot.json":      powershotOut,
 		"read-busy.json":           failed(busy),
 		"read-wrong-usb-mode.json": failureOutput(readOutput{Device: wrongModeDevice}, wrongMode),
 		"read-no-camera.json":      failureOutput(readOutput{}, noDeviceError{}),
 		"read-no-answer.json":      failed(fmt.Errorf("the camera didn't answer, even after a reset: %w", usb.ErrTimeout)),
 		"list-r8.json":             listOutput(registry(nil, false), []usb.DeviceInfo{r8Listed}),
 		"trace-r8.json":            r8Trace,
-		"trace-90d.json":           d90Trace,
+		"trace-80d.json":           d80Trace,
+		"trace-powershot.json":     powershotTrace,
 	}
-
-	assert.Equal(t, "3-1.5.0", r8Info.DeviceVersion)
 
 	for name, value := range fixtures {
 		raw, err := json.MarshalIndent(value, "", "  ")

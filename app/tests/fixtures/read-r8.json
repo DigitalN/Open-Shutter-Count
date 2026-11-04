@@ -58,7 +58,7 @@
     "OpenSession: OK",
     "GetDeviceInfo: OK, Canon EOS R8, firmware 3-1.5.0, 9 operations",
     "GetDevicePropValue(0xd1ac): OperationNotSupported",
-    "\"Canon EOS R8\" is an RF body: reading 0xd167 off the event channel",
+    "it lists Canon's event channel: reading 0xd167",
     "SetRemoteMode(1): OK",
     "SetEventMode(1): OK",
     "GetEvent: 82 bytes, 3 records",

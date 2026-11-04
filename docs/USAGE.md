@@ -77,15 +77,23 @@ have the camera open. Not yet tried against a camera.
 
 ## What it sends
 
-Every Canon body is asked the standard shutter count property (0xD1AC). Then:
+Every Canon body is asked the standard shutter count property (0xD1AC), which
+bodies up to about DIGIC 5 answer. After that, what's sent depends on what the
+camera lists in GetDeviceInfo:
 
-- the EOS 5D Mark IV is read through the factory channel: `MonOpen`,
-  `MonReadAndGetData` and `MonClose`;
-- RF bodies (a model name in GetDeviceInfo of "EOS R" and a number, "EOS RP" or
-  "EOS R") are read through Canon's event channel, with the tethering commands
-  EOS Utility sends (SetRemoteMode, SetEventMode, GetEvent, and
-  RequestDevicePropValue for 0xD167), and only those the camera lists;
-- anything else is sent nothing more, and reported as one that can't be read yet.
+- the factory channel (`MonOpen`, `MonReadAndGetData`, `MonClose`), on the EOS
+  5D Mark IV and on any body that lists 0x9052 and 0x9053: EF DSLRs up to about
+  DIGIC 7. Bodies other than the 5D Mark IV are read at its addresses;
+- otherwise Canon's event channel, with the tethering commands EOS Utility
+  sends (SetRemoteMode, SetEventMode, GetEvent, and RequestDevicePropValue for
+  0xD167), on any body that lists them: RF bodies, the 90D, newer EOS M. 0xD167
+  is read the way the R8 lays it out. A body that lists both is tried here if
+  the factory channel gives nothing;
+- a body that lists neither is sent nothing more, and reported as one that
+  can't be read yet.
+
+The R8 and the 90D don't list the factory channel, and both hung when it was
+sent anyway, so it's never sent to a body that doesn't list it.
 
 Only the EOS R8 and the EOS 5D Mark IV are tested; any other reading says it's
 not fully tested.

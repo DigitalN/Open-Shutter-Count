@@ -39,7 +39,8 @@ def test_the_log_holds_what_the_plan_lists(fixture):
 
 
 def test_nothing_in_the_log_identifies_the_camera(fixture):
-    for name, trace in [("read-r8.json", "trace-r8.json"), ("read-90d.json", "trace-90d.json")]:
+    for name, trace in [("read-r8.json", "trace-r8.json"), ("read-80d.json", "trace-80d.json"),
+                        ("read-powershot.json", "trace-powershot.json")]:
         log = log_for(fixture, name, trace=fixture(trace))
         for secret in SECRETS:
             assert secret not in log, (name, secret)
@@ -47,8 +48,8 @@ def test_nothing_in_the_log_identifies_the_camera(fixture):
 
 
 def test_a_failed_read_says_why(fixture):
-    log = log_for(fixture, "read-90d.json", trace=fixture("trace-90d.json"))
-    assert "Result: Can't read the EOS 90D yet" in log
+    log = log_for(fixture, "read-powershot.json", trace=fixture("trace-powershot.json"))
+    assert "Result: Can't read the PowerShot G7 X Mark III yet" in log
     assert "Kind: not_supported" in log
     assert "Message: this camera can't be read yet" in log
 
@@ -73,14 +74,14 @@ def test_the_file_name():
 
 
 def test_the_issue_link_fills_in_the_new_camera_template(fixture):
-    url = issue_url("https://github.com/DigitalN/openshuttercounter", summarize(fixture("read-90d.json")))
+    url = issue_url("https://github.com/DigitalN/openshuttercounter", summarize(fixture("read-powershot.json")))
     parts = urlparse(url)
     assert parts.path == "/DigitalN/openshuttercounter/issues/new"
     query = {k: v[0] for k, v in parse_qs(parts.query).items()}
     assert query["template"] == "new-camera.yml"
-    assert query["camera"] == "EOS 90D"
-    assert query["title"] == "EOS 90D: Can't read the EOS 90D yet"
-    assert query["app_said"].startswith("Can't read the EOS 90D yet\n\nPlease save the log")
+    assert query["camera"] == "PowerShot G7 X Mark III"
+    assert query["title"] == "PowerShot G7 X Mark III: Can't read the PowerShot G7 X Mark III yet"
+    assert query["app_said"].startswith("Can't read the PowerShot G7 X Mark III yet\n\nPlease save the log")
     assert len(url) < 4000
 
 
