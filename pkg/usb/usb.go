@@ -41,6 +41,10 @@ var (
 	// ErrTimeout is returned when a transfer moved nothing before its
 	// timeout. Backends that can tell a timeout apart wrap it.
 	ErrTimeout = errors.New("transfer timed out")
+
+	// ErrNoStillImage is returned when a device offers no still image (PTP)
+	// interface, which is how a camera in a webcam or other USB mode looks.
+	ErrNoStillImage = errors.New("the device offers no still image (PTP) interface")
 )
 
 // Resetter is implemented by backends that can send the still image class
@@ -66,6 +70,10 @@ type DeviceInfo struct {
 	Manufacturer string `json:"manufacturer,omitempty"`
 	Product      string `json:"product,omitempty"`
 	Serial       string `json:"serial,omitempty"`
+
+	// Interfaces describes what the device offers, filled in by backends
+	// that read the configuration descriptor when opening it.
+	Interfaces string `json:"interfaces,omitempty"`
 }
 
 // String renders a device for the CLI's device list.

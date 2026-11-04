@@ -378,9 +378,16 @@ func (d *darwinDevice) configure() error {
 		return fmt.Errorf("parsing configuration descriptor: %w", err)
 	}
 
-	iface, ok := cfg.PTPInterface()
+	// Unlike Linux, macOS enumeration can't filter on the still image class
+	// without opening every device, so the check happens here. Falling back
+	// to any bulk pair, as PTPInterface does, sent PTP into a camera's
+	// vendor pipe when it was in another USB mode, so it isn't done here.
+	d.info.Interfaces = cfg.Summary()
+
+	iface, ok := cfg.StillImageInterface()
 	if !ok {
-		return fmt.Errorf("%s exposes no still image interface", d.info.Path)
+		return fmt.Errorf("%s: %w%s; it offers:%s",
+			d.info.Path, ErrNoStillImage, d.otherConfigurations(), d.info.Interfaces)
 	}
 
 	epIn, okIn := iface.BulkIn()
@@ -413,6 +420,22 @@ func (d *darwinDevice) configure() error {
 	_ = d.ClearHalt()
 
 	return nil
+}
+
+// otherConfigurations notes when the device has configurations besides the
+// first, the only one checked, so a report shows whether PTP might be there.
+func (d *darwinDevice) otherConfigurations() string {
+	raw, err := d.descriptor(descriptorTypeDevice, 18)
+	if err != nil {
+		return ""
+	}
+
+	desc, err := ParseDeviceDescriptor(raw)
+	if err != nil || desc.NumConfigurations <= 1 {
+		return ""
+	}
+
+	return fmt.Sprintf(" (only the first of its %d configurations was checked)", desc.NumConfigurations)
 }
 
 // configDescriptor fetches configuration descriptor zero: nine bytes first to

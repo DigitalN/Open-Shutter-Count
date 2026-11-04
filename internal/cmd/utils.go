@@ -126,6 +126,11 @@ const noDeviceHint = `no camera found. Check that:
 If your camera is from a manufacturer this build does not know yet, it will
 not be listed at all. Adding one is welcome; see CONTRIBUTING.md.`
 
+const noStillImageHint = `The camera is connected, but its USB connection is in a mode that can't be
+read, such as webcam. No commands were sent to it. Switch it to photo transfer,
+then unplug it and plug it back in. On Canon mirrorless bodies that is the
+Setup menu > Choose USB connection app > Photo Import/Remote Control.`
+
 // openDevice claims the camera, working around whatever is holding it.
 func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	logger := logs.LoggerFromContext(ctx)
@@ -133,6 +138,10 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	device, err := usb.Open(info)
 	if err == nil {
 		return device, nil
+	}
+
+	if errors.Is(err, usb.ErrNoStillImage) {
+		return nil, fmt.Errorf("%w\n\n%s", err, noStillImageHint)
 	}
 
 	if !errors.Is(err, usb.ErrBusy) {
@@ -269,6 +278,7 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 	logger.Debug("claimed the camera",
 		zap.String("manufacturer", s.info.Manufacturer),
 		zap.String("product", s.info.Product),
+		zap.String("interfaces", s.info.Interfaces),
 	)
 
 	if err := openPTPSession(logger, s.device, transport); err != nil {

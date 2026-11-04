@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // USB descriptor types, from the USB 2.0 specification, table 9-5.
@@ -106,6 +107,67 @@ func (c Config) StillImageInterface() (Interface, bool) {
 	}
 
 	return Interface{}, false
+}
+
+// Summary lists every interface and its endpoints, one per line. It is what
+// tells a mode that can't be read (a webcam mode, say) apart from one that
+// can.
+func (c Config) Summary() string {
+	var b strings.Builder
+
+	for _, i := range c.Interfaces {
+		fmt.Fprintf(&b, "\n  interface %d (alt %d): %s, class 0x%02x subclass 0x%02x protocol 0x%02x",
+			i.Number, i.Alternate, className(i.Class), i.Class, i.SubClass, i.Protocol)
+
+		for _, e := range i.Endpoints {
+			direction := "out"
+			if e.IsIn() {
+				direction = "in"
+			}
+
+			fmt.Fprintf(&b, "; %s %s 0x%02x", transferTypeName(e.Attributes), direction, e.Address)
+		}
+	}
+
+	return b.String()
+}
+
+func className(class uint8) string {
+	switch class {
+	case 0x01:
+		return "audio"
+	case 0x02:
+		return "communications"
+	case 0x03:
+		return "HID"
+	case ClassStillImage:
+		return "still image (PTP)"
+	case 0x08:
+		return "mass storage"
+	case 0x0a:
+		return "CDC data"
+	case 0x0e:
+		return "video"
+	case 0x10:
+		return "audio/video"
+	case 0xff:
+		return "vendor specific"
+	default:
+		return "other"
+	}
+}
+
+func transferTypeName(attributes uint8) string {
+	switch attributes & 0x03 {
+	case transferTypeControl:
+		return "control"
+	case transferTypeIsochronous:
+		return "isochronous"
+	case transferTypeBulk:
+		return "bulk"
+	default:
+		return "interrupt"
+	}
 }
 
 // PTPInterface returns the interface to use for PTP: the still image one when
