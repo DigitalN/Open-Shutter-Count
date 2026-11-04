@@ -52,12 +52,19 @@ func TestSpacedHex(t *testing.T) {
 }
 
 func TestDarwinBusyHintNamesTheApp(t *testing.T) {
-	hint := darwinBusyHint([]usb.Owner{{PID: 589, Name: "ptpcamerad"}, {PID: 777, Name: "Some Camera App"}})
-	assert.True(t, strings.HasPrefix(hint, "Some Camera App has the camera."), hint)
+	hint := darwinBusyHint([]usb.Owner{
+		{PID: 69966, Name: "ptpcamerad", Exclusive: true},
+		{PID: 73425, Name: "accessoryd"},
+		{PID: 69958, Name: "camerashuttercount"},
+	})
+	assert.True(t, strings.HasPrefix(hint, "camerashuttercount has the camera open. Quit it completely"), hint)
+
+	hint = darwinBusyHint([]usb.Owner{{PID: 1, Name: "Arc"}, {PID: 2, Name: "camerashuttercount"}})
+	assert.True(t, strings.HasPrefix(hint, "Arc, camerashuttercount have the camera open."), hint)
 }
 
 func TestDarwinBusyHintBlamesPtpcameradsClients(t *testing.T) {
-	for _, owners := range [][]usb.Owner{nil, {{PID: 589, Name: "ptpcamerad"}}} {
-		assert.Contains(t, darwinBusyHint(owners), "keeps taking the camera back")
+	for _, owners := range [][]usb.Owner{nil, {{PID: 589, Name: "ptpcamerad", Exclusive: true}}} {
+		assert.Contains(t, darwinBusyHint(owners), "won't let go while\nan app is using it")
 	}
 }
