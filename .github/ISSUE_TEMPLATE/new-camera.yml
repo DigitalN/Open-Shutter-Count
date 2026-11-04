@@ -1,0 +1,35 @@
+name: New camera
+description: Open Shutter Count couldn't read your camera, or its numbers look wrong.
+title: "A camera: "
+labels: ["camera"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping Open Shutter Count read more cameras. Each Canon body keeps its shutter count a little differently, and the log shows how yours answered.
+  - type: input
+    id: camera
+    attributes:
+      label: Camera
+      description: The camera's model, for example "EOS R6 Mark II".
+    validations:
+      required: true
+  - type: input
+    id: shutter_mode
+    attributes:
+      label: Shutter mode
+      description: The shutter mode the camera was in, for example Mechanical, Elec. 1st-curtain or Electronic. It's in the camera's shooting menu.
+  - type: textarea
+    id: app_said
+    attributes:
+      label: What the app said
+      description: Open an Issue fills this in. If the numbers look wrong, say what you expected, and how many photos the camera has taken if you know.
+    validations:
+      required: true
+  - type: upload
+    id: log
+    attributes:
+      label: Log
+      description: On the result screen, click Save Log, then attach the .txt file here. It has the camera's model, firmware and what it answered, and nothing that identifies you or your camera (no serial number).
+    validations:
+      accept: ".txt"

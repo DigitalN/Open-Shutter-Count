@@ -1,17 +1,18 @@
 # Using openshuttercounter from the command line
 
-On an Apple silicon Mac, double-clicking `Read Shutter Count.command` is
-easier. This page is for everything else.
+On an Apple silicon Mac, the [Open Shutter Count app](../README.md) is easier. This
+page is for the tool inside it, on its own.
 
 ## Get it
 
-Each [release](https://github.com/DigitalN/openshuttercounter/releases) has
-command line builds for Linux (amd64, arm64), Windows (amd64) and Apple
-silicon Macs. Or, with Go installed:
+With Go installed:
 
 ```bash
 go install github.com/DigitalN/openshuttercounter/cmd/openshuttercounter@latest
 ```
+
+On an Apple silicon Mac, the build in `mac/` of this repository works too, with the
+copy of libusb beside it. Releases only carry the app.
 
 ## Commands
 
@@ -27,8 +28,10 @@ openshuttercounter probe --out before.json  # save everything the camera reports
 openshuttercounter compare before.json after.json --frames 20
 ```
 
-`decode` reads traces written by openshuttercounter, and USB captures in pcap
-or pcapng format. `probe --events` also reads a Canon body's event channel,
+`decode` reads traces written by openshuttercounter, logs saved by the app (the
+trace is at the end), and USB captures in pcap or pcapng format. Traces leave
+out the camera's serial number, and on Canon bodies its owner, artist and
+copyright names. `probe --events` also reads a Canon body's event channel,
 and `compare` shows what went up by the number of photos taken between two
 probes. That's how a new camera gets worked out; see
 [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -72,12 +75,24 @@ No driver replacement is needed: the tool opens the still image device
 interface the stock driver already exposes. Close anything else that might
 have the camera open. Not yet tried against a camera.
 
+## What it sends
+
+Every Canon body is asked the standard shutter count property (0xD1AC). Then:
+
+- the EOS 5D Mark IV is read through the factory channel: `MonOpen`,
+  `MonReadAndGetData` and `MonClose`;
+- RF bodies (a model name in GetDeviceInfo of "EOS R" and a number, "EOS RP" or
+  "EOS R") are read through Canon's event channel, with the tethering commands
+  EOS Utility sends (SetRemoteMode, SetEventMode, GetEvent, and
+  RequestDevicePropValue for 0xD167), and only those the camera lists;
+- anything else is sent nothing more, and reported as one that can't be read yet.
+
+Only the EOS R8 and the EOS 5D Mark IV are tested; any other reading says it's
+not fully tested.
+
 ## Safety
 
-This tool only reads. On Canon bodies it sends standard PTP reads, the factory
-channel's `MonOpen`, `MonReadAndGetData` and `MonClose`, and, on the EOS R8,
-Canon's tethering commands for the event channel (SetRemoteMode, SetEventMode,
-GetEvent, RequestDevicePropValue). The factory channel also carries commands
+This tool only reads. The factory channel also carries commands
 that write calibration data and the counters themselves; the code
 [refuses to build them](../pkg/manufacturers/canon/factory.go), and a test
 checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
@@ -86,8 +101,8 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 
 | Path | Contents |
 |---|---|
-| `Read Shutter Count.command` | The Mac launcher |
-| `mac/` | The Mac binary, libusb, and the launchers' shared script |
+| `app/` | The Open Shutter Count app; [DEVELOPMENT.md](DEVELOPMENT.md) |
+| `mac/` | The Mac binary and libusb, which the app bundles, and `Find Shutter Counter.command` |
 | `cmd/`, `internal/` | The CLI |
 | `pkg/manufacturers` | What a camera maker has to provide to be readable |
 | `pkg/manufacturers/canon` | Canon's factory and event channels, decoding, model list |

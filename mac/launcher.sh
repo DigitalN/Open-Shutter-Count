@@ -1,4 +1,4 @@
-# Shared by the .command launchers; not run on its own.
+# Used by Find Shutter Counter.command; not run on its own.
 #
 # Set $here to this folder before sourcing it. It sets $tool, $readings and
 # $stamp, and defines check_setup, start, run and finish. Set $log before

@@ -1,7 +1,9 @@
 # Open Shutter Count app: the agreed plan
 
-Agreed with the maintainer on 2026-11-04. Nothing here is built yet. Build it in
-this order, and ask before departing from any decision below.
+Agreed with the maintainer on 2026-11-04, and built the same day, apart from
+step 5 (the maintainer's `v0.5.0` run). Ask before departing from any decision
+below. "Where things are" describes the code before the app; DEVELOPMENT.md
+describes it now.
 
 ## Goal
 
