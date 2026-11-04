@@ -176,15 +176,16 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		}
 	}
 
-	owners, listing, ownersErr := usb.DeviceOwners(ctx, info)
+	owners, summary, ownersErr := usb.DeviceOwners(ctx, info)
 	logger.Debug("what has the camera open",
-		zap.Stringers("owners", owners), zap.String("ioreg", listing), zap.Error(ownersErr))
+		zap.Stringers("owners", owners), zap.String("ioreg", summary), zap.Error(ownersErr))
 
 	return nil, fmt.Errorf("%w\n\n%s", err, darwinBusyHint(owners))
 }
 
 // openWhileFree tries to open the camera every darwinPollInterval for up to
 // darwinRetryDelay, to catch it between ptpcamerad exiting and coming back.
+// ptpcamerad doesn't exit while an app is using it, and then this can't help.
 func openWhileFree(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	deadline := time.Now().Add(darwinRetryDelay)
 
@@ -207,28 +208,40 @@ func openWhileFree(ctx context.Context, info usb.DeviceInfo) (usb.Device, error)
 const (
 	darwinOpenAttempts = 5
 	darwinRetryDelay   = 500 * time.Millisecond
-	darwinPollInterval = 20 * time.Millisecond
+	darwinPollInterval = 100 * time.Millisecond
 )
+
+// macOSServices are macOS's own processes that show up holding a camera.
+// They aren't something to quit.
+var macOSServices = map[string]bool{
+	"ptpcamerad": true, // the camera service, serving apps that use cameras
+	"accessoryd": true, // accessory approval; takes the R8's vendor interface
+}
 
 // darwinBusyHint says what to do about whatever has the camera.
 func darwinBusyHint(owners []usb.Owner) string {
 	var apps []string
 
 	for _, o := range owners {
-		if o.Name != "ptpcamerad" {
+		if !macOSServices[o.Name] {
 			apps = append(apps, o.Name)
 		}
 	}
 
-	if len(apps) > 0 {
-		return strings.Join(apps, " and ") + ` has the camera. Quit it, unplug the camera, plug it back
-in, and try again.`
-	}
+	const quit = `Quit it completely: it may still be running with no window open, so check
+the menu bar, or find it in Activity Monitor. Then unplug the camera, plug it
+back in, and try again.`
 
-	return `macOS's camera service (ptpcamerad) keeps taking the camera back, which
-usually means an app is asking for it: Photos, Image Capture, Preview,
-Lightroom, EOS Utility or another camera app. Quit them, unplug the camera,
-plug it back in, and try again.`
+	switch len(apps) {
+	case 0:
+		return `macOS's camera service (ptpcamerad) has the camera, and won't let go while
+an app is using it: Photos, Image Capture, Preview, Lightroom, EOS Utility or
+another camera app. ` + quit
+	case 1:
+		return apps[0] + " has the camera open. " + quit
+	default:
+		return strings.Join(apps, ", ") + " have the camera open. " + quit
+	}
 }
 
 func busyHint() string {

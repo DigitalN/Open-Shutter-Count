@@ -6,49 +6,65 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// ioregSample is shaped like `ioreg -r -c IOUSBHostDevice -l -w0`: a keyboard,
-// then an EOS R8 that ptpcamerad has open, with an interface and a user
-// client below it.
-const ioregSample = `+-o Magic Keyboard@01200000  <class IOUSBHostDevice, id 0x100000a01, registered, matched, active>
+// ioregSample is cut down from `ioreg -r -c IOUSBHostDevice -l -w0` on the
+// maintainer's Mac (macOS 27.2) with an EOS R8 that another app had open,
+// serial numbers left out, after a keyboard for contrast.
+const ioregSample = `+-o Magic Keyboard@01200000  <class IOUSBHostDevice, id 0x100000a01, registered>
   | {
   |   "idProduct" = 615
   |   "idVendor" = 1452
   |   "UsbExclusiveOwner" = "pid 111, hidd"
   | }
   |
-+-o Canon Digital Camera@01100000  <class IOUSBHostDevice, id 0x100000b02, registered, matched, active, busy 0 (2 ms), retain 30>
++-o Canon Digital Camera@01100000  <class IOUSBHostDevice, id 0x1000148fd, registered, matched, active>
   | {
   |   "USB Product Name" = "Canon Digital Camera"
   |   "idProduct" = 13068
   |   "idVendor" = 1193
-  |   "UsbExclusiveOwner" = "pid 589, ptpcamerad"
   | }
   |
-  +-o AppleUSBHostDeviceUserClient  <class AppleUSBHostDeviceUserClient, id 0x100000b03, !registered>
-  |   {
-  |     "IOUserClientCreator" = "pid 589, ptpcamerad"
-  |   }
-  |
-  +-o Canon Digital Camera@0  <class IOUSBHostInterface, id 0x100000b04, registered, matched, active, busy 0 (0 ms), retain 8>
-      {
-        "bInterfaceClass" = 6
-        "UsbExclusiveOwner" = "pid 777, Some Camera App"
-      }
+  +-o IOUSBHostInterface@0  <class IOUSBHostInterface, id 0x100014903, registered, matched, active>
+  | | {
+  | |   "bInterfaceClass" = 6
+  | |   "UsbExclusiveOwner" = "pid 69966, ptpcamerad"
+  | | }
+  | |
+  | +-o ptpcamerad  <class AppleUSBHostInterfaceUserClient, id 0x10001490e, !registered>
+  | |     "IOUserClientCreator" = "pid 69966, ptpcamerad"
+  | +-o openshuttercounter  <class AppleUSBHostInterfaceUserClient, id 0x100014a9b, !registered>
+  | |     "IOUserClientCreator" = "pid 74749, openshuttercount"
+  | +-o openshuttercounter  <class AppleUSBHostInterfaceUserClient, id 0x100014a9c, !registered>
+  |       "IOUserClientCreator" = "pid 74749, openshuttercount"
+  +-o iAP Interface@1  <class IOUSBHostInterface, id 0x100014904, registered, matched, active>
+  | +-o accessoryd  <class AppleUSBHostInterfaceUserClient, id 0x100014909, !registered>
+  |       "IOUserClientCreator" = "pid 73425, accessoryd"
+  +-o camerashuttercount  <class AppleUSBHostDeviceUserClient, id 0x10001490a, !registered>
+        "IOUserClientCreator" = "pid 69958, camerashuttercou"
 `
 
 func TestParseIORegOwners(t *testing.T) {
-	owners, block := ParseIORegOwners(ioregSample, 0x04a9, 0x330c)
+	owners, summary := ParseIORegOwners(ioregSample, 0x04a9, 0x330c)
 
-	assert.Equal(t, []Owner{{589, "ptpcamerad"}, {777, "Some Camera App"}}, owners)
-	assert.Contains(t, block, "Canon Digital Camera")
-	assert.NotContains(t, block, "hidd")
+	assert.Equal(t, []Owner{
+		{PID: 69966, Name: "ptpcamerad", Exclusive: true},
+		{PID: 74749, Name: "openshuttercounter"},
+		{PID: 73425, Name: "accessoryd"},
+		{PID: 69958, Name: "camerashuttercount"},
+	}, owners)
+
+	assert.Equal(t, `IOUSBHostInterface IOUSBHostInterface@0: ptpcamerad (pid 69966, exclusive)
+AppleUSBHostInterfaceUserClient ptpcamerad: ptpcamerad (pid 69966)
+AppleUSBHostInterfaceUserClient openshuttercounter: openshuttercounter (pid 74749)
+AppleUSBHostInterfaceUserClient accessoryd: accessoryd (pid 73425)
+AppleUSBHostDeviceUserClient camerashuttercount: camerashuttercount (pid 69958)`, summary)
+	assert.NotContains(t, summary, "hidd")
 }
 
 func TestParseIORegOwnersOtherDevice(t *testing.T) {
-	owners, block := ParseIORegOwners(ioregSample, 0x04a9, 0x32a6)
+	owners, summary := ParseIORegOwners(ioregSample, 0x04a9, 0x32a6)
 
 	assert.Empty(t, owners)
-	assert.Empty(t, block)
+	assert.Empty(t, summary)
 }
 
 func TestParseIORegOwnersNobody(t *testing.T) {
@@ -57,11 +73,12 @@ func TestParseIORegOwnersNobody(t *testing.T) {
   |   "idVendor" = 1193
 `
 
-	owners, block := ParseIORegOwners(out, 0x04a9, 0x330c)
+	owners, summary := ParseIORegOwners(out, 0x04a9, 0x330c)
 	assert.Empty(t, owners)
-	assert.NotEmpty(t, block)
+	assert.Empty(t, summary)
 }
 
 func TestOwnerString(t *testing.T) {
-	assert.Equal(t, "ptpcamerad (pid 589)", Owner{589, "ptpcamerad"}.String())
+	assert.Equal(t, "Arc (pid 70060)", Owner{PID: 70060, Name: "Arc"}.String())
+	assert.Equal(t, "ptpcamerad (pid 1, exclusive)", Owner{PID: 1, Name: "ptpcamerad", Exclusive: true}.String())
 }
