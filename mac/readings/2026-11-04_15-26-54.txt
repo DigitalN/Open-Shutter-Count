@@ -1,0 +1,39 @@
+Read Shutter Count, 2026-11-04_15-26-54
+ProductName:		macOS
+ProductVersion:		27.2
+BuildVersion:		26B123
+Mac: MacBookPro18,1 (arm64)
+
+USB devices (vendor:product):
+
+  04a9:330c  Canon EOS R8                     usb:001:001
+
+
+Reading:
+2026-11-04T15:26:55.933029-06:00	debug	cmd/utils.go:239	opening device	{"path": "usb:001:001", "device": "04a9:330c  unknown device  (usb:001:001)", "manufacturer": "Canon"}
+2026-11-04T15:26:55.936127-06:00	warn	cmd/utils.go:156	the camera is held by another process, stopping ptpcamerad and retrying
+github.com/DigitalN/openshuttercounter/internal/cmd.openDevice
+	github.com/DigitalN/openshuttercounter/internal/cmd/utils.go:156
+github.com/DigitalN/openshuttercounter/internal/cmd.openSession
+	github.com/DigitalN/openshuttercounter/internal/cmd/utils.go:245
+github.com/DigitalN/openshuttercounter/internal/cmd.Read
+	github.com/DigitalN/openshuttercounter/internal/cmd/read.go:51
+github.com/DigitalN/openshuttercounter/internal/cmd.Execute.func1
+	github.com/DigitalN/openshuttercounter/internal/cmd/utils.go:53
+github.com/urfave/cli/v3.(*Command).run
+	github.com/urfave/cli/v3@v3.11.0/command_run.go:382
+github.com/urfave/cli/v3.(*Command).Run
+	github.com/urfave/cli/v3@v3.11.0/command_run.go:95
+main.main
+	github.com/DigitalN/openshuttercounter/cmd/openshuttercounter/main.go:12
+runtime.main
+	runtime/proc.go:302
+2026-11-04T15:26:56.249987-06:00	debug	cmd/utils.go:175	the camera is still busy	{"attempt": 1, "error": "libusb_claim_interface: LIBUSB_ERROR_ACCESS: device is claimed by another process (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)"}
+2026-11-04T15:26:56.569542-06:00	debug	cmd/utils.go:175	the camera is still busy	{"attempt": 2, "error": "libusb_claim_interface: LIBUSB_ERROR_ACCESS: device is claimed by another process (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)"}
+2026-11-04T15:26:56.887335-06:00	debug	cmd/utils.go:175	the camera is still busy	{"attempt": 3, "error": "libusb_claim_interface: LIBUSB_ERROR_ACCESS: device is claimed by another process (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)"}
+2026-11-04T15:26:57.203709-06:00	debug	cmd/utils.go:175	the camera is still busy	{"attempt": 4, "error": "libusb_claim_interface: LIBUSB_ERROR_ACCESS: device is claimed by another process (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)"}
+2026-11-04T15:26:57.519889-06:00	debug	cmd/utils.go:175	the camera is still busy	{"attempt": 5, "error": "libusb_claim_interface: LIBUSB_ERROR_ACCESS: device is claimed by another process (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)"}
+libusb_claim_interface: LIBUSB_ERROR_ACCESS: device is claimed by another process (macOS hands cameras to ptpcamerad; stop it with: killall ptpcamerad)
+macOS gives cameras to ptpcamerad. Release it with:
+  killall ptpcamerad
+exit status 1
