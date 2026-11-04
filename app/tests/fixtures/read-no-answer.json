@@ -1,0 +1,12 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "330c",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "error": {
+    "kind": "no_answer",
+    "message": "the camera didn't answer, even after a reset: transfer timed out"
+  }
+}

@@ -52,3 +52,23 @@ jobs:
 
       - name: Build
         run: go build ./cmd/openshuttercounter
+
+  # The Mac app's Python. What it does with macOS is checked by the maintainer's
+  # release run; everything else is tested here.
+  app:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Install Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.13'
+
+      - name: Install pytest
+        run: python -m pip install pytest==9.2.0
+
+      - name: Test
+        run: python -m pytest -q app/tests

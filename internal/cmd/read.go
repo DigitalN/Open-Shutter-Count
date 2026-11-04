@@ -133,6 +133,15 @@ func fail(cmd *cli.Command, out readOutput, err error) error {
 		return err
 	}
 
+	if err := printJSON(failureOutput(out, err)); err != nil {
+		return err
+	}
+
+	return ErrReported
+}
+
+// failureOutput is out with err in it, and what to do about it.
+func failureOutput(out readOutput, err error) readOutput {
 	out.Error = &errorOutput{Kind: errorKind(err), Message: err.Error()}
 
 	if hinted, ok := errors.AsType[hintedError](err); ok {
@@ -143,11 +152,7 @@ func fail(cmd *cli.Command, out readOutput, err error) error {
 		out.Error.Message, out.Error.Hint = "no camera found", noDeviceHint
 	}
 
-	if err := printJSON(out); err != nil {
-		return err
-	}
-
-	return ErrReported
+	return out
 }
 
 func errorKind(err error) string {

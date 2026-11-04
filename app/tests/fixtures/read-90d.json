@@ -1,0 +1,34 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "3295",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "camera": {
+    "manufacturer": "Canon.Inc",
+    "model": "Canon EOS 90D",
+    "firmware": "3-1.5.0",
+    "operations": [
+      "0x1001",
+      "0x1002",
+      "0x1003",
+      "0x1014",
+      "0x1015",
+      "0x9114",
+      "0x9115",
+      "0x9116",
+      "0x9127"
+    ]
+  },
+  "steps": [
+    "OpenSession: OK",
+    "GetDeviceInfo: OK, Canon EOS 90D, firmware 3-1.5.0, 9 operations",
+    "GetDevicePropValue(0xd1ac): OperationNotSupported",
+    "\"Canon EOS 90D\" isn't the EOS 5D Mark IV or an RF body: nothing else is tried"
+  ],
+  "error": {
+    "kind": "not_supported",
+    "message": "this camera can't be read yet: the EOS 90D doesn't answer the standard shutter count property, and only the EOS 5D Mark IV and RF bodies are read any other way"
+  }
+}

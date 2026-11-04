@@ -41,7 +41,7 @@ func TestTheHintIsKeptApart(t *testing.T) {
 
 func TestNoSerialNumberInTheOutput(t *testing.T) {
 	info := usb.DeviceInfo{
-		VendorID: 0x04a9, ProductID: 0x330c, Product: "Canon Digital Camera", Serial: "SERIAL123", Path: "usb:001:002",
+		VendorID: 0x04a9, ProductID: 0x330c, Product: "Canon Digital Camera", Serial: "SERIAL123", Path: fakePath,
 	}
 	camera := ptp.DeviceInfo{
 		Model: "Canon EOS R8", DeviceVersion: "3-1.5.0", SerialNumber: "SERIAL456", Operations: []uint16{0x1001, 0x9116},

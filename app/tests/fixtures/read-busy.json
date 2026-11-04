@@ -1,0 +1,13 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "330c",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "error": {
+    "kind": "busy",
+    "message": "libusb_open: LIBUSB_ERROR_ACCESS: device is claimed by another process",
+    "hint": "EOS Utility has the camera open. Quit it completely: it may still be running with no window open, so check\nthe menu bar, or find it in Activity Monitor. Then unplug the camera, plug it\nback in, and try again."
+  }
+}

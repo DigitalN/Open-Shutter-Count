@@ -1,0 +1,71 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "330c",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "camera": {
+    "manufacturer": "Canon.Inc",
+    "model": "Canon EOS R8",
+    "firmware": "3-1.5.0",
+    "operations": [
+      "0x1001",
+      "0x1002",
+      "0x1003",
+      "0x1014",
+      "0x1015",
+      "0x9114",
+      "0x9115",
+      "0x9116",
+      "0x9127"
+    ]
+  },
+  "reading": {
+    "manufacturer": "Canon",
+    "model": "EOS R8",
+    "confirmed": true,
+    "method": "canon-event-channel-0xd167",
+    "note": "  The camera keeps these counts in thousands, rounded up, so it can only say\n  which thousand each is in. A photo's own metadata holds the exact total."
+  },
+  "counters": [
+    {
+      "label": "Mechanical shutter",
+      "location": "0xd167 word 3",
+      "value": 2000,
+      "range": true,
+      "min": 1001,
+      "raw": "1000000001000000d0070000f0550000"
+    },
+    {
+      "label": "Electronic shutter",
+      "location": "word 4 less word 3",
+      "value": 20999,
+      "range": true,
+      "min": 19001,
+      "raw": "1000000001000000d0070000f0550000"
+    },
+    {
+      "label": "All photos",
+      "location": "0xd167 word 4",
+      "value": 22000,
+      "range": true,
+      "min": 21001,
+      "raw": "1000000001000000d0070000f0550000"
+    }
+  ],
+  "steps": [
+    "OpenSession: OK",
+    "GetDeviceInfo: OK, Canon EOS R8, firmware 3-1.5.0, 9 operations",
+    "GetDevicePropValue(0xd1ac): OperationNotSupported",
+    "\"Canon EOS R8\" is an RF body: reading 0xd167 off the event channel",
+    "SetRemoteMode(1): OK",
+    "SetEventMode(1): OK",
+    "GetEvent: 82 bytes, 3 records",
+    "GetEvent: 8 bytes, 0 records",
+    "SetRemoteMode(0): OK",
+    "SetRemoteMode(1): OK",
+    "SetEventMode(0): OK",
+    "0xd167: 1000000001000000d0070000f0550000"
+  ]
+}
