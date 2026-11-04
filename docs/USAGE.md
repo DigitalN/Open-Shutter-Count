@@ -93,4 +93,3 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 | `pkg/usb` | The three USB backends |
 | `pkg/trace`, `pkg/pcap` | Recording conversations, and reading USB captures |
 | `docs/` | This, the protocol reference, and how to add a camera |
-| `research/` | Readings from working out the EOS R8 |

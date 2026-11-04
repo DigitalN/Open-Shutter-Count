@@ -14,13 +14,15 @@ the R8 did, and what's next.
 - `mac/`: the Mac binary, libusb, `launcher.sh`, `Find Shutter Counter.command`.
 - `docs/`: CONTRIBUTING.md, PROTOCOL.md (5D Mark IV factory channel),
   R8-PROGRESS.md.
-- `research/r8/`: the maintainer's readings and the test photo.
 
 ## How testing works
 
 - Claude can't reach the Mac or the camera. The maintainer double-clicks a
-  launcher, and commits and pushes what it saved in `mac/readings/`. Readings
-  so far are in `research/r8/logs/`.
+  launcher, and commits and pushes the `.txt` log it saved in `mac/readings/`.
+  Traces and probes (`.json`) are ignored because they hold the camera's
+  serial number; ask the maintainer to paste a part of one if it's needed.
+  Earlier readings were taken out of the repo and its history for privacy;
+  docs/R8-PROGRESS.md quotes what they showed.
 - After any Go change, rebuild the Mac binary with `bash mac/build.sh` (works
   on Linux; reproducible; the Go linker ad-hoc signs it) and commit
   `mac/openshuttercounter` with the change. The maintainer then pulls and reruns.

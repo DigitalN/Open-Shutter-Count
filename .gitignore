@@ -7,6 +7,12 @@ openshuttercounter
 helpers
 coverage.out
 
+# A run's logs. Traces and probes (.json) hold the camera's serial number, so
+# only the .txt logs can be committed.
+mac/readings/*
+!mac/readings/*.txt
+.DS_Store
+
 # capture and snapshot artefacts from a research session
 *.pcap
 !research/captures/*.pcap
@@ -17,4 +23,3 @@ snap_*.json
 # the bundle this repository was built from, kept locally for reference
 handoff/
 canon-shutter-handoff.tar.gz
-.DS_Store
