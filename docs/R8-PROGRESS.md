@@ -13,10 +13,10 @@ tools already read it.
 
 ## Status (2026-11-04)
 
-Built, not yet run on the camera: `probe --events` reads Canon's event
-channel, and `Find Shutter Counter.command` compares two such reads around
-20 Elec. 1st-curtain and 7 Electronic photos. Next step is the maintainer
-running it.
+`probe --events` works on the R8. The first event channel test
+(`mac/readings/2026-11-04_14-25-17-probe*`, 20 Elec. 1st-curtain then 7
+Electronic photos) found no exact counter, but 0xD167 word 3 crossed a
+thousand. Which word counts what is still open; see Next.
 
 ## What the R8 has shown
 
@@ -38,6 +38,21 @@ running it.
   - Standard properties: 0xD402, 0xD407, 0xD406, 0xD303, 0x5001. None moved
     across 20 photos (`Logs/2026-11-04_13-38-11-probe.txt`).
 - GetDevicePropValue(0xD1AC): 0x2005 OperationNotSupported.
+- Event channel (2026-11-04_14-25-17): SetRemoteMode, SetEventMode and the
+  exit sequence all answered OK. The first GetEvent gave 15,468 bytes, 324
+  records; after the photos, 40,544 bytes, 909 records. The second GetEvent
+  was empty both times.
+  - 0xD167 before: 16, 1, 1000, 22000. After 20 Elec. 1st-curtain and 7
+    Electronic photos: 16, 1, 2000, 22000. So word 3's counter crossed a
+    multiple of 1,000 during those 27 photos and counts at least one kind of
+    them; word 4 didn't move. Neither is identified yet.
+  - Nothing in any record rose by exactly 20, 7 or 27, at any offset, width
+    or byte order. So no exact counter in the event channel.
+  - What changed: D113 CameraTime and D17C UTCTime (+46 s), D11B
+    AvailableShots (3311 to 3287), D21A ShutterType (0 to 3: the camera was
+    left on Electronic), D1DC StroboFiring, D238 (0x12 to 0x11), and three
+    allowed-value lists. After the photos it also sent 27 ObjectAddedEx64
+    (0xC1A7) records, one per photo, and 25 StorageInfoChanged.
 - Shutter modes: Elec. 1st-curtain and Electronic only.
 - Earlier problems were a charge-only USB-C cable, and macOS's accessory
   approval on Apple silicon laptops (a declined device charges but can't be
@@ -62,16 +77,14 @@ running it.
 
 ## Next
 
-1. Maintainer runs `Find Shutter Counter.command` and pushes the
-   `*-probe*` files in `mac/readings/`.
-2. If any event record field went up by exactly 20 or 7: that's an exact
-   counter. Confirm with a second run at different numbers (e.g. 13 and 4),
-   then make `Read Shutter Count` show it.
-3. If not: work out which 0xD167 word counts what, without guessing or
-   wearing the shutter. One idea, not yet put to the maintainer: Electronic
-   photos until a word steps up (at most 1,000, no shutter wear). The word
-   that doesn't move counts the shutter; whether the other is electronic or
-   total needs more.
+1. Done: event channel test. No exact counter; 0xD167 word 3 crossed 1,000
+   to 2,000.
+2. Asked the maintainer: push four photos from that test (first and last of
+   each shutter mode) so their maker notes can be read. The exact total
+   (CameraInfo 0x0d29) says which 0xD167 word fits, and the rest of the
+   CameraInfo block may hold separate counters exiftool doesn't decode.
+3. If that doesn't settle it: Electronic photos in batches until a word steps
+   up (at most about 1,000, no shutter wear). Not yet put to the maintainer.
 
 ## Loose ends
 
