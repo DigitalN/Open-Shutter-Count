@@ -37,7 +37,18 @@ var (
 	// ErrNotSupported is returned by backends that are not implemented on
 	// the current platform.
 	ErrNotSupported = errors.New("not supported on this platform")
+
+	// ErrTimeout is returned when a transfer moved nothing before its
+	// timeout. Backends that can tell a timeout apart wrap it.
+	ErrTimeout = errors.New("transfer timed out")
 )
+
+// Resetter is implemented by backends that can send the still image class
+// Device Reset request, which returns the camera to its idle state: no
+// session open and nothing pending. It changes no settings or files.
+type Resetter interface {
+	ResetPTP() error
+}
 
 // DeviceInfo identifies a device before it is opened.
 type DeviceInfo struct {

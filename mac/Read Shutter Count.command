@@ -16,7 +16,29 @@ trace="$readings/$stamp-trace.json"
 finish() {
     echo
     read -r -p "Press Return to close this window. "
+    close_window
     exit "$1"
+}
+
+# Closes this Terminal window just after the script exits. Waiting for the
+# exit means Terminal doesn't ask whether to stop a running process. nohup
+# keeps it alive when the window's shell goes away.
+close_window() {
+    local me
+    me="$(tty)" || return
+    nohup /usr/bin/osascript - "$me" >/dev/null 2>&1 <<'EOF' &
+on run argv
+    delay 0.5
+    tell application "Terminal"
+        repeat with w in windows
+            if (count of tabs of w) is 1 and tty of tab 1 of w is (item 1 of argv) then
+                close w
+                return
+            end if
+        end repeat
+    end tell
+end run
+EOF
 }
 
 clear

@@ -184,6 +184,8 @@ func (a *libusbAPI) err(op string, rc int32) error {
 	switch rc {
 	case libusbErrorBusy, libusbErrorAccess:
 		return fmt.Errorf("%s: %s: %w", op, a.errorName(rc), ErrBusy)
+	case libusbErrorTimeout:
+		return fmt.Errorf("%s: %s: %w", op, a.errorName(rc), ErrTimeout)
 	default:
 		return fmt.Errorf("%s: %s (%d)", op, a.errorName(rc), rc)
 	}
@@ -339,6 +341,26 @@ func (d *darwinDevice) Close() error {
 	return nil
 }
 
+// ResetPTP sends the still image class Device Reset request (PIMA 15740 USB
+// annex, bRequest 0x66), which closes any session the camera has open and
+// drops whatever transaction it was in the middle of.
+func (d *darwinDevice) ResetPTP() error {
+	const (
+		requestTypeClassInterfaceOut uint8  = 0x21
+		requestDeviceReset           uint8  = 0x66
+		controlTimeoutMS             uint32 = 1000
+	)
+
+	//nolint:gosec // interface numbers come from a uint8 descriptor field
+	rc := d.api.controlTransfer(d.handle, requestTypeClassInterfaceOut, requestDeviceReset,
+		0, uint16(d.iface), nil, 0, controlTimeoutMS)
+	if rc < 0 {
+		return d.api.err("libusb_control_transfer (PTP device reset)", rc)
+	}
+
+	return nil
+}
+
 // configure reads the configuration descriptor over the control endpoint,
 // picks the PTP interface and claims it.
 //
@@ -383,6 +405,12 @@ func (d *darwinDevice) configure() error {
 			d.api.err("libusb_claim_interface", rc),
 		)
 	}
+
+	// Whatever had the camera before us, usually ptpcamerad, leaves its
+	// endpoints in a state that can make the camera ignore our first
+	// command. Clearing both endpoints resets them at both ends, and is
+	// harmless when nothing was wrong.
+	_ = d.ClearHalt()
 
 	return nil
 }

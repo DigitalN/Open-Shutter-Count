@@ -259,12 +259,6 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 		}
 	}
 
-	if err := s.device.OpenSession(); err != nil {
-		s.close()
-
-		return nil, err
-	}
-
 	// The identity is only fully known once the interface is open, since
 	// some backends read the descriptors on the way in.
 	s.info = s.device.Info()
@@ -272,7 +266,51 @@ func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
 		s.recorder.Describe(s.info)
 	}
 
+	logger.Debug("claimed the camera",
+		zap.String("manufacturer", s.info.Manufacturer),
+		zap.String("product", s.info.Product),
+	)
+
+	if err := openPTPSession(logger, s.device, transport); err != nil {
+		// A trace of a camera that never answered is still worth having.
+		if traceErr := s.saveTrace(ctx); traceErr != nil {
+			logger.Debug("saving the trace", zap.Error(traceErr))
+		}
+
+		s.close()
+
+		return nil, err
+	}
+
 	return s, nil
+}
+
+// openPTPSession opens the PTP session, resetting the camera and trying once
+// more if it doesn't answer. A camera taken over from another process can
+// still be in that process's session or transaction and ignore a new one.
+func openPTPSession(logger *zap.Logger, device *ptp.Device, transport usb.Device) error {
+	err := device.OpenSession()
+	if err == nil || !errors.Is(err, usb.ErrTimeout) {
+		return err
+	}
+
+	logger.Warn("the camera didn't answer; resetting it and trying again", zap.Error(err))
+
+	if resetter, ok := transport.(usb.Resetter); ok {
+		if resetErr := resetter.ResetPTP(); resetErr != nil {
+			logger.Debug("PTP device reset", zap.Error(resetErr))
+		}
+	}
+
+	if clearErr := device.ClearHalt(); clearErr != nil {
+		logger.Debug("clearing the endpoints", zap.Error(clearErr))
+	}
+
+	if err = device.OpenSession(); err != nil {
+		return fmt.Errorf("the camera didn't answer, even after a reset: %w", err)
+	}
+
+	return nil
 }
 
 // saveTrace writes the recording out, if one was asked for.
