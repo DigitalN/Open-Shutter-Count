@@ -23,7 +23,8 @@ Before reading, set up the camera:
   3. A card in, and the camera switched on.
   4. Plugged straight into this Mac with a data cable, not a hub. Allow it
      if macOS asks whether the accessory may connect.
-  5. Image Capture, Photos and EOS Utility closed.
+  5. Apps that use cameras closed: Photos, Image Capture, Preview,
+     Lightroom, EOS Utility and the like.
 
 SETUP
 

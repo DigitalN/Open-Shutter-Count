@@ -149,46 +149,100 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		return nil, err
 	}
 
+	if runtime.GOOS != "darwin" {
+		return nil, fmt.Errorf("%w\n%s", err, busyHint())
+	}
+
 	// macOS hands every camera to ptpcamerad the moment it appears, and
-	// launchd can start it again straight away, so stop it and retry a few
-	// times. launchd brings it back for good once we are done.
-	if runtime.GOOS == "darwin" {
-		logger.Warn("the camera is held by another process, stopping ptpcamerad and retrying")
+	// launchd starts it again as soon as an app asks for a camera. So stop
+	// it, then try to open the camera every few milliseconds until it comes
+	// back. launchd brings it back for good once we are done.
+	logger.Info("the camera is held by another process, stopping ptpcamerad and retrying")
 
-		for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
-			if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
-				logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
-			}
+	for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
+		if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
+			logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
+		}
 
-			// Give the daemon a moment to exit and let go of the device.
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(darwinRetryDelay):
-			}
+		device, err = openWhileFree(ctx, info)
+		if err == nil {
+			return device, nil
+		}
 
-			device, err = usb.Open(info)
-			if err == nil {
-				return device, nil
-			}
+		logger.Debug("the camera is still busy", zap.Int("attempt", attempt), zap.Error(err))
 
-			logger.Debug("the camera is still busy", zap.Int("attempt", attempt), zap.Error(err))
-
-			if !errors.Is(err, usb.ErrBusy) {
-				return nil, err
-			}
+		if !errors.Is(err, usb.ErrBusy) {
+			return nil, err
 		}
 	}
 
-	return nil, fmt.Errorf("%w\n%s", err, busyHint())
+	owners, summary, ownersErr := usb.DeviceOwners(ctx, info)
+	logger.Debug("what has the camera open",
+		zap.Stringers("owners", owners), zap.String("ioreg", summary), zap.Error(ownersErr))
+
+	return nil, fmt.Errorf("%w\n\n%s", err, darwinBusyHint(owners))
 }
 
-// How often, and how far apart, opening a busy camera is retried on macOS
-// after stopping ptpcamerad.
+// openWhileFree tries to open the camera every darwinPollInterval for up to
+// darwinRetryDelay, to catch it between ptpcamerad exiting and coming back.
+// ptpcamerad doesn't exit while an app is using it, and then this can't help.
+func openWhileFree(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
+	deadline := time.Now().Add(darwinRetryDelay)
+
+	for {
+		device, err := usb.Open(info)
+		if err == nil || !errors.Is(err, usb.ErrBusy) || time.Now().After(deadline) {
+			return device, err
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(darwinPollInterval):
+		}
+	}
+}
+
+// How often opening a busy camera is retried on macOS after stopping
+// ptpcamerad, for how long each time, and how often within that.
 const (
 	darwinOpenAttempts = 5
-	darwinRetryDelay   = 300 * time.Millisecond
+	darwinRetryDelay   = 500 * time.Millisecond
+	darwinPollInterval = 100 * time.Millisecond
 )
+
+// macOSServices are macOS's own processes that show up holding a camera.
+// They aren't something to quit.
+var macOSServices = map[string]bool{
+	"ptpcamerad": true, // the camera service, serving apps that use cameras
+	"accessoryd": true, // accessory approval; takes the R8's vendor interface
+}
+
+// darwinBusyHint says what to do about whatever has the camera.
+func darwinBusyHint(owners []usb.Owner) string {
+	var apps []string
+
+	for _, o := range owners {
+		if !macOSServices[o.Name] {
+			apps = append(apps, o.Name)
+		}
+	}
+
+	const quit = `Quit it completely: it may still be running with no window open, so check
+the menu bar, or find it in Activity Monitor. Then unplug the camera, plug it
+back in, and try again.`
+
+	switch len(apps) {
+	case 0:
+		return `macOS's camera service (ptpcamerad) has the camera, and won't let go while
+an app is using it: Photos, Image Capture, Preview, Lightroom, EOS Utility or
+another camera app. ` + quit
+	case 1:
+		return apps[0] + " has the camera open. " + quit
+	default:
+		return strings.Join(apps, ", ") + " have the camera open. " + quit
+	}
+}
 
 func busyHint() string {
 	switch runtime.GOOS {
@@ -196,9 +250,6 @@ func busyHint() string {
 		return `On desktop Linux gvfs claims cameras on sight. Release it with:
   gio mount -u gphoto2://
   systemctl --user mask gvfs-gphoto2-volume-monitor`
-	case "darwin":
-		return `macOS gives cameras to ptpcamerad. Release it with:
-  killall ptpcamerad`
 	case "windows":
 		return "Close any other software that may have opened the camera."
 	default:

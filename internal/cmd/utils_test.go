@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -48,4 +49,22 @@ func TestMatchesSelector(t *testing.T) {
 func TestSpacedHex(t *testing.T) {
 	assert.Equal(t, "00 66 00 00 f2 00", spacedHex("00660000f200"))
 	assert.Empty(t, spacedHex(""))
+}
+
+func TestDarwinBusyHintNamesTheApp(t *testing.T) {
+	hint := darwinBusyHint([]usb.Owner{
+		{PID: 69966, Name: "ptpcamerad", Exclusive: true},
+		{PID: 73425, Name: "accessoryd"},
+		{PID: 69958, Name: "camerashuttercount"},
+	})
+	assert.True(t, strings.HasPrefix(hint, "camerashuttercount has the camera open. Quit it completely"), hint)
+
+	hint = darwinBusyHint([]usb.Owner{{PID: 1, Name: "Arc"}, {PID: 2, Name: "camerashuttercount"}})
+	assert.True(t, strings.HasPrefix(hint, "Arc, camerashuttercount have the camera open."), hint)
+}
+
+func TestDarwinBusyHintBlamesPtpcameradsClients(t *testing.T) {
+	for _, owners := range [][]usb.Owner{nil, {{PID: 589, Name: "ptpcamerad", Exclusive: true}}} {
+		assert.Contains(t, darwinBusyHint(owners), "won't let go while\nan app is using it")
+	}
 }
