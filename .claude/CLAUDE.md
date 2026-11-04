@@ -6,7 +6,8 @@ accounts; LICENSE keeps his copyright line because MIT requires it. The goal her
 on their Mac (MacBookPro18,1, M1 Pro, macOS 27.2) without using Terminal.
 
 Read [docs/R8-PROGRESS.md](../docs/R8-PROGRESS.md) first: what's been done, what
-the R8 did, and what's next.
+the R8 did, and what's next. The Mac app being built next is planned in
+[docs/APP-PLAN.md](../docs/APP-PLAN.md); read it before working on the app.
 
 ## Layout
 
@@ -14,7 +15,7 @@ the R8 did, and what's next.
   the README and LICENSE, plus what Go and the tooling need there.
 - `mac/`: the Mac binary, libusb, `launcher.sh`, `Find Shutter Counter.command`.
 - `docs/`: CONTRIBUTING.md, PROTOCOL.md (5D Mark IV factory channel),
-  R8-PROGRESS.md.
+  R8-PROGRESS.md, APP-PLAN.md.
 
 ## Releases
 

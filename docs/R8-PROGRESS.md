@@ -119,8 +119,8 @@ How word 3 and word 4 were identified:
 1. Done (2026-11-04 15:39): `Read Shutter Count.command` read the R8 through
    0xD167: mechanical 1,001 to 2,000, electronic 19,001 to 20,999, all photos
    21,001 to 22,000. The raw bytes matched the event channel test.
-2. A small UI for reading the count, designed in another chat. The first
-   release waits for it. `openshuttercounter --json` gives each count's range
+2. A small UI for reading the count: the Open Shutter Count app, planned in
+   [APP-PLAN.md](APP-PLAN.md). The first release waits for it. `openshuttercounter --json` gives each count's range
    (`min` and `value`).
 3. Open: an exact mechanical count (see Status); reporting this to
    libgphoto2; whether other R bodies lay 0xD167 out the same way.
