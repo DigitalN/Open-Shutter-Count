@@ -8,9 +8,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // MethodEventChannel is property 0xD167 on Canon's event channel, which

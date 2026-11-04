@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
 )
 
 // Canon's EOS tethering operations. EOS Utility, Lightroom and libgphoto2 send

@@ -1,7 +1,8 @@
 # openshuttercounter (DigitalN fork)
 
-A fork of mvisonneau/openshuttercounter, which the original author has stopped
-working on. The goal here is reading the shutter count of the maintainer's Canon EOS R8
+An independent project that started from Maxime Visonneau's
+openshuttercounter. Don't point anything at mvisonneau's repositories or
+accounts; LICENSE keeps his copyright line because MIT requires it. The goal here is reading the shutter count of the maintainer's Canon EOS R8
 on their Mac (MacBookPro18,1, M1 Pro, macOS 27.2) without using Terminal.
 
 Read [docs/R8-PROGRESS.md](../docs/R8-PROGRESS.md) first: what's been done, what
@@ -14,6 +15,14 @@ the R8 did, and what's next.
 - `mac/`: the Mac binary, libusb, `launcher.sh`, `Find Shutter Counter.command`.
 - `docs/`: CONTRIBUTING.md, PROTOCOL.md (5D Mark IV factory channel),
   R8-PROGRESS.md.
+
+## Releases
+
+Publishing a GitHub release (a new `v*` tag) runs
+`.github/workflows/release.yml`, which runs `.github/release.sh`: a Mac ZIP
+(`Read Shutter Count.command` plus `mac/`) and command line builds, attached to
+the release. `mac/openshuttercounter` is still committed so the maintainer can
+test a branch by pulling it.
 
 ## How testing works
 

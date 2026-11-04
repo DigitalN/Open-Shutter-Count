@@ -20,9 +20,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/pcap"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/pcap"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // FormatVersion is the trace file schema version. It goes in every file so a

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
 )
 
 // Session is an open conversation on the factory command channel.

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // r8D167 is what the maintainer's EOS R8 reported after the 2026-11-04 test.

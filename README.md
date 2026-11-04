@@ -17,8 +17,9 @@ Read your camera's shutter count over USB. Free and open source.
 
 ## Use it on a Mac
 
-1. Click **Code > Download ZIP** on this page, and open the ZIP. Needs an
-   Apple silicon Mac.
+1. Download `openshuttercounter-<version>-mac.zip` from the
+   [latest release](https://github.com/DigitalN/openshuttercounter/releases/latest)
+   and open it. Needs an Apple silicon Mac.
 2. Double-click **Read Shutter Count.command**. It walks you through setting
    up the camera first.
 3. The first time, macOS may refuse to open it. Go to **System Settings >
@@ -35,8 +36,8 @@ R8 uses.
 
 ## Credit
 
-A fork of [mvisonneau/openshuttercounter](https://github.com/mvisonneau/openshuttercounter),
-which worked out Canon's factory channel. The work it built on is credited in
+Started from Maxime Visonneau's openshuttercounter, which worked out Canon's
+factory channel. The work it built on is credited in
 [docs/PROTOCOL.md](docs/PROTOCOL.md#prior-work).
 
 ## License

@@ -8,9 +8,9 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/mvisonneau/openshuttercounter/internal/logs"
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/internal/logs"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // List reports the cameras currently attached.

@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 const (

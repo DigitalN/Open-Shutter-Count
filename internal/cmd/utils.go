@@ -12,13 +12,13 @@ import (
 	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 
-	"github.com/mvisonneau/openshuttercounter/internal/app"
-	"github.com/mvisonneau/openshuttercounter/internal/logs"
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers/canon"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/trace"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/internal/app"
+	"github.com/DigitalN/openshuttercounter/internal/logs"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers/canon"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/trace"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // registry lists the manufacturers this build can read.

@@ -3,12 +3,14 @@
 On an Apple silicon Mac, double-clicking `Read Shutter Count.command` is
 easier. This page is for everything else.
 
-## Build it
+## Get it
 
-There are no release builds of this fork yet. With Go installed:
+Each [release](https://github.com/DigitalN/openshuttercounter/releases) has
+command line builds for Linux (amd64, arm64), Windows (amd64) and Apple
+silicon Macs. Or, with Go installed:
 
 ```bash
-go build ./cmd/openshuttercounter
+go install github.com/DigitalN/openshuttercounter/cmd/openshuttercounter@latest
 ```
 
 ## Commands

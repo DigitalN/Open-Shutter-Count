@@ -15,11 +15,11 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/mvisonneau/openshuttercounter/internal/app"
-	"github.com/mvisonneau/openshuttercounter/internal/logs"
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers/canon"
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/internal/app"
+	"github.com/DigitalN/openshuttercounter/internal/logs"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers/canon"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // probeFile is what `probe` saves: what the camera says it supports, and

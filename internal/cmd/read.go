@@ -9,8 +9,8 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/manufacturers"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 type readOutput struct {

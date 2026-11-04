@@ -14,7 +14,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(dirname "$here")"
 
-version="0.0.0-digitaln-mac"
+version="${VERSION:-0.0.0-dev}"
 
 libusb_wheel_url="https://files.pythonhosted.org/packages/52/6f/26de4e9f858ab50e87931f0be268f3c1bbfce33e8584add60da857632142/libusb_package-1.0.30.0-py3-none-macosx_11_0_arm64.whl"
 libusb_wheel_sha256="4ad25f8d254bbbdd234446d5580b24d62d59bb0e690d8090457dac347f044437"
@@ -24,7 +24,7 @@ echo "==> building openshuttercounter $version for darwin/arm64"
     cd "$root"
     CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
         -trimpath -buildvcs=false \
-        -ldflags "-s -w -X github.com/mvisonneau/openshuttercounter/internal/app.Version=$version" \
+        -ldflags "-s -w -X github.com/DigitalN/openshuttercounter/internal/app.Version=$version" \
         -o "$here/openshuttercounter" ./cmd/openshuttercounter
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/mvisonneau/openshuttercounter/internal/cli"
+	"github.com/DigitalN/openshuttercounter/internal/cli"
 )
 
 func main() {

@@ -44,12 +44,6 @@ jobs:
       - name: Test
         run: make test
 
-      - name: Publish coverage to coveralls.io
-        uses: shogo82148/actions-goveralls@25f5320d970fb565100cf1993ada29be1bb196a1 # v1
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        with:
-          path-to-profile: coverage.out
-
       # Every USB backend has to keep compiling, including the ones this
       # runner cannot exercise.
       - name: Cross compile all targets

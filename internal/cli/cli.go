@@ -3,8 +3,8 @@ package cli
 import (
 	"github.com/urfave/cli/v3"
 
-	"github.com/mvisonneau/openshuttercounter/internal/app"
-	"github.com/mvisonneau/openshuttercounter/internal/cmd"
+	"github.com/DigitalN/openshuttercounter/internal/app"
+	"github.com/DigitalN/openshuttercounter/internal/cmd"
 )
 
 // NewApp configures the CLI application.

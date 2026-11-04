@@ -13,8 +13,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mvisonneau/openshuttercounter/pkg/ptp"
-	"github.com/mvisonneau/openshuttercounter/pkg/usb"
+	"github.com/DigitalN/openshuttercounter/pkg/ptp"
+	"github.com/DigitalN/openshuttercounter/pkg/usb"
 )
 
 // CounterSpec describes a counter a model is known to expose.
