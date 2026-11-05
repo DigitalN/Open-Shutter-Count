@@ -5,4 +5,4 @@ tool (mac/build.sh) read it from here. Releases are tagged v<VERSION>; see the r
 checklist in docs/DEVELOPMENT.md.
 """
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
