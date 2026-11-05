@@ -29,7 +29,7 @@ NO_ANSWER = "no_answer"
 FAILED = "failed"
 
 USB_MODE_SETTING = ("MENU > Setup (wrench) > Choose USB connection app > Photo Import/Remote Control. "
-                    "On the EOS R8 it's on page 4 of the Setup menu.")
+                    "On the Canon R8 it's on page 4 of the Setup menu.")
 NO_CAMERA_HELP = (
     "- Switch the camera on, with a card in it.\n"
     f"- Set its USB connection to Photo Import/Remote Control: {USB_MODE_SETTING}\n"
@@ -38,7 +38,8 @@ NO_CAMERA_HELP = (
     "- If macOS asks whether to allow the accessory, click Allow.")
 RESTART_CAMERA = ("Switch the camera off and on again (take the battery out if it won't switch off), "
                   "then click Read Again.")
-SEND_THE_LOG = "Please save the log and open an issue, so it can be worked out."
+OPEN_AN_ISSUE = "Please open an issue, so it can be worked out."
+READ_IT = "Success! We've read your shutter count."
 
 
 class ToolError(Exception):
@@ -139,19 +140,25 @@ def count_text(counter):
     return f"{value:,}"
 
 
+def plain_name(model):
+    """The name people call a Canon by: "Canon R8" for the EOS R8, which the camera calls
+    "Canon EOS R8"."""
+    name = model[len("Canon "):] if model.startswith("Canon ") else model
+    name = name[len("EOS "):] if name.startswith("EOS ") else name
+    return f"Canon {name}" if name else ""
+
+
 def camera_name(output, devices=()):
     """The camera's model, as plainly as it's known."""
     reading = output.get("reading") or {}
     camera = output.get("camera") or {}
     model = reading.get("model") or camera.get("model") or ""
-    if model.startswith("Canon "):
-        model = model[len("Canon "):]
     if model:
-        return model
+        return plain_name(model)
     for device in list(devices) + [output.get("device") or {}]:
         name = device.get("name") or device.get("product")
         if name and name not in ("Canon camera", "Canon Digital Camera", "unrecognised device"):
-            return name[len("Canon "):] if name.startswith("Canon ") else name
+            return plain_name(name)
     return ""
 
 
@@ -175,7 +182,8 @@ def summarize(output, devices=()):
     """What the result screen shows for what `read --json` printed.
 
     ok says whether it read; tested is only true for the bodies the tool marks
-    confirmed (the EOS R8 and the EOS 5D Mark IV)."""
+    confirmed (the R8 and the 5D Mark IV). A reading from any other body says it's not
+    fully tested: the counts aren't proven to be what their names say."""
     model = camera_name(output, devices)
     the_camera = f"the {model}" if model else "the camera"
     error = output.get("error")
@@ -187,12 +195,10 @@ def summarize(output, devices=()):
             "ok": True,
             "tested": tested,
             "model": model,
-            "headline": f"Read {the_camera}",
-            "detail": (f"Tested on {the_camera}." if tested else
-                       f"Not fully tested on {the_camera}; if these numbers look wrong, please send the log."),
-            "counters": [{"label": c.get("label", ""), "text": count_text(c), "location": c.get("location", "")}
-                         for c in output.get("counters") or []],
-            "note": " ".join((reading.get("note") or "").split()),
+            "headline": READ_IT,
+            "detail": "" if tested else
+                      f"Not fully tested on {the_camera}; if these numbers look wrong, please open an issue.",
+            "counters": [{"label": c.get("label", ""), "text": count_text(c)} for c in output.get("counters") or []],
             "hint": "",
             "kind": "",
         }
@@ -203,15 +209,15 @@ def summarize(output, devices=()):
     headline, detail = {
         NO_CAMERA: ("No camera found",
                     "Only Canon cameras are looked for. If yours is another make, it can't be read yet: "
-                    "please save the log and open an issue."),
+                    "please open an issue."),
         SEVERAL_CAMERAS: ("More than one camera is plugged in", "Unplug all but one, then click Read Again."),
         WRONG_USB_MODE: ("Change the camera's USB connection setting",
                          f"Change it to Photo Import/Remote Control: {USB_MODE_SETTING} "
                          "Then unplug the camera, plug it back in, and click Read Again."),
         BUSY: ("Another app is using the camera", ""),
-        NOT_SUPPORTED: (f"Can't read {the_camera} yet", SEND_THE_LOG),
+        NOT_SUPPORTED: (f"Can't read {the_camera} yet", OPEN_AN_ISSUE),
         NO_ANSWER: ("The camera stopped answering", RESTART_CAMERA),
-    }.get(kind, (f"Couldn't read {the_camera}", SEND_THE_LOG))
+    }.get(kind, (f"Couldn't read {the_camera}", OPEN_AN_ISSUE))
 
     if kind == WRONG_USB_MODE:
         hint = ""  # the detail names the setting
@@ -224,7 +230,6 @@ def summarize(output, devices=()):
         "headline": headline,
         "detail": detail,
         "counters": [],
-        "note": "",
         "hint": hint,
         "message": message,
         "kind": kind,

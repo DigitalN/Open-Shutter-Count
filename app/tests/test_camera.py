@@ -80,24 +80,27 @@ def test_counts():
 def test_an_r8_reads_as_tested(fixture):
     s = summarize(fixture("read-r8.json"))
     assert s["ok"] and s["tested"]
-    assert s["headline"] == "Read the EOS R8"
-    assert s["detail"] == "Tested on the EOS R8."
-    assert [(c["label"], c["text"]) for c in s["counters"]] == [
-        ("Mechanical shutter", "1,001 to 2,000"), ("Electronic shutter", "19,001 to 20,999"),
-        ("All photos", "21,001 to 22,000")]
-    assert s["note"].startswith("The camera keeps these counts in thousands")
+    assert s["headline"] == "Success! We've read your shutter count."
+    assert s["detail"] == ""  # nothing under the headline for a tested body
+    # Just the names and counts: not where each was read from, or why they're ranges.
+    assert s["counters"] == [
+        {"label": "Mechanical shutter", "text": "1,001 to 2,000"},
+        {"label": "Electronic shutter", "text": "19,001 to 20,999"},
+        {"label": "All photos", "text": "21,001 to 22,000"}]
+    assert "note" not in s
 
 
 def test_another_rf_body_says_its_not_fully_tested(fixture):
     s = summarize(fixture("read-r6.json"))
     assert s["ok"] and not s["tested"]
-    assert s["detail"] == "Not fully tested on the EOS R6; if these numbers look wrong, please send the log."
+    assert s["headline"] == "Success! We've read your shutter count."
+    assert s["detail"] == "Not fully tested on the Canon R6; if these numbers look wrong, please open an issue."
 
 
 def test_an_ef_body_and_a_90d_read_as_not_fully_tested(fixture):
     ef = summarize(fixture("read-80d.json"))
     assert ef["ok"] and not ef["tested"]
-    assert ef["detail"].startswith("Not fully tested on the EOS 80D")
+    assert ef["detail"].startswith("Not fully tested on the Canon 80D")
     assert [c["label"] for c in ef["counters"]] == ["Shutter actuations", "Mirror actuations", "Total counter"]
     assert ef["counters"][0]["text"] == "26,354"
 
@@ -109,8 +112,8 @@ def test_an_ef_body_and_a_90d_read_as_not_fully_tested(fixture):
 def test_a_camera_that_cant_be_read_yet(fixture):
     s = summarize(fixture("read-powershot.json"))
     assert not s["ok"]
-    assert s["headline"] == "Can't read the PowerShot G7 X Mark III yet"
-    assert "save the log" in s["detail"]
+    assert s["headline"] == "Can't read the Canon PowerShot G7 X Mark III yet"
+    assert s["detail"] == "Please open an issue, so it can be worked out."
 
 
 def test_another_app_holding_the_camera_shows_the_tools_hint(fixture):
@@ -143,5 +146,13 @@ def test_unwrap():
 
 
 def test_the_camera_is_named_from_the_device_list_before_its_read(fixture):
-    assert camera.camera_name({}, fixture("list-r8.json")) == "EOS R8"
+    assert camera.camera_name({}, fixture("list-r8.json")) == "Canon R8"
     assert camera.camera_name({}, [{"name": "Canon camera"}]) == ""
+
+
+def test_cameras_go_by_the_names_people_call_them():
+    assert camera.plain_name("Canon EOS R8") == "Canon R8"
+    assert camera.plain_name("EOS R8") == "Canon R8"
+    assert camera.plain_name("Canon EOS 5D Mark IV") == "Canon 5D Mark IV"
+    assert camera.plain_name("Canon PowerShot G7 X Mark III") == "Canon PowerShot G7 X Mark III"
+    assert camera.plain_name("") == ""

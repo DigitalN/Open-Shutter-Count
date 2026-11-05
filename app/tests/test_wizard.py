@@ -93,7 +93,7 @@ def test_a_whole_read(fixture):
 
     name, text = w.log()
     assert name.startswith("Open Shutter Count log ")
-    assert "Result: Read the EOS R8" in text
+    assert "Result: Success! We've read your shutter count." in text
     for secret in SECRETS:
         assert secret not in text
 

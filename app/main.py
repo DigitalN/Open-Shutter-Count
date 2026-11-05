@@ -83,8 +83,11 @@ class Api:
         return {"path": str(path), "name": path.name}
 
     def open_issue(self):
-        result = self._app._wizard.state().get("result") or {}
-        _open_url(report.issue_url(launch.REPOSITORY_URL, result))
+        """Open an Issue: GitHub's new-issue page, with the log filled in."""
+        wizard = self._app._wizard
+        result = wizard.state().get("result") or {}
+        saved = wizard.log()
+        _open_url(report.issue_url(launch.REPOSITORY_URL, result, saved[1] if saved else ""))
 
     def download_update(self):
         _open_url(launch.RELEASES_URL)

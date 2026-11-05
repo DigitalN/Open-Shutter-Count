@@ -11,14 +11,9 @@ body:
     id: camera
     attributes:
       label: Camera
-      description: The camera's model, for example "EOS R6 Mark II".
+      description: The camera's model, for example "Canon R6 Mark II".
     validations:
       required: true
-  - type: input
-    id: shutter_mode
-    attributes:
-      label: Shutter mode
-      description: The shutter mode the camera was in, for example Mechanical, Elec. 1st-curtain or Electronic. It's in the camera's shooting menu.
   - type: textarea
     id: app_said
     attributes:
@@ -26,10 +21,9 @@ body:
       description: Open an Issue fills this in. If the numbers look wrong, say what you expected, and how many photos the camera has taken if you know.
     validations:
       required: true
-  - type: upload
+  - type: textarea
     id: log
     attributes:
       label: Log
-      description: On the result screen, click Save Log, then attach the .txt file here. It has the camera's model, firmware and what it answered, and nothing that identifies you or your camera (no serial number).
-    validations:
-      accept: ".txt"
+      description: Open an Issue fills this in. It has the camera's model, firmware and what it answered, your Mac's model and macOS version, and nothing that identifies you or your camera (no serial number).
+      render: text

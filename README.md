@@ -16,12 +16,12 @@ Free and open source.
 
 | Camera | What it reads |
 |---|---|
-| Canon EOS R8 | Mechanical, electronic and all photos, each to within a thousand: the camera only keeps them that way. Tested. |
+| Canon R8 | Mechanical, electronic and all photos, each to within a thousand: the camera only keeps them that way. Tested. |
 | Canon EOS 5D Mark IV | Exact shutter and mirror counts. Tested. |
 | Other EF DSLRs that list Canon's factory channel (7D Mark II, 5DS R, 80D, 77D and so on) | Read the way the 5D Mark IV is, and labelled not fully tested |
 | RF bodies, and newer bodies that report the R8's counter (90D, EOS M50 Mark II, M6 Mark II) | Read the way the R8 is, and labelled not fully tested |
 | Older Canon bodies that answer the standard shutter count | Read, and labelled not fully tested |
-| Anything else | Can't be read yet. Save the log and open an issue, and it can be worked out. |
+| Anything else | Can't be read yet. Click Open an Issue in the app, and it can be worked out. |
 
 ## Install
 
@@ -43,22 +43,23 @@ one, and reopens.
 
 1. Open the app. It checks for an update first.
 2. Set up the camera as the checklist says: USB connection set to **Photo Import/Remote
-   Control** (on the EOS R8: MENU › Setup (wrench) › page 4 › Choose USB connection
+   Control** (on the Canon R8: MENU › Setup (wrench) › page 4 › Choose USB connection
    app), Wi-Fi and Bluetooth off, a card in, plugged straight into the Mac with a data
    cable, and Image Capture, Photos and EOS Utility closed.
 3. Switch the camera on and plug it in. It's found by itself. On a Mac laptop, click
    **Allow** if macOS asks whether the accessory can connect.
 4. It reads the camera and shows the counts.
 
-If it couldn't read your camera, or the numbers look wrong, click **Save Log**, then
-**Open an Issue** and attach the log.
+If it couldn't read your camera, or the numbers look wrong, click **Open an Issue**. It opens
+a new GitHub issue with the log filled in, for you to look over before you submit it.
 
 ## Privacy
 
 - **The only connection is the update check**: each time it opens, it asks GitHub for
   the latest release. It only installs updates signed by the same developer. No
   analytics, crash reports or web server.
-- **The log is only made when you click Save Log**, and only goes where you save it. It
+- **The log only goes where you send it**: Save Log saves it where you choose, and Open an
+  Issue sends it to GitHub to fill in a new issue, which isn't posted until you submit it. It
   has the camera's model, firmware and what it answered, your Mac's model and macOS
   version, and nothing that identifies you or your camera: no serial number, owner or
   copyright name.
