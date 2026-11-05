@@ -217,8 +217,7 @@ func ParseDeviceDescriptor(b []byte) (DeviceDescriptor, error) {
 }
 
 // ParseConfig parses a configuration descriptor and everything that follows
-// it, which is how both usbfs and a GET_DESCRIPTOR control transfer hand it
-// over: one config descriptor followed by its interface and endpoint
+// it, which is how a GET_DESCRIPTOR control transfer hands it over: one config descriptor followed by its interface and endpoint
 // descriptors, back to back.
 //
 // Unknown descriptor types (class specific ones, interface associations) are

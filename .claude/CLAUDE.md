@@ -34,7 +34,8 @@ start at 0.5.0 and go up by 0.0.1. Installed copies update from the latest
 release at every launch, so a new release is also how a fix gets tested on the
 camera.
 
-Claude opens every pull request into `main` and merges it once CI is green. For
+Claude opens every pull request into `main` and merges it once the checks below
+pass; there's no CI, as with Mac Engine Room. For
 a release, Claude works through the checklist in docs/DEVELOPMENT.md; its top
 says which steps are Claude's and which need the maintainer's Mac. Claude does
 its steps, then hands the maintainer the Mac steps with the version and the
@@ -55,11 +56,12 @@ release notes written out.
 - After changing what `read --json` or `list --json` prints, or what a read
   sends, regenerate the app's fixtures:
   `UPDATE_FIXTURES=1 go test ./internal/cmd -run TestAppFixtures`.
-- Checks before pushing: `go vet ./...` for linux, darwin and windows;
-  `go test ./...`; the repo's linter for each OS:
+- Checks before pushing: `go vet ./...` here and with `GOOS=darwin`;
+  `go test ./...`; the repo's linter here and for the Mac:
   `go build -o .bin/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint`
-  then `GOOS=<os> .bin/golangci-lint run ./...`, then `rm -rf .bin`; and
-  `python3 -m pytest app/tests`.
+  then `.bin/golangci-lint run ./...` and `GOOS=darwin .bin/golangci-lint run ./...`,
+  then `rm -rf .bin`; and `python3 -m pytest app/tests`. The tool only reads
+  cameras on macOS: off a Mac, `pkg/usb` is a stub that finds none.
 - The page can be checked on Linux with `python3 app/preview/serve.py` and a
   browser (scenarios at the top of `app/preview/stub.js`). The rest of the app
   (AppKit, the updater, signing) is checked by the maintainer's release run.

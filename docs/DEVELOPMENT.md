@@ -57,8 +57,13 @@ A copy run from source doesn't check for updates, and uses `mac/openshuttercount
 ```bash
 python3 -m pytest app/tests        # the app (runs anywhere)
 make test                          # the Go tool
-make lint-all                      # the Go linter, for each platform's USB backend
+make lint lint-mac                 # the Go linter, here and for the Mac
 ```
+
+There's no CI, as with Mac Engine Room: these run before every push, and
+`Package a Release.command` runs the app's tests again before it builds. The tool
+only reads cameras on macOS; on any other machine it builds and its tests run,
+but it finds no camera.
 
 The app's tests read what the tool prints from `app/tests/fixtures`. Those files are made
 by the Go tests, from the real code reading a scripted camera, so the two can't drift.
@@ -99,7 +104,7 @@ updating, publishing, and opening an older copy to see it update.
   be higher than the latest release, or installed copies won't update.
 - [ ] `mac/openshuttercounter` was rebuilt with that version (`bash mac/build.sh`, then
   commit it). `app/scripts/build.sh` refuses to build if the two differ.
-- [ ] CI is green on `main`.
+- [ ] The tests above pass on `main`.
 - [ ] The signing certificate is valid and not about to expire:
   `security find-identity -v -p codesigning` lists an *Apple Development* identity from
   team `XT4LT7MS6Y`, the same as Mac Engine Room's. Installed copies refuse updates

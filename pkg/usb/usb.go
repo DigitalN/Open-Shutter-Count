@@ -2,13 +2,9 @@
 // needs in order to speak PTP to a camera: enumerate still image devices,
 // claim the interface and move bulk transfers in both directions.
 //
-// Each platform gets its own backend, chosen at build time:
-//
-//	linux    usbfs ioctls on /dev/bus/usb, pure Go
-//	darwin   libusb-1.0 loaded at runtime through purego, no cgo
-//	windows  the still image device interface, opened with CreateFile
-//
-// None of them require the camera's vendor driver to be replaced.
+// It runs on macOS, through libusb-1.0 loaded at run time with purego, so
+// there's no cgo (usb_darwin.go). Elsewhere it builds but finds no camera
+// (usb_other.go), so the rest of the code can be tested anywhere.
 package usb
 
 import (
@@ -30,8 +26,8 @@ var (
 	// ErrNoDevice is returned when no matching camera is connected.
 	ErrNoDevice = errors.New("no still image device found")
 
-	// ErrBusy is returned when the interface is claimed by something else.
-	// On desktop Linux that is almost always gvfs.
+	// ErrBusy is returned when the interface is claimed by something else:
+	// macOS's ptpcamerad, or an app using the camera through it.
 	ErrBusy = errors.New("device is claimed by another process")
 
 	// ErrNotSupported is returned by backends that are not implemented on
@@ -56,9 +52,8 @@ type Resetter interface {
 
 // DeviceInfo identifies a device before it is opened.
 type DeviceInfo struct {
-	// Path is the backend specific handle used to open the device: a usbfs
-	// node on Linux, a device interface path on Windows, an opaque
-	// bus/address pair on macOS.
+	// Path names the device for the CLI's --device: an opaque bus/address
+	// pair.
 	Path string `json:"path"`
 
 	Bus     uint16 `json:"bus"`
@@ -160,10 +155,8 @@ func Open(info DeviceInfo) (Device, error) {
 // ReleaseSystemCameraDaemon stops the operating system service that claims
 // cameras as soon as they are plugged in, so the interface can be taken.
 //
-// This only does anything on macOS, where ptpcamerad grabs every camera and
-// launchd restarts it on demand once we are done. Elsewhere the equivalent
-// holders are userspace processes such as gvfs, which cannot be displaced
-// this way and are reported to the user instead.
+// ptpcamerad grabs every camera, and launchd restarts it on demand once we
+// are done.
 func ReleaseSystemCameraDaemon(ctx context.Context) error {
 	return releaseSystemCameraDaemon(ctx)
 }

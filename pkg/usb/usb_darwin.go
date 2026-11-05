@@ -18,9 +18,9 @@ import (
 )
 
 // The macOS backend drives libusb-1.0, loaded at runtime with purego rather
-// than linked with cgo. That keeps CGO_ENABLED=0 across the whole project, so
-// the release pipeline can still cross compile every target from one machine,
-// and it keeps the binary free of any build time dependency.
+// than linked with cgo. That keeps CGO_ENABLED=0, so mac/build.sh can build
+// the Mac binary on any machine, and it keeps the binary free of any build
+// time dependency.
 //
 // libusb is the practical choice here because IOKit's USB device interfaces
 // are CoreFoundation plug-ins, which are considerably more work to drive
@@ -194,8 +194,8 @@ func (a *libusbAPI) err(op string, rc int32) error {
 
 // list enumerates every attached USB device.
 //
-// Unlike the Linux backend this does not filter on the still image class:
-// determining it would mean opening each device, which is intrusive and fails
+// It doesn't filter on the still image class: determining it would mean
+// opening each device, which is intrusive and fails
 // on anything another process holds. Callers that want cameras should use
 // ListVendor; Open verifies the interface exists before claiming it.
 func list() ([]DeviceInfo, error) {
@@ -376,8 +376,8 @@ func (d *darwinDevice) configure() error {
 		return fmt.Errorf("parsing configuration descriptor: %w", err)
 	}
 
-	// Unlike Linux, macOS enumeration can't filter on the still image class
-	// without opening every device, so the check happens here. Falling back
+	// macOS enumeration can't filter on the still image class without
+	// opening every device, so the check happens here. Falling back
 	// to any bulk pair, as PTPInterface does, sent PTP into a camera's
 	// vendor pipe when it was in another USB mode, so it isn't done here.
 	d.info.Interfaces = cfg.Summary()
@@ -552,6 +552,20 @@ func clampInt32(v int64) int32 {
 		return math.MinInt32
 	default:
 		return int32(v)
+	}
+}
+
+// clampUint32 narrows a millisecond timeout to the width libusb takes,
+// saturating rather than wrapping so a very long timeout stays very long
+// instead of becoming a very short one.
+func clampUint32(v int64) uint32 {
+	switch {
+	case v < 0:
+		return 0
+	case v > math.MaxUint32:
+		return math.MaxUint32
+	default:
+		return uint32(v)
 	}
 }
 

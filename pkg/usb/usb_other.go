@@ -1,12 +1,11 @@
-//go:build !linux && !darwin && !windows
+//go:build !darwin
 
 package usb
 
 import "context"
 
-// No backend exists for this platform yet. Adding one means implementing list
-// and open against whatever the operating system offers for raw USB bulk
-// transfers; everything above pkg/usb is portable.
+// Open Shutter Count reads cameras on macOS only. This lets everything else
+// build and run its tests on other machines, where no camera is ever found.
 
 func list() ([]DeviceInfo, error) {
 	return nil, ErrNotSupported

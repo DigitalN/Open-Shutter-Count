@@ -4,10 +4,9 @@ REPOSITORY    := DigitalN/$(NAME)
 
 GOLANGCI_LINT := go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
-# Building the linter once lets it be re-run under a different GOOS. `go tool`
-# would cross compile the linter itself instead of the code under it.
+# Building the linter once lets it be re-run under GOOS=darwin from any
+# machine. `go tool` would cross compile the linter itself instead.
 GOLANGCI_BIN  := .bin/golangci-lint
-PLATFORMS     := linux darwin windows
 
 .DEFAULT_GOAL := help
 
@@ -19,12 +18,9 @@ fmt: ## Format source code
 lint: ## Run all lint related tests upon the codebase
 	$(GOLANGCI_LINT) run -v
 
-.PHONY: lint-all
-lint-all: $(GOLANGCI_BIN) ## Lint every platform's USB backend, not only the host's
-	@for os in $(PLATFORMS); do \
-		echo "==> GOOS=$$os"; \
-		GOOS=$$os $(GOLANGCI_BIN) run || exit 1; \
-	done
+.PHONY: lint-mac
+lint-mac: $(GOLANGCI_BIN) ## Lint the macOS USB backend too, from any machine
+	GOOS=darwin $(GOLANGCI_BIN) run
 
 $(GOLANGCI_BIN):
 	@mkdir -p $(dir $@)
@@ -52,15 +48,9 @@ install: ## Build and install locally the binary (dev purpose)
 build: ## Build the binary using local GOOS
 	go build ./cmd/$(NAME)
 
-.PHONY: build-all
-build-all: ## Cross compile every supported target, to check the backends still build
-	GOOS=linux   GOARCH=amd64 go build -o /dev/null ./cmd/$(NAME)
-	GOOS=linux   GOARCH=arm64 go build -o /dev/null ./cmd/$(NAME)
-	GOOS=linux   GOARCH=386   go build -o /dev/null ./cmd/$(NAME)
-	GOOS=darwin  GOARCH=amd64 go build -o /dev/null ./cmd/$(NAME)
-	GOOS=darwin  GOARCH=arm64 go build -o /dev/null ./cmd/$(NAME)
-	GOOS=windows GOARCH=amd64 go build -o /dev/null ./cmd/$(NAME)
-	GOOS=windows GOARCH=386   go build -o /dev/null ./cmd/$(NAME)
+.PHONY: build-mac
+build-mac: ## Build the Mac binary and libusb into mac/ (see mac/build.sh)
+	bash mac/build.sh
 
 .PHONY: clean
 clean: ## Remove build artefacts
@@ -72,7 +62,7 @@ is-git-dirty: ## Tests if git is in a dirty state
 	@test $(shell git status --porcelain | grep -c .) -eq 0
 
 .PHONY: all
-all: lint-all test build-all coverage ## Lint every platform, test and cross compile
+all: lint lint-mac test coverage ## Lint here and for the Mac, and test
 
 .PHONY: help
 help: ## Displays this help

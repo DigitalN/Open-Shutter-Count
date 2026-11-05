@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	// defaultReadChunk is the size of a single bulk IN request. usbfs caps a
-	// synchronous bulk transfer at 16 KiB, so asking for more would fail on
-	// Linux; larger payloads simply take several reads.
+	// defaultReadChunk is the size of a single bulk IN request. Larger
+	// payloads simply take several reads.
 	defaultReadChunk = 16 * 1024
 
 	defaultReadTimeout  = 10 * time.Second

@@ -40,9 +40,8 @@ linters:
 
   exclusions:
     rules:
-      # Every USB backend has to reach into C structures (usbfs ioctls,
-      # SetupAPI detail buffers, libusb's device list) and read the device
-      # nodes and sysfs attributes it just enumerated. That is the job.
+      # The USB backend has to reach into C structures (libusb's device list
+      # and descriptors). That is the job.
       - path: pkg/usb/
         linters:
           - gosec
