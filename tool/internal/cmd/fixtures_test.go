@@ -125,9 +125,8 @@ var (
 
 // fakeCamera is a Canon body that answers like the maintainer's EOS R8 does,
 // listing the channels given. Its event channel reports d167 and its owner
-// unasked, and its serial number (0xD1AF) only when it's asked for, which the
-// R8 didn't report unasked; its factory channel answers each read with the
-// next of mpu.
+// unasked, and its serial number (0xD1AF) only when it's asked for, as the R8
+// does; its factory channel answers each read with the next of mpu.
 func fakeCamera(
 	t *testing.T, model string, productID uint16, channels []uint16, d167 []byte, mpu ...[]byte,
 ) *scriptedCamera {

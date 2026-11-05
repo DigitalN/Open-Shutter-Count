@@ -48,7 +48,7 @@ const PropShutterReleaseCounter uint32 = 0xd167
 // It isn't the serial number GetDeviceInfo gives, which on the EOS R8 is a
 // 31 character hex ID. The maintainer's R8 doesn't report it unasked: its
 // 2026-11-04 trace has 161 properties in the first batch, and not this one.
-// So it's asked for, once 0xD167 is in hand.
+// So it's asked for once 0xD167 is in hand, and the R8 gives it then (0.5.3).
 const PropSerialNumber uint32 = 0xd1af
 
 // ErrNoEventChannel means the camera doesn't list the operations needed to
