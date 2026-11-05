@@ -63,8 +63,8 @@ build-mac: ## Build the Mac binary and libusb into tool/mac/ (see tool/mac/build
 	bash tool/mac/build.sh
 
 .PHONY: clean
-clean: ## Remove build artefacts
-	rm -rf $(NAME) $(COVERAGE_FILE) .bin dist helpers
+clean: ## Remove build artefacts, keeping the release DMGs in dist/
+	rm -rf $(NAME) $(COVERAGE_FILE) .bin helpers
 
 .PHONY: is-git-dirty
 is-git-dirty: ## Tests if git is in a dirty state
