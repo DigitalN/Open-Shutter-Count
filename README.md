@@ -21,7 +21,7 @@ Free and open source.
 
 | Camera | What it reads |
 |---|---|
-| Canon R8 | Mechanical and electronic shot counts, kept separate. Each to within a thousand, as the camera only keeps them that way. |
+| Canon R3, R5 Mark II, R8 | Mechanical and electronic shot counts, kept separate. Each to within a thousand, as the camera only keeps them that way. |
 | Canon EOS 5D Mark IV | Exact shutter and mirror counts. |
 
 **Should work, but not 100% confirmed**
