@@ -1,18 +1,18 @@
 # Using openshuttercounter from the command line
 
-On an Apple silicon Mac, the [Open Shutter Count app](../README.md) is easier. This
-page is for the tool inside it, on its own.
+The [Open Shutter Count app](../README.md) is easier. This page is for the tool
+inside it, on its own, on a Mac.
 
 ## Get it
 
-With Go installed:
+The build in `mac/` of this repository, with the copy of libusb beside it, is the
+one the app bundles. Or, with Go installed:
 
 ```bash
 go install github.com/DigitalN/openshuttercounter/cmd/openshuttercounter@latest
 ```
 
-On an Apple silicon Mac, the build in `mac/` of this repository works too, with the
-copy of libusb beside it. Releases only carry the app.
+Releases only carry the app.
 
 ## Commands
 
@@ -45,35 +45,10 @@ probes. That's how a new camera gets worked out; see
 - A data cable, plugged in directly rather than through a hub. USB 2 ports
   have been more reliable than USB 3.
 
-### Linux
-
-Reading a camera without root needs a udev rule, for example in
-`/etc/udev/rules.d/99-canon-ptp.rules`:
-
-```
-SUBSYSTEM=="usb", ATTR{idVendor}=="04a9", MODE="0660", TAG+="uaccess"
-```
-
-Then `sudo udevadm control --reload-rules && sudo udevadm trigger`, and replug
-the camera. If you get *device is claimed by another process*, that's gvfs:
-
-```bash
-gio mount -u gphoto2://
-systemctl --user mask gvfs-gphoto2-volume-monitor
-```
-
-### macOS
-
 USB goes through libusb, loaded at runtime. The copy in `mac/` ships with it;
 otherwise `brew install libusb`. macOS gives every camera to `ptpcamerad`;
 the tool stops it and retries when the camera is busy, and macOS restarts it
 afterwards.
-
-### Windows
-
-No driver replacement is needed: the tool opens the still image device
-interface the stock driver already exposes. Close anything else that might
-have the camera open. Not yet tried against a camera.
 
 ## What it sends
 
@@ -115,6 +90,6 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 | `pkg/manufacturers` | What a camera maker has to provide to be readable |
 | `pkg/manufacturers/canon` | Canon's factory and event channels, decoding, model list |
 | `pkg/ptp` | PTP over USB, enough of it to send vendor opcodes |
-| `pkg/usb` | The three USB backends |
+| `pkg/usb` | USB on macOS, through libusb |
 | `pkg/trace`, `pkg/pcap` | Recording conversations, and reading USB captures |
 | `docs/` | This, the protocol reference, and how to add a camera |

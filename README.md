@@ -68,8 +68,8 @@ If it couldn't read your camera, or the numbers look wrong, click **Save Log**, 
 
 ## Command line
 
-The `openshuttercounter` tool inside the app also runs on its own, on macOS, Linux and
-Windows. See [docs/USAGE.md](docs/USAGE.md).
+The `openshuttercounter` tool inside the app also runs on its own on a Mac. See
+[docs/USAGE.md](docs/USAGE.md).
 
 ## How it works
 

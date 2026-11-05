@@ -131,7 +131,9 @@ own records (the USB accessory approval, "Open Anyway"), which is accepted.
 - Keep `mac/Find Shutter Counter.command` and `mac/launcher.sh` (for working
   out new cameras), and keep committing `mac/openshuttercounter` (built on Linux
   by `mac/build.sh`), so the Mac needs only Python, not Go.
-- Keep `test.yml` and add the Python tests to it.
+- Keep `test.yml` and add the Python tests to it. (Changed by the maintainer on
+  2026-11-05: no CI and no Linux or Windows support, so releases follow Mac
+  Engine Room's path. `test.yml` and the Linux and Windows USB backends are gone.)
 - Add a "New camera" issue template (camera model, shutter mode it was in, what
   the app said, the attached log), like Mac Engine Room's sensor report.
 - Add a third-party notices file: Python, pywebview, pyobjc, libusb (LGPL,

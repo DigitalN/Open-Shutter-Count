@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -171,10 +170,6 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		return nil, err
 	}
 
-	if runtime.GOOS != "darwin" {
-		return nil, withHint(err, busyHint())
-	}
-
 	// macOS hands every camera to ptpcamerad the moment it appears, and
 	// launchd starts it again as soon as an app asks for a camera. So stop
 	// it, then try to open the camera every few milliseconds until it comes
@@ -263,19 +258,6 @@ another camera app. ` + quit
 		return apps[0] + " has the camera open. " + quit
 	default:
 		return strings.Join(apps, ", ") + " have the camera open. " + quit
-	}
-}
-
-func busyHint() string {
-	switch runtime.GOOS {
-	case "linux":
-		return `On desktop Linux gvfs claims cameras on sight. Release it with:
-  gio mount -u gphoto2://
-  systemctl --user mask gvfs-gphoto2-volume-monitor`
-	case "windows":
-		return "Close any other software that may have opened the camera."
-	default:
-		return ""
 	}
 }
 

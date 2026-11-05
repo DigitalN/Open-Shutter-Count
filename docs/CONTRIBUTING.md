@@ -105,10 +105,6 @@ bodies still answer it.
 
 ## Other things that would help
 
-- **Confirming the Windows backend against real hardware.** It opens the still
-  image device interface with `CreateFile` and exchanges containers with
-  `ReadFile` / `WriteFile`, which follows from how Windows exposes PTP cameras
-  but has not been run against a camera yet.
 - **Explaining the varying low byte offset** in Canon's replies. The decoder
   takes the last non-zero byte after offset 1. That works on every reply seen
   so far, but it is an empirical rule rather than an understood format. A third
@@ -147,9 +143,9 @@ bodies also advertise `UpdateFirmware`, `FormatStore` and `DeleteObject`.
 
 ```bash
 make test        # tests, with the race detector
-make lint-all    # lint every platform's USB backend, not only the host's
-make build-all   # cross compile every supported target
-make all         # all of the above
+make lint-mac    # lint the macOS USB backend, from any machine
+make build-mac   # rebuild mac/openshuttercounter and libusb
+python3 -m pytest app/tests    # the app
 ```
 
 Two things are worth knowing before changing anything under
@@ -160,6 +156,6 @@ Two things are worth knowing before changing anything under
   shown to accept. A malformed payload puts a Canon body into Err 70. If a
   framing test fails, the change is wrong: do not update the fixture to match
   the code, and do not run the result against a camera.
-- **Only one platform's USB backend compiles on any given machine.** Run
-  `make lint-all` and `make build-all` before opening a pull request, or CI
-  will find what your laptop could not.
+- **The USB backend only compiles for macOS.** Elsewhere a stub stands in,
+  so run `make lint-mac` as well as `make lint` if you're not on a Mac. There's
+  no CI: run the tests before opening a pull request.

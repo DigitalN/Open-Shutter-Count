@@ -228,40 +228,15 @@ exact number of frames, read it again, and keep whatever advanced by exactly
 that number. `openshuttercounter --trace` and `openshuttercounter decode` exist
 for precisely this, and CONTRIBUTING.md walks through it.
 
-The channel itself is transport independent. Only the plumbing underneath
-differs, and this repository implements three of them, none of which needs the
-camera's driver replaced:
-
-| Platform | Backend | cgo | Driver swap | Run against a camera |
-|---|---|---|---|---|
-| Linux | usbfs ioctls on `/dev/bus/usb` | no | no | yes |
-| macOS | libusb-1.0, loaded at runtime via purego | no | no | not yet |
-| Windows | still image device interface, `CreateFile` + `ReadFile` / `WriteFile` | no | no | not yet |
-
-### The Windows transport
-
-Windows exposes every PTP camera through the still image device interface class
-`{6BDD1FC6-810F-11D0-BEC7-08002BE2092F}`, backed by `usbscan.sys`. An
-application enumerates it with SetupAPI, opens the resulting device path with
-`CreateFile`, and exchanges PTP containers with `WriteFile` and `ReadFile`. The
-I/O is pipe style rather than `DeviceIoControl` based.
-
-The useful consequence is that a Windows implementation needs neither libusb
-nor a WinUSB driver swap, so the manufacturer's own software keeps working
-alongside it. That is what this project's Windows backend does.
-
-**It has not been run against a camera yet.** Confirming it takes one person
-with a Windows machine and a camera:
-
-```
-openshuttercounter --trace windows.json
-```
+The channel itself is transport independent. Open Shutter Count reads it on
+macOS only, through libusb (below), without replacing the camera's driver. The
+readings above were taken through the Linux backend this project started with,
+since removed.
 
 ### The macOS transport
 
 libusb is loaded at runtime with purego rather than linked with cgo, which
-keeps `CGO_ENABLED=0` across the project and lets every target cross compile
-from one machine. IOKit's USB device interfaces are CoreFoundation plug-ins and
+keeps `CGO_ENABLED=0` and lets the Mac binary be built on any machine. IOKit's USB device interfaces are CoreFoundation plug-ins and
 are considerably more work to drive through a runtime FFI than a flat C API,
 which is why libusb is there at all.
 
