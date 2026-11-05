@@ -10,21 +10,22 @@ Free and open source.
   <img src="docs/screenshots/result.png" width="360" alt="Open Shutter Count showing a Canon R8's mechanical, electronic and total counts">
 </p>
 
-- **Read off the camera itself.** A photo only carries the total. The mechanical count
+- **Read off the camera itself.** Some online tools read from a photo file. The mechanical count
   is kept inside the camera, and this reads it from there.
-- **Read-only.** It never changes a setting, a file or a count on the camera.
-- **Walks you through it.** It checks the camera is set up, waits for it, reads it, and
+- **Guided walkthrough experience.** It checks the camera is set up, waits for it, reads it, and
   says what it found, or what to do if it couldn't.
 
 ## Cameras
 
-| Camera | What it reads |
+**| Camera | Officially Tested Bodies |**
 |---|---|
-| Canon R8 | Mechanical, electronic and all photos, each to within a thousand: the camera only keeps them that way. Tested. |
-| Canon EOS 5D Mark IV | Exact shutter and mirror counts. Tested. |
-| Other EF DSLRs that list Canon's factory channel (7D Mark II, 5DS R, 80D, 77D and so on) | Read the way the 5D Mark IV is, and labelled not fully tested |
-| RF bodies, and newer bodies that report the R8's counter (90D, EOS M50 Mark II, M6 Mark II) | Read the way the R8 is, and labelled not fully tested |
-| Older Canon bodies that answer the standard shutter count | Read, and labelled not fully tested |
+| Canon R8 | Mechanical and electronic shot counts are separated. Each to within a thousand as the camera only keeps them that way.
+| Canon EOS 5D Mark IV | Exact shutter and mirror counts.
+
+
+**| Camera | Should work, but not 100% confirmed tested |**
+| Other EF DSLRs that list Canon's factory channel (7D Mark II, 5DS R, 80D, 77D and so on) | Read the way the 5D Mark IV does |
+| RF bodies, and newer bodies that report the R8's counter (90D, EOS M50 Mark II, M6 Mark II) | Read the way the R8 does |
 | Anything else | Can't be read yet. Click Open an Issue in the app, and it can be worked out. |
 
 ## Install
@@ -37,20 +38,20 @@ Free and open source.
 
 The first time you open it, macOS may say it can't verify Open Shutter Count. Click
 **Done**, then go to **System Settings › Privacy & Security**, scroll down, and click
-**Open Anyway**. You only do this once: Open Shutter Count isn't distributed through
-Apple, so Apple hasn't checked it. All of its code is in this repository.
+**Open Anyway**. You only do this once: Open Shutter Count isn't tied to a paid
+developer account so this step is required.
 
-It keeps itself up to date: each time it opens, it installs a new version if there is
-one, and reopens.
+Each time it opens it installs a new version if there is one, and reopens.
+This allows us to quickly test new cameras as they are added.
 
 ## Reading a camera
 
-1. Open the app. It checks for an update first.
+1. Open the app.
 2. Set up the camera as the checklist says: USB connection set to **Photo Import/Remote
    Control** (on the Canon R8: MENU › Setup (wrench) › page 4 › Choose USB connection
    app), Wi-Fi and Bluetooth off, a card in, plugged straight into the Mac with a data
    cable, and Image Capture, Photos and EOS Utility closed.
-3. Switch the camera on and plug it in. It's found by itself. On a Mac laptop, click
+3. Switch the camera on and plug it in. On a Mac laptop, click
    **Allow** if macOS asks whether the accessory can connect.
 4. It reads the camera and shows the counts.
 
@@ -61,7 +62,7 @@ a new GitHub issue with the log filled in, for you to look over before you submi
 
 - **The only connection is the update check**: each time it opens, it asks GitHub for
   the latest release. It only installs updates signed by the same developer. No
-  analytics, crash reports or web server.
+  analytics, crash reports or web servers.
 - **The log only goes where you send it**: Save Log saves it where you choose, and Open an
   Issue sends it to GitHub to fill in a new issue, which isn't posted until you submit it. It
   has the camera's model, firmware and what it answered, your Mac's model and macOS
@@ -71,17 +72,6 @@ a new GitHub issue with the log filled in, for you to look over before you submi
   update download is deleted. macOS keeps its own records, such as the accessory
   approval and Open Anyway.
 
-## Command line
-
-The `openshuttercounter` tool inside the app also runs on its own on a Mac. See
-[docs/USAGE.md](docs/USAGE.md).
-
-## How it works
-
-Canon keeps the counts in different places on different bodies:
-[docs/PROTOCOL.md](docs/PROTOCOL.md) covers the factory channel the 5D Mark IV uses, and
-[docs/R8-PROGRESS.md](docs/R8-PROGRESS.md) covers the event channel the R8 uses. Building
-the app and making a release: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Credit
 
