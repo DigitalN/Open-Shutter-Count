@@ -55,25 +55,28 @@ A copy run from source doesn't check for updates, and uses `mac/openshuttercount
 ## Tests
 
 ```bash
-python3 -m pytest app/tests        # the app (runs anywhere)
-make test                          # the Go tool
-make lint lint-mac                 # the Go linter, here and for the Mac
+make check
 ```
 
-There's no CI, as with Mac Engine Room: these run before every push, and
-`Package a Release.command` runs the app's tests again before it builds. The tool
-only reads cameras on macOS; on any other machine it builds and its tests run,
-but it finds no camera.
+runs everything that has to pass before a push: `go vet`, the Go tests and the linter,
+here and for the Mac, and the app's tests (`pip install pytest` off a Mac). It also
+remakes `mac/openshuttercounter` and the app's fixtures, which come out the same every
+time, and fails if either was stale: commit what it remade, then run it again.
+
+There's no CI, as with Mac Engine Room. `.githooks/pre-push` runs `make check` before
+every push, and `Package a Release.command` runs the app's tests again before it builds.
+Claude sessions turn the hook on when they start (`.claude/hooks/session-start.sh`);
+anywhere else, run `git config core.hooksPath .githooks` once. The tool only reads
+cameras on macOS; on any other machine it builds and its tests run, but it finds no
+camera.
 
 The app's tests read what the tool prints from `app/tests/fixtures`. Those files are made
 by the Go tests, from the real code reading a scripted camera, so the two can't drift.
-After changing what `read --json` or `list --json` prints, or what a read sends:
+`make check` remakes them, or on their own:
 
 ```bash
 UPDATE_FIXTURES=1 go test ./internal/cmd -run TestAppFixtures
 ```
-
-and commit the files with the change.
 
 To look at the page without a Mac:
 
@@ -91,20 +94,25 @@ Releases are public, and installed copies update themselves from the latest one 
 their next launch, so a mistake reaches everyone. A new release is also how a fix is
 tested on the camera: there's no separate test build.
 
-Claude does all of it, as in Mac Engine Room, when it runs on the maintainer's Mac:
-building, signing and publishing need the certificate in its keychain. A Claude
-session in the cloud can't reach the Mac, so it stops before *Build and check the
-disk image* and hands the rest over.
+Claude does every step below, every time, in order, without being reminded. On the
+maintainer's Mac that's all of it: building, signing and publishing need the certificate
+in its keychain. A session in the cloud can't reach the Mac, so it stops before *Build
+and check the disk image* and hands the rest over, with the version and the release
+notes written out.
+
+Run the steps one at a time, and read each result before a step that can't be undone
+(merging, publishing, turning the previous release into a draft).
 
 ### Before building
 
 - [ ] Everything going out is merged into `main`, and the Mac's `main` matches GitHub
   (`git pull`).
-- [ ] `VERSION` in `app/version.py` is raised by 0.0.1 (`0.5.10` after `0.5.9`). It must
+- [ ] `VERSION` in `app/version.py` is raised by 0.0.1 (`0.5.10` after `0.5.9`), on a
+  `claude/release-<version>` branch whose pull request Claude opens and merges. It must
   be higher than the latest release, or installed copies won't update.
-- [ ] `mac/openshuttercounter` was rebuilt with that version (`bash mac/build.sh`, then
-  commit it). `app/scripts/build.sh` refuses to build if the two differ.
-- [ ] The tests above pass on `main`.
+- [ ] `make check` passes on that branch. It remakes `mac/openshuttercounter` with the
+  new version, so commit that with the bump; `app/scripts/build.sh` refuses to build if
+  the two differ.
 - [ ] The signing certificate is valid and not about to expire:
   `security find-identity -v -p codesigning` lists an *Apple Development* identity from
   team `XT4LT7MS6Y`, the same as Mac Engine Room's. Installed copies refuse updates
