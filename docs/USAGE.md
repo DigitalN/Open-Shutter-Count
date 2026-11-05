@@ -62,7 +62,8 @@ camera lists in GetDeviceInfo:
   DIGIC 7. Bodies other than the 5D Mark IV are read at its addresses;
 - otherwise Canon's event channel, with the tethering commands EOS Utility
   sends (SetRemoteMode, SetEventMode, GetEvent, and RequestDevicePropValue for
-  0xD167), on any body that lists them: RF bodies, the 90D, newer EOS M. 0xD167
+  0xD167 and then 0xD1AF, the serial number on the body, if the camera didn't
+  report them), on any body that lists them: RF bodies, the 90D, newer EOS M. 0xD167
   is read the way the R8 lays it out. A body that lists both is tried here if
   the factory channel gives nothing;
 - a body that lists neither is sent nothing more, and reported as one that

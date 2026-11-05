@@ -44,9 +44,11 @@ const (
 const PropShutterReleaseCounter uint32 = 0xd167
 
 // PropSerialNumber is EOS property 0xD1AF, which libgphoto2 names
-// EOS_SerialNumber: the serial number on the body, as text. libgphoto2's EOS R8
-// dump has it in the event channel's first batch, twelve digits and a NUL. It
-// isn't the serial number GetDeviceInfo gives.
+// EOS_SerialNumber: the serial number on the body, as text, a NUL after it.
+// It isn't the serial number GetDeviceInfo gives, which on the EOS R8 is a
+// 31 character hex ID. The maintainer's R8 doesn't report it unasked: its
+// 2026-11-04 trace has 161 properties in the first batch, and not this one.
+// So it's asked for, once 0xD167 is in hand.
 const PropSerialNumber uint32 = 0xd1af
 
 // ErrNoEventChannel means the camera doesn't list the operations needed to
@@ -163,7 +165,8 @@ func (t *EventTable) SerialNumber() string {
 //
 // It sends SetRemoteMode(1) and SetEventMode(1), then GetEvent until the
 // camera has nothing more to report. If property 0xD167 wasn't among it, it
-// asks for it with RequestDevicePropValue and drains again. On the way out it
+// asks for it with RequestDevicePropValue and drains again; then, with 0xD167
+// in hand, the same for the serial number, 0xD1AF. On the way out it
 // does what libgphoto2 does when it stops tethering: SetRemoteMode(0), then
 // SetRemoteMode(1), which it notes switches the display back on, then
 // SetEventMode(0).
@@ -210,21 +213,44 @@ func (t *EventTable) readEvents(dev *ptp.Device, info ptp.DeviceInfo, logger *za
 		return err
 	}
 
-	if _, ok := t.Property(PropShutterReleaseCounter); ok {
+	if err := t.requestIfMissing(dev, info, PropShutterReleaseCounter, logger); err != nil {
+		return err
+	}
+
+	// The serial number is only worth asking for once there's a count to
+	// show it with.
+	if _, ok := t.Property(PropShutterReleaseCounter); !ok {
+		return nil
+	}
+
+	return t.requestIfMissing(dev, info, PropSerialNumber, logger)
+}
+
+// requestIfMissing asks for a property the camera didn't report on its own,
+// with RequestDevicePropValue, and drains what it reports then. Only
+// PropShutterReleaseCounter and PropSerialNumber are asked for: the
+// maintainer approved the first on 2026-11-04 and the second on 2026-11-05,
+// after the EOS R8 was found not to report its serial number unasked.
+func (t *EventTable) requestIfMissing(dev *ptp.Device, info ptp.DeviceInfo, prop uint32, logger *zap.Logger) error {
+	if prop != PropShutterReleaseCounter && prop != PropSerialNumber {
+		return fmt.Errorf("refusing to ask for %#04x: only 0xd167 and 0xd1af are asked for", prop)
+	}
+
+	if _, ok := t.Property(prop); ok {
 		return nil
 	}
 
 	if !info.Supports(OpEOSRequestDevicePropValue) {
-		t.Steps = append(t.Steps, "0xd167 wasn't reported, and the camera doesn't list RequestDevicePropValue")
+		t.Steps = append(t.Steps, fmt.Sprintf("%#04x wasn't reported, and the camera doesn't list RequestDevicePropValue", prop))
 
 		return nil
 	}
 
 	// A camera without the property answers GeneralError, which libgphoto2
 	// logs and carries on from; so does this.
-	name := fmt.Sprintf("RequestDevicePropValue(%#04x)", PropShutterReleaseCounter)
+	name := fmt.Sprintf("RequestDevicePropValue(%#04x)", prop)
 
-	resp, err := dev.Transact(OpEOSRequestDevicePropValue, PropShutterReleaseCounter)
+	resp, err := dev.Transact(OpEOSRequestDevicePropValue, prop)
 	if err != nil {
 		return fmt.Errorf("%s: %w", name, err)
 	}

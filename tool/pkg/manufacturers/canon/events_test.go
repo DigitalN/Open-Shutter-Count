@@ -26,6 +26,8 @@ const (
 	getEvent    = "0x9116[]"
 	resetRemote = "0x9114[0]"
 	leaveEvents = "0x9115[0]"
+	askCounter  = "0x9127[53607]" // RequestDevicePropValue(0xd167)
+	askSerial   = "0x9127[53679]" // RequestDevicePropValue(0xd1af)
 )
 
 // leaving is what libgphoto2 sends when it stops tethering.
@@ -170,12 +172,15 @@ func TestReadEventTable(t *testing.T) {
 	table, err := ReadEventTable(ptp.New(cam), eventOps, nil)
 	require.NoError(t, err)
 
-	assert.Equal(t, append([]string{enterRemote, enterEvents, getEvent, getEvent}, leaving...), cam.commands)
+	// The count came unasked; the serial number didn't, so it's asked for.
+	assert.Equal(t, append([]string{
+		enterRemote, enterEvents, getEvent, getEvent, askSerial, getEvent,
+	}, leaving...), cam.commands)
 
 	value, ok := table.Property(PropShutterReleaseCounter)
 	require.True(t, ok)
 	assert.Equal(t, eosD167, value)
-	assert.Len(t, table.Replies, 2)
+	assert.Len(t, table.Replies, 3)
 }
 
 func TestReadEventTableAsksForD167WhenItIsMissing(t *testing.T) {
@@ -205,7 +210,8 @@ func TestReadEventTableAsksForD167WhenItIsMissing(t *testing.T) {
 
 	assert.Equal(t, append([]string{
 		enterRemote, enterEvents, getEvent,
-		"0x9127[53607]", getEvent, getEvent,
+		askCounter, getEvent, getEvent,
+		askSerial, getEvent,
 	}, leaving...), cam.commands)
 
 	_, ok := table.Property(PropShutterReleaseCounter)
@@ -238,7 +244,7 @@ func TestReadEventTableLeavesRemoteModeWhenEventModeIsRefused(t *testing.T) {
 func TestReadEventTableStopsDrainingACameraThatNeverRunsOut(t *testing.T) {
 	cam := &camera{answer: func(op uint16, _ []uint32) ([]byte, uint16) {
 		if op == OpEOSGetEvent {
-			return eventList(propRecord(0xd167, eosD167...)), ptp.RCOK
+			return eventList(propRecord(0xd167, eosD167...), propRecord(0xd1af, []byte("072022001307\x00")...)), ptp.RCOK
 		}
 
 		return nil, ptp.RCOK
@@ -247,6 +253,137 @@ func TestReadEventTableStopsDrainingACameraThatNeverRunsOut(t *testing.T) {
 	table, err := ReadEventTable(ptp.New(cam), eventOps, nil)
 	require.NoError(t, err)
 	assert.Len(t, table.Replies, maxEventRounds)
+}
+
+// r8Camera reports 0xD167 unasked, as the maintainer's EOS R8 does, and
+// answers a request for 0xD1AF with refusal, or with the serial number in the
+// next GetEvent.
+func r8Camera(refuse bool) *camera {
+	asked := false
+
+	return &camera{answer: func(op uint16, params []uint32) ([]byte, uint16) {
+		switch op {
+		case OpEOSRequestDevicePropValue:
+			if refuse {
+				return nil, ptp.RCGeneralError
+			}
+
+			asked = len(params) == 1 && params[0] == PropSerialNumber
+
+			return nil, ptp.RCOK
+		case OpEOSGetEvent:
+			if asked {
+				asked = false
+
+				return eventList(propRecord(0xd1af, []byte("072022001307\x00")...)), ptp.RCOK
+			}
+
+			return eventList(), ptp.RCOK
+		default:
+			return nil, ptp.RCOK
+		}
+	}}
+}
+
+func TestReadEventTableAsksForTheSerialNumberWhenItIsMissing(t *testing.T) {
+	cam := r8Camera(false)
+	first := true
+	answer := cam.answer
+	cam.answer = func(op uint16, params []uint32) ([]byte, uint16) {
+		if op == OpEOSGetEvent && first {
+			first = false
+
+			return eventList(propRecord(0xd167, eosD167...)), ptp.RCOK
+		}
+
+		return answer(op, params)
+	}
+
+	table, err := ReadEventTable(ptp.New(cam), eventOps, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, append([]string{
+		enterRemote, enterEvents, getEvent, getEvent, askSerial, getEvent, getEvent,
+	}, leaving...), cam.commands)
+	assert.Equal(t, "072022001307", table.SerialNumber())
+	assert.Contains(t, table.Steps, "RequestDevicePropValue(0xd1af): OK")
+}
+
+func TestASerialNumberTheCameraWontGiveLeavesTheCountAlone(t *testing.T) {
+	cam := r8Camera(true)
+	first := true
+	answer := cam.answer
+	cam.answer = func(op uint16, params []uint32) ([]byte, uint16) {
+		if op == OpEOSGetEvent && first {
+			first = false
+
+			return eventList(propRecord(0xd167, eosD167...)), ptp.RCOK
+		}
+
+		return answer(op, params)
+	}
+
+	table, err := ReadEventTable(ptp.New(cam), eventOps, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, append([]string{enterRemote, enterEvents, getEvent, getEvent, askSerial}, leaving...), cam.commands)
+	assert.Empty(t, table.SerialNumber())
+	assert.Contains(t, table.Steps, "RequestDevicePropValue(0xd1af): GeneralError")
+
+	_, ok := table.Property(PropShutterReleaseCounter)
+	assert.True(t, ok)
+}
+
+func TestASerialNumberReportedUnaskedIsntAskedFor(t *testing.T) {
+	sent := false
+
+	cam := &camera{answer: func(op uint16, _ []uint32) ([]byte, uint16) {
+		if op == OpEOSGetEvent && !sent {
+			sent = true
+
+			return eventList(propRecord(0xd167, eosD167...), propRecord(0xd1af, []byte("072022001307\x00")...)), ptp.RCOK
+		}
+
+		if op == OpEOSGetEvent {
+			return eventList(), ptp.RCOK
+		}
+
+		return nil, ptp.RCOK
+	}}
+
+	table, err := ReadEventTable(ptp.New(cam), eventOps, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, append([]string{enterRemote, enterEvents, getEvent, getEvent}, leaving...), cam.commands)
+	assert.Equal(t, "072022001307", table.SerialNumber())
+}
+
+func TestTheSerialNumberIsntAskedForWithoutACount(t *testing.T) {
+	// No 0xD167 unasked, and the request for it refused.
+	cam := &camera{answer: func(op uint16, _ []uint32) ([]byte, uint16) {
+		switch op {
+		case OpEOSRequestDevicePropValue:
+			return nil, ptp.RCGeneralError
+		case OpEOSGetEvent:
+			return eventList(), ptp.RCOK
+		default:
+			return nil, ptp.RCOK
+		}
+	}}
+
+	_, err := ReadEventTable(ptp.New(cam), eventOps, nil)
+	require.NoError(t, err)
+
+	assert.Equal(t, append([]string{enterRemote, enterEvents, getEvent, askCounter}, leaving...), cam.commands)
+}
+
+func TestOnlyTheCountAndTheSerialNumberAreAskedFor(t *testing.T) {
+	cam := &camera{answer: func(uint16, []uint32) ([]byte, uint16) { return nil, ptp.RCOK }}
+
+	var table EventTable
+
+	require.Error(t, table.requestIfMissing(ptp.New(cam), eventOps, 0xd115, nil))
+	assert.Empty(t, cam.commands)
 }
 
 func TestTheSerialNumberOnTheBody(t *testing.T) {

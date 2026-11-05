@@ -89,7 +89,10 @@ is also how a fix gets tested on the camera.
   tethering commands for reading the event channel, and only these:
   SetRemoteMode 0x9114 (params 1, then 0 and 1 on the way out), SetEventMode
   0x9115 (1, then 0), GetEvent 0x9116, and RequestDevicePropValue 0x9127 for
-  0xD167 only. They're in `tool/pkg/manufacturers/canon/events.go`, sent by
+  0xD167, and for 0xD1AF (the serial number on the body), which the maintainer
+  approved on 2026-11-05 after finding the R8 doesn't report it unasked. 0xD1AF is
+  asked for only once 0xD167 is in hand, and neither is asked for if the camera
+  reported it. Nothing else is asked for. They're in `tool/pkg/manufacturers/canon/events.go`, sent by
   `probe --events` and by a read of a body that lists them. The maintainer
   approved extending them from the R8 to RF bodies, then to any Canon body that
   lists them (the 90D, EOS M), on 2026-11-04, and each is sent only if the
@@ -102,8 +105,8 @@ is also how a fix gets tested on the camera.
 - No serial number in anything the tool or the app writes: traces blank it, and
   Canon's owner, nickname, artist and copyright properties too (`tool/pkg/trace`,
   `canon.ScrubEvents`). The one exception is the result screen, which shows the
-  serial number on the body (Canon's 0xD1AF, from the event channel the read
-  already drains) so it can be screenshotted for a sale. The maintainer chose this
+  serial number on the body (Canon's 0xD1AF, from the event channel, asked for
+  if the camera didn't report it) so it can be screenshotted for a sale. The maintainer chose this
   on 2026-11-05. Only `read --serial` prints it, and the app passes that; the log,
   the issue and traces still never hold it.
 - When the camera stops answering, the maintainer switches it off and on (battery out
