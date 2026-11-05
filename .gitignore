@@ -2,15 +2,15 @@ dist
 vendor
 .bin
 openshuttercounter
-!cmd/openshuttercounter
-!mac/openshuttercounter
+!tool/cmd/openshuttercounter
+!tool/mac/openshuttercounter
 helpers
 coverage.out
 
 # A run's logs. Traces and probes (.json) hold the camera's serial number, so
 # only the .txt logs can be committed.
-mac/readings/*
-!mac/readings/*.txt
+tool/mac/readings/*
+!tool/mac/readings/*.txt
 .DS_Store
 
 # capture and snapshot artefacts from a research session

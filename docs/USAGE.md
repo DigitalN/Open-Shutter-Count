@@ -5,11 +5,11 @@ inside it, on its own, on a Mac.
 
 ## Get it
 
-The build in `mac/` of this repository, with the copy of libusb beside it, is the
+The build in `tool/mac/` of this repository, with the copy of libusb beside it, is the
 one the app bundles. Or, with Go installed:
 
 ```bash
-go install github.com/DigitalN/openshuttercounter/cmd/openshuttercounter@latest
+go install github.com/DigitalN/openshuttercounter/tool/cmd/openshuttercounter@latest
 ```
 
 Releases only carry the app.
@@ -45,7 +45,7 @@ probes. That's how a new camera gets worked out; see
 - A data cable, plugged in directly rather than through a hub. USB 2 ports
   have been more reliable than USB 3.
 
-USB goes through libusb, loaded at runtime. The copy in `mac/` ships with it;
+USB goes through libusb, loaded at runtime. The copy in `tool/mac/` ships with it;
 otherwise `brew install libusb`. macOS gives every camera to `ptpcamerad`;
 the tool stops it and retries when the camera is busy, and macOS restarts it
 afterwards.
@@ -77,7 +77,7 @@ not fully tested.
 
 This tool only reads. The factory channel also carries commands
 that write calibration data and the counters themselves; the code
-[refuses to build them](../pkg/manufacturers/canon/factory.go), and a test
+[refuses to build them](../tool/pkg/manufacturers/canon/factory.go), and a test
 checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 
 ## Repository layout
@@ -85,6 +85,7 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 | Path | Contents |
 |---|---|
 | `app/` | The Open Shutter Count app; [DEVELOPMENT.md](DEVELOPMENT.md) |
+| `tool/` | This tool, a Go module of its own; the paths below are inside it |
 | `mac/` | The Mac binary and libusb, which the app bundles, and `Find Shutter Counter.command` |
 | `cmd/`, `internal/` | The CLI |
 | `pkg/manufacturers` | What a camera maker has to provide to be readable |
@@ -92,4 +93,4 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 | `pkg/ptp` | PTP over USB, enough of it to send vendor opcodes |
 | `pkg/usb` | USB on macOS, through libusb |
 | `pkg/trace`, `pkg/pcap` | Recording conversations, and reading USB captures |
-| `docs/` | This, the protocol reference, and how to add a camera |
+| `docs/` | This, the protocol reference, how to add a camera, and the third-party notices |

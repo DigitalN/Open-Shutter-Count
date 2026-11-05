@@ -64,7 +64,7 @@ def test_no_camera_lists_the_usb_devices(fixture):
 
 
 def test_the_go_tool_finds_the_trace_with_the_same_markers():
-    source = (Path(__file__).resolve().parents[2] / "pkg" / "trace" / "trace.go").read_text(encoding="utf-8")
+    source = (Path(__file__).resolve().parents[2] / "tool" / "pkg" / "trace" / "trace.go").read_text(encoding="utf-8")
     assert f'LogBegin = "{TRACE_BEGIN}"' in source
     assert f'LogEnd   = "{TRACE_END}"' in source
 

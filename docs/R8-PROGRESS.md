@@ -2,7 +2,7 @@
 
 The maintainer's local copy is `~/Documents/GitHub/openshuttercounter`. Readings
 now come from the Open Shutter Count app: its saved log has no serial number in
-it. `Find Shutter Counter.command` still saves `.txt` logs in `mac/readings/`
+it. `Find Shutter Counter.command` still saves `.txt` logs in `tool/mac/readings/`
 (probes hold the camera's serial number, so they're ignored). The readings and the test photo cited
 below were taken out of the repo and its history on 2026-11-04 for privacy;
 the figures quoted here are what they showed.
@@ -140,7 +140,7 @@ How word 3 and word 4 were identified:
   word 3 as 0xffffffff, which the decoder refuses, so the M100 ends as "can't
   read yet".
 - Nothing has been reported upstream.
-- `mac/openshuttercounter` stays committed, so building the app on the Mac
+- `tool/mac/openshuttercounter` stays committed, so building the app on the Mac
   needs only Python (Q31).
 - Old branches are gone (2026-11-05): GitHub has only `main`, and the local
   copy of the branch from before the readings were taken out of the history is

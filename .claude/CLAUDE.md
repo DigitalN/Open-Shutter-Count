@@ -18,15 +18,19 @@ prefix: `/mattpocock-skills:<name>` is `/<name>`, so read
 
 ## Layout
 
-- The top level is kept for what a user needs: the README, LICENSE and
-  THIRD-PARTY-NOTICES, plus what Go and the tooling need there.
+- The top level holds three folders and only the files GitHub, git, make and
+  Claude Code look for there (README, LICENSE, Makefile, `.gitignore`,
+  `.github/`, `.claude/`), so the file list above the README stays short. New
+  files go in a folder; the maintainer chose this on 2026-11-05.
 - `app/`: the Mac app (Python, pywebview). `version.py` is the one version, for
   the app and the tool. `scripts/` builds, packages and draws the icon;
   `tests/` and `preview/` are below.
-- `mac/`: the tool and libusb the app bundles, `launcher.sh` and
+- `tool/`: the tool, a Go module of its own
+  (`github.com/DigitalN/openshuttercounter/tool`; the Makefile runs Go there).
+  `tool/mac/` has the tool and libusb the app bundles, `launcher.sh` and
   `Find Shutter Counter.command` (for working out new cameras).
 - `docs/`: CONTRIBUTING.md, DEVELOPMENT.md, PROTOCOL.md (5D Mark IV factory
-  channel), R8-PROGRESS.md, APP-PLAN.md, USAGE.md.
+  channel), R8-PROGRESS.md, APP-PLAN.md, USAGE.md, THIRD-PARTY-NOTICES.
 
 ## Releases
 
@@ -52,14 +56,14 @@ is also how a fix gets tested on the camera.
 - A session on the Mac reaches the Mac; a cloud session reaches neither the Mac
   nor the camera. Either way, reads are the maintainer's: they open the app and
   send the log Save Log wrote (no serial number in it) or what the screen said.
-  `Find Shutter Counter.command` still saves `.txt` logs in `mac/readings/` for
+  `Find Shutter Counter.command` still saves `.txt` logs in `tool/mac/readings/` for
   working out a camera; probes (`.json`) are ignored because they hold the
   camera's serial number. Earlier readings were taken out of the repo and its
   history for privacy; docs/R8-PROGRESS.md quotes what they showed.
 - Run `make check` before every push; the pre-push hook runs it too. It also
-  remakes `mac/openshuttercounter` and the app's fixtures, and fails if either
+  remakes `tool/mac/openshuttercounter` and the app's fixtures, and fails if either
   was stale: commit what it remade. The tool only reads cameras on macOS: off a
-  Mac, `pkg/usb` is a stub that finds none.
+  Mac, `tool/pkg/usb` is a stub that finds none.
 - The page can be checked on Linux with `python3 app/preview/serve.py` and a
   browser (scenarios at the top of `app/preview/stub.js`). The rest of the app
   (AppKit, the updater, signing) is checked by the maintainer's release run.
@@ -67,7 +71,7 @@ is also how a fix gets tested on the camera.
 ## Camera safety
 
 - Never send a command that writes to the camera, and never sweep opcodes.
-  `pkg/manufacturers/canon` refuses the known write commands; keep it that way.
+  `tool/pkg/manufacturers/canon` refuses the known write commands; keep it that way.
 - The reading rule (`canon.Reader.Read`), by what the camera lists in
   GetDeviceInfo: 0xD1AC on any Canon body; then the factory channel on the 5D
   Mark IV (by USB product ID) and on bodies that list 0x9052 and 0x9053 (EF
@@ -85,7 +89,7 @@ is also how a fix gets tested on the camera.
   tethering commands for reading the event channel, and only these:
   SetRemoteMode 0x9114 (params 1, then 0 and 1 on the way out), SetEventMode
   0x9115 (1, then 0), GetEvent 0x9116, and RequestDevicePropValue 0x9127 for
-  0xD167 only. They're in `pkg/manufacturers/canon/events.go`, sent by
+  0xD167 only. They're in `tool/pkg/manufacturers/canon/events.go`, sent by
   `probe --events` and by a read of a body that lists them. The maintainer
   approved extending them from the R8 to RF bodies, then to any Canon body that
   lists them (the 90D, EOS M), on 2026-11-04, and each is sent only if the
@@ -96,7 +100,7 @@ is also how a fix gets tested on the camera.
   until a test proves what it counts. Only the EOS R8 and the EOS 5D Mark IV are
   tested; a reading from any other body says it's not fully tested.
 - No serial number in anything the tool or the app writes: traces blank it, and
-  Canon's owner, nickname, artist and copyright properties too (`pkg/trace`,
+  Canon's owner, nickname, artist and copyright properties too (`tool/pkg/trace`,
   `canon.ScrubEvents`).
 - When the camera stops answering, the maintainer switches it off and on (battery out
   if it won't switch off).

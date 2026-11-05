@@ -137,9 +137,9 @@ own records (the USB accessory approval, "Open Anyway"), which is accepted.
 
 - Delete `.github/workflows/release.yml`, `.github/release.sh` and
   `Read Shutter Count.command`.
-- Keep `mac/Find Shutter Counter.command` and `mac/launcher.sh` (for working
-  out new cameras), and keep committing `mac/openshuttercounter` (built on Linux
-  by `mac/build.sh`), so the Mac needs only Python, not Go.
+- Keep `tool/mac/Find Shutter Counter.command` and `tool/mac/launcher.sh` (for working
+  out new cameras), and keep committing `tool/mac/openshuttercounter` (built on Linux
+  by `tool/mac/build.sh`), so the Mac needs only Python, not Go.
 - Keep `test.yml` and add the Python tests to it. (Changed by the maintainer on
   2026-11-05: no CI and no Linux or Windows support, so releases follow Mac
   Engine Room's path. `test.yml` and the Linux and Windows USB backends are gone.)
@@ -182,18 +182,18 @@ Copy from it:
 
 ### This repo
 
-- `pkg/manufacturers/canon/reader.go`, `Read()`: today R8 (by USB ID, in
+- `tool/pkg/manufacturers/canon/reader.go`, `Read()`: today R8 (by USB ID, in
   `eventModels`) goes to 0xD167; everything else tries 0xD1AC, then the
   factory channel, using a guessed memory map (`FallbackModel`) for unknown
   bodies. `noFactoryChannel` only shields the R8. Only `events.go` checks
   `info.Supports()`; the factory channel doesn't.
-- `pkg/manufacturers/canon/models.go`: the 5D Mark IV is the only factory
+- `tool/pkg/manufacturers/canon/models.go`: the 5D Mark IV is the only factory
   channel model, `Confirmed: true`.
-- `pkg/ptp/dataset.go`: `DeviceInfo` has `Model` and `SerialNumber`.
-- `internal/cmd/utils.go`: `darwinBusyHint`.
+- `tool/pkg/ptp/dataset.go`: `DeviceInfo` has `Model` and `SerialNumber`.
+- `tool/internal/cmd/utils.go`: `darwinBusyHint`.
 - `openshuttercounter --json` gives each count's range (`min` and `value`);
   `--trace` writes the camera exchange.
-- `pkg/usb/usb_darwin.go` looks for `libusb-1.0.dylib` next to the executable
+- `tool/pkg/usb/usb_darwin.go` looks for `libusb-1.0.dylib` next to the executable
   first, so keep them side by side in the bundle.
 - Check that `openshuttercounter list` sends nothing to the camera before
   polling with it every second.
@@ -201,7 +201,7 @@ Copy from it:
 ## Order of work
 
 1. Go: the reading rule, the serial left out of the trace, tests, then
-   `bash mac/build.sh` and commit the binary.
+   `bash tool/mac/build.sh` and commit the binary.
 2. App: copy Mac Engine Room's app, launcher and updater; change them as above;
    build the wizard; Python tests.
 3. Build and package scripts, the icon script, the version source.

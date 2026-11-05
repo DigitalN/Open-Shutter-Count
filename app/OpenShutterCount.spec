@@ -1,5 +1,5 @@
 # PyInstaller spec for Open Shutter Count. Built by app/scripts/build.sh, which then puts
-# the openshuttercounter tool and libusb (mac/) in Contents/MacOS, side by side, and signs
+# the openshuttercounter tool and libusb (tool/mac/) in Contents/MacOS, side by side, and signs
 # the whole app.
 
 import os
@@ -20,7 +20,7 @@ a = Analysis(
         ('index.html', '.'),
         # The licenses of what's inside: Contents/Resources in the app.
         (os.path.join(SPECPATH, '..', 'LICENSE'), '.'),
-        (os.path.join(SPECPATH, '..', 'THIRD-PARTY-NOTICES'), '.'),
+        (os.path.join(SPECPATH, '..', 'docs', 'THIRD-PARTY-NOTICES'), '.'),
     ],
     hiddenimports=[
         'webview',

@@ -18,7 +18,7 @@ import textwrap
 
 from camera import count_text
 
-# Must match pkg/trace's LogBegin and LogEnd, so `decode` finds the trace in a log.
+# Must match tool/pkg/trace's LogBegin and LogEnd, so `decode` finds the trace in a log.
 TRACE_BEGIN = "-----BEGIN OPENSHUTTERCOUNTER TRACE-----"
 TRACE_END = "-----END OPENSHUTTERCOUNTER TRACE-----"
 # Starts the last part of the log, the camera exchange, which the issue leaves out.
