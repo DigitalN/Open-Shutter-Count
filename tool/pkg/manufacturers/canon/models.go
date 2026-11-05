@@ -96,6 +96,11 @@ func LookupModel(productID uint16) (Model, bool) {
 var tested = map[string]bool{
 	"EOS 5D Mark IV": true,
 	"EOS R8":         true,
+	"EOS R3":         true,
+	// Canon's USB name for the R5 Mark II is probably "EOS R5m2" (as with the
+	// R6 Mark II); both spellings are listed until a log shows which.
+	"EOS R5 Mark II": true,
+	"EOS R5m2":       true,
 }
 
 // GuessModel is what a body that lists the factory channel but has no map of

@@ -72,7 +72,7 @@ camera lists in GetDeviceInfo:
 The R8 and the 90D don't list the factory channel, and both hung when it was
 sent anyway, so it's never sent to a body that doesn't list it.
 
-Only the EOS R8 and the EOS 5D Mark IV are tested; any other reading says it's
+Only the EOS R8, EOS R5 Mark II, EOS R3 and EOS 5D Mark IV are tested; any other reading says it's
 not fully tested.
 
 ## Safety
