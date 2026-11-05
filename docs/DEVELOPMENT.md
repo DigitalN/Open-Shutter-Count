@@ -91,10 +91,10 @@ Releases are public, and installed copies update themselves from the latest one 
 their next launch, so a mistake reaches everyone. A new release is also how a fix is
 tested on the camera: there's no separate test build.
 
-Claude opens and merges the pull requests, and does *Before building* and *After
-publishing* except the last step, plus the release notes. The rest needs the
-maintainer's Mac and certificate: building and checking the disk image, testing
-updating, publishing, and opening an older copy to see it update.
+Claude does all of it, as in Mac Engine Room, when it runs on the maintainer's Mac:
+building, signing and publishing need the certificate in its keychain. A Claude
+session in the cloud can't reach the Mac, so it stops before *Build and check the
+disk image* and hands the rest over.
 
 ### Before building
 

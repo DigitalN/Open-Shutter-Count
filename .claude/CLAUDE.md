@@ -34,12 +34,26 @@ start at 0.5.0 and go up by 0.0.1. Installed copies update from the latest
 release at every launch, so a new release is also how a fix gets tested on the
 camera.
 
-Claude opens every pull request into `main` and merges it once the checks below
-pass; there's no CI, as with Mac Engine Room. For
-a release, Claude works through the checklist in docs/DEVELOPMENT.md; its top
-says which steps are Claude's and which need the maintainer's Mac. Claude does
-its steps, then hands the maintainer the Mac steps with the version and the
-release notes written out.
+Releasing works as in Mac Engine Room:
+
+- Claude opens every pull request into `main` and merges it once the checks
+  below pass; there's no CI.
+- A release means the whole release checklist in docs/DEVELOPMENT.md, every
+  time, without being reminded: version bump, tests, building and checking the
+  DMG, release notes, publishing, drafting the previous release, the README, and
+  checking the live page afterwards.
+- Merging to `main` is not a release. If user-facing changes are merged but
+  unreleased, say so: installed copies only update when a release is published.
+- When the maintainer says a pull request is merged, do the release straight
+  away without asking: the version bump on a `claude/release-<version>` branch,
+  its pull request, merging that yourself, then building, publishing, drafting
+  the previous release and the checks.
+- Check each step's result before the next step that can't be undone. Don't
+  chain a check and a publish with `&&`.
+- Building, signing and publishing need the maintainer's Mac, whose keychain
+  holds the certificate. A session running on the Mac does all of it. A cloud
+  session can't reach the Mac: it does everything up to the build, then says so
+  and hands the maintainer the rest, with the release notes written out.
 
 ## How testing works
 
