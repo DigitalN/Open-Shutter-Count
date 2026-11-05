@@ -105,7 +105,7 @@ The final argument record in a multi-argument command is followed by 16 bytes
 of zero rather than 12, giving the trailing 4 bytes noted above.
 
 Both encodings are reproduced by `Command.MarshalBinary` in
-`pkg/manufacturers/canon`, whose tests assert the result byte for byte against
+`tool/pkg/manufacturers/canon`, whose tests assert the result byte for byte against
 payloads a camera has been observed to accept. The framing described here is
 therefore checked on every test run rather than transcribed once and trusted,
 which matters because a malformed payload is what produces Err 70.
@@ -207,7 +207,7 @@ state: calibration data, the counters themselves, the calendar. Commercial
 service software advertises the ability to rewrite the shutter counter and the
 whole MPU EEPROM through this same layer.
 
-`pkg/manufacturers/canon` refuses to build any of them —
+`tool/pkg/manufacturers/canon` refuses to build any of them —
 `Command.MarshalBinary` returns an error rather than bytes — and a test asserts
 the refusal. That is deliberate
 and is not an oversight to be tidied up: a read-only tool is worth more than a

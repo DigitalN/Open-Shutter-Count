@@ -83,7 +83,7 @@ Started from Maxime Visonneau's openshuttercounter, which worked out Canon's fac
 channel. The work it built on is credited in
 [docs/PROTOCOL.md](docs/PROTOCOL.md#prior-work). The app's updater, look and packaging
 come from [Mac Engine Room](https://github.com/DigitalN/mac-engine-room). What's
-bundled with it, and their licenses, are in [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES).
+bundled with it, and their licenses, are in [THIRD-PARTY-NOTICES](docs/THIRD-PARTY-NOTICES).
 
 ## License
 

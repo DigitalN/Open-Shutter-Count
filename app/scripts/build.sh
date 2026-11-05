@@ -35,13 +35,13 @@ MSG
     fi
 fi
 
-# One version for the app and the tool inside it. The tool is built by mac/build.sh
+# One version for the app and the tool inside it. The tool is built by tool/mac/build.sh
 # (on Linux or a Mac) and committed, so this Mac needs only Python.
 VERSION=$(sed -n 's/^VERSION = "\(.*\)"$/\1/p' app/version.py)
-TOOL_VERSION=$(mac/openshuttercounter --version 2>/dev/null | awk '{print $NF}')
+TOOL_VERSION=$(tool/mac/openshuttercounter --version 2>/dev/null | awk '{print $NF}')
 if [[ "$TOOL_VERSION" != "$VERSION" ]]; then
-    echo "mac/openshuttercounter is version '${TOOL_VERSION}', and app/version.py says $VERSION." >&2
-    echo "Rebuild it with: bash mac/build.sh (then commit it)." >&2
+    echo "tool/mac/openshuttercounter is version '${TOOL_VERSION}', and app/version.py says $VERSION." >&2
+    echo "Rebuild it with: bash tool/mac/build.sh (then commit it)." >&2
     exit 1
 fi
 
@@ -61,7 +61,7 @@ if ! OPENSHUTTERCOUNT_ICON="$WORK/OpenShutterCount.icns" python3 -m PyInstaller 
 fi
 
 # The tool and libusb side by side: the tool looks for libusb next to itself first.
-cp mac/openshuttercounter mac/libusb-1.0.dylib "$APP/Contents/MacOS/"
+cp tool/mac/openshuttercounter tool/mac/libusb-1.0.dylib "$APP/Contents/MacOS/"
 chmod 755 "$APP/Contents/MacOS/openshuttercounter"
 
 xattr -cr "$APP"

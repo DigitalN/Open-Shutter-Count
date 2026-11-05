@@ -61,7 +61,7 @@ openshuttercounter decode after.json  --only 9052,9053
 If every counter advanced by exactly the number of frames you took, that is a
 confirmed camera. Open a pull request adding it to the model list for its
 manufacturer — for Canon that is
-[`pkg/manufacturers/canon/models.go`](../pkg/manufacturers/canon/models.go) —
+[`tool/pkg/manufacturers/canon/models.go`](../tool/pkg/manufacturers/canon/models.go) —
 attaching both traces and saying how many frames you took:
 
 ```go
@@ -90,11 +90,11 @@ Only Canon is implemented so far. The rest of the project is deliberately
 manufacturer agnostic, so adding another one means writing a single package and
 naming it in one place:
 
-1. Implement `manufacturers.Reader` in `pkg/manufacturers/<name>/`. It gets an
+1. Implement `manufacturers.Reader` in `tool/pkg/manufacturers/<name>/`. It gets an
    open PTP session and the USB device it belongs to, and returns a
    `manufacturers.Reading`.
 2. Add it to the registry in
-   [`internal/cmd/utils.go`](../internal/cmd/utils.go).
+   [`tool/internal/cmd/utils.go`](../tool/internal/cmd/utils.go).
 
 Everything else — claiming the USB interface, PTP framing, tracing, output,
 JSON, the CLI — is already shared and needs no changes.
@@ -130,7 +130,7 @@ Anything that writes to the camera.
 
 On Canon bodies, `FA_SetProperty`, `FA_SetCalendar`, `MonWrite` and `MonCall`
 write factory state: calibration data, the calendar, and the actuation counters
-themselves. `pkg/manufacturers/canon` refuses to build them, a test asserts the
+themselves. `tool/pkg/manufacturers/canon` refuses to build them, a test asserts the
 refusal, and that is not up for negotiation. Shutter count fraud is the reason
 readers like this one get distrusted, and a read-only tool is worth more than a
 complete one.
@@ -144,11 +144,11 @@ bodies also advertise `UpdateFirmware`, `FormatStore` and `DeleteObject`.
 ```bash
 make check       # everything that has to pass before a push
 make test        # the Go tests, with the race detector
-make build-mac   # rebuild mac/openshuttercounter and libusb
+make build-mac   # rebuild tool/mac/openshuttercounter and libusb
 ```
 
 Two things are worth knowing before changing anything under
-`pkg/manufacturers/`:
+`tool/pkg/manufacturers/`:
 
 - **The framing tests are ground truth, not a formality.** They assert that
   what this code builds is byte-identical to what a camera has already been

@@ -4,8 +4,8 @@ set -euo pipefail
 
 cd "${CLAUDE_PROJECT_DIR:-.}"
 
-# Turn on .githooks/pre-push, which runs `make check` before every push.
-git config core.hooksPath .githooks
+# Turn on .github/hooks/pre-push, which runs `make check` before every push.
+git config core.hooksPath .github/hooks
 
 # A cloud container has Go but not pytest, which `make check` needs. The rest
 # of app/requirements.txt (pywebview, PyObjC, PyInstaller) is Mac only.

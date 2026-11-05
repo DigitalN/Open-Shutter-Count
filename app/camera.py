@@ -2,7 +2,7 @@
 
 `list` only asks macOS which USB devices are attached: nothing is sent to the camera,
 so it's safe to run every second while waiting. `read` reads the camera and says what
-it did. Both print JSON (see internal/cmd in the repository); `read --trace` also saves
+it did. Both print JSON (see tool/internal/cmd in the repository); `read --trace` also saves
 everything exchanged with the camera, minus its serial number.
 
 What the tool says is turned into what the result screen says by `summarize`.
@@ -19,7 +19,7 @@ LIST_TIMEOUT = 10  # seconds
 # that hangs the tool itself.
 READ_TIMEOUT = 120
 
-# How the tool names the kinds of failure (internal/cmd/read.go).
+# How the tool names the kinds of failure (tool/internal/cmd/read.go).
 NO_CAMERA = "no_camera"
 SEVERAL_CAMERAS = "several_cameras"
 WRONG_USB_MODE = "wrong_usb_mode"
@@ -47,10 +47,10 @@ class ToolError(Exception):
 
 
 def tool_path():
-    """The bundled tool: beside the app's executable, or mac/ when running from source."""
+    """The bundled tool: beside the app's executable, or tool/mac/ when running from source."""
     if getattr(sys, "frozen", False):
         return Path(sys.executable).parent / "openshuttercounter"
-    return Path(__file__).resolve().parent.parent / "mac" / "openshuttercounter"
+    return Path(__file__).resolve().parent.parent / "tool" / "mac" / "openshuttercounter"
 
 
 class Camera:

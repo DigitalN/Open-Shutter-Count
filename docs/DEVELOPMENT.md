@@ -15,11 +15,13 @@ the app was built to is [APP-PLAN.md](APP-PLAN.md).
   - `report.py`: the log Save Log writes, and the Open an Issue link.
   - `cleanup.py`: what makes sure nothing is left behind.
   - `version.py`: the version, for the app and the tool.
-- `mac/openshuttercounter` and `mac/libusb-1.0.dylib`: the tool and libusb, built on
-  Linux or a Mac by `mac/build.sh` and committed, so the Mac needs only Python. The app
-  bundle has them side by side in `Contents/MacOS`.
-- The tool's Go code: `cmd/`, `internal/`, `pkg/`. The reading rule is in
-  `pkg/manufacturers/canon/reader.go`.
+- `tool/`: the `openshuttercounter` command line tool, a Go module of its own.
+  - `cmd/`, `internal/` and `pkg/`: its Go code. The reading rule is in
+    `pkg/manufacturers/canon/reader.go`.
+  - `mac/openshuttercounter` and `mac/libusb-1.0.dylib`: the tool and libusb, built on
+    Linux or a Mac by `mac/build.sh` and committed, so the Mac needs only Python. The
+    app bundle has them side by side in `Contents/MacOS`.
+- `docs/`: these pages, and `THIRD-PARTY-NOTICES`, the licenses of what the app bundles.
 
 ## Build from source
 
@@ -50,7 +52,7 @@ To run from source without building (on a Mac, with the packages installed):
 python3 app/main.py
 ```
 
-A copy run from source doesn't check for updates, and uses `mac/openshuttercounter`.
+A copy run from source doesn't check for updates, and uses `tool/mac/openshuttercounter`.
 
 ## Tests
 
@@ -60,17 +62,17 @@ make check
 
 runs everything that has to pass before a push: `go vet`, the Go tests and the linter,
 here and for the Mac, and the app's tests (`pip install pytest` off a Mac). It also
-remakes `mac/openshuttercounter` and the app's fixtures, which come out the same every
-time, and fails if either was stale: commit what it remade, then run it again.
+remakes `tool/mac/openshuttercounter` and the app's fixtures, which come out the same
+every time, and fails if either was stale: commit what it remade, then run it again.
 
 It needs Go (`brew install go` on a Mac), and runs Go 1.27.0 whatever's installed:
-the Makefile and `mac/build.sh` pin it, and Go fetches it the first time. The tool's
+the Makefile and `tool/mac/build.sh` pin it, and Go fetches it the first time. The tool's
 bytes depend on the Go version, and golangci-lint can't read what Go 1.27.3 compiles.
 
-There's no CI, as with Mac Engine Room. `.githooks/pre-push` runs `make check` before
+There's no CI, as with Mac Engine Room. `.github/hooks/pre-push` runs `make check` before
 every push, and `Package a Release.command` runs the app's tests again before it builds.
 Claude sessions turn the hook on when they start (`.claude/hooks/session-start.sh`);
-anywhere else, run `git config core.hooksPath .githooks` once. The tool only reads
+anywhere else, run `git config core.hooksPath .github/hooks` once. The tool only reads
 cameras on macOS; on any other machine it builds and its tests run, but it finds no
 camera.
 
@@ -79,7 +81,7 @@ by the Go tests, from the real code reading a scripted camera, so the two can't 
 `make check` remakes them, or on their own:
 
 ```bash
-UPDATE_FIXTURES=1 go test ./internal/cmd -run TestAppFixtures
+cd tool && UPDATE_FIXTURES=1 go test ./internal/cmd -run TestAppFixtures
 ```
 
 To look at the page without a Mac:
@@ -114,9 +116,9 @@ Run the steps one at a time, and read each result before a step that can't be un
 - [ ] `VERSION` in `app/version.py` is raised by 0.0.1 (`0.5.10` after `0.5.9`), on a
   `claude/release-<version>` branch whose pull request Claude opens and merges. It must
   be higher than the latest release, or installed copies won't update.
-- [ ] `make check` passes on that branch. It remakes `mac/openshuttercounter` with the
-  new version, so commit that with the bump; `app/scripts/build.sh` refuses to build if
-  the two differ.
+- [ ] `make check` passes on that branch. It remakes `tool/mac/openshuttercounter` with
+  the new version, so commit that with the bump; `app/scripts/build.sh` refuses to build
+  if the two differ.
 - [ ] The signing certificate is valid and not about to expire:
   `security find-identity -v -p codesigning` lists an *Apple Development* identity from
   team `XT4LT7MS6Y`, the same as Mac Engine Room's. Installed copies refuse updates
