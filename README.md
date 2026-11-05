@@ -6,6 +6,12 @@ Free and open source.
 **[Download the latest version](https://github.com/DigitalN/openshuttercounter/releases/latest)**
 (for Macs with Apple silicon)
 
+<p align="center">
+  <img src="docs/screenshots/setup.png" width="360" alt="Open Shutter Count's checklist for setting up the camera">
+  &nbsp;
+  <img src="docs/screenshots/result.png" width="360" alt="Open Shutter Count showing a Canon R8's mechanical, electronic and total counts">
+</p>
+
 - **Read off the camera itself.** A photo only carries the total. The mechanical count
   is kept inside the camera, and this reads it from there.
 - **Read-only.** It never changes a setting, a file or a count on the camera.
