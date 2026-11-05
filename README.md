@@ -17,15 +17,19 @@ Free and open source.
 
 ## Cameras
 
-**| Camera | Officially Tested Bodies |**
+**Tested**
+
+| Camera | What it reads |
 |---|---|
-| Canon R8 | Mechanical and electronic shot counts are separated. Each to within a thousand as the camera only keeps them that way.
-| Canon EOS 5D Mark IV | Exact shutter and mirror counts.
+| Canon R8 | Mechanical and electronic shot counts, kept separate. Each to within a thousand, as the camera only keeps them that way. |
+| Canon EOS 5D Mark IV | Exact shutter and mirror counts. |
 
+**Should work, but not 100% confirmed**
 
-**| Camera | Should work, but not 100% confirmed tested |**
-| Other EF DSLRs that list Canon's factory channel (7D Mark II, 5DS R, 80D, 77D and so on) | Read the way the 5D Mark IV does |
-| RF bodies, and newer bodies that report the R8's counter (90D, EOS M50 Mark II, M6 Mark II) | Read the way the R8 does |
+| Camera | What it reads |
+|---|---|
+| Other EF DSLRs that list Canon's factory channel (7D Mark II, 5DS R, 80D, 77D and so on) | Read the way the 5D Mark IV is |
+| RF bodies, and newer bodies that report the R8's counter (90D, EOS M50 Mark II, M6 Mark II) | Read the way the R8 is |
 | Anything else | Can't be read yet. Click Open an Issue in the app, and it can be worked out. |
 
 ## Install
