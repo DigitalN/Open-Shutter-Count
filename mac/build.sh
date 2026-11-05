@@ -10,8 +10,12 @@
 #
 # Runs on macOS or Linux with Go, curl and unzip. Nothing here needs cgo, and
 # the Go linker ad-hoc signs darwin/arm64 binaries itself, so no Mac is needed.
-# The build is reproducible: the same Go version gives the same bytes.
+# The build is reproducible: the same Go version gives the same bytes, so it's
+# pinned below, the same as the Makefile's. Any Go 1.21 or later fetches that
+# version itself. Raise both on purpose, and commit the binary it makes.
 set -euo pipefail
+
+go_version="go1.27.0"
 
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(dirname "$here")"
@@ -29,7 +33,7 @@ libusb_wheel_sha256="4ad25f8d254bbbdd234446d5580b24d62d59bb0e690d8090457dac347f0
 echo "==> building openshuttercounter $version for darwin/arm64"
 (
     cd "$root"
-    CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
+    GOTOOLCHAIN="$go_version" CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
         -trimpath -buildvcs=false \
         -ldflags "-s -w -X github.com/DigitalN/openshuttercounter/internal/app.Version=$version" \
         -o "$here/openshuttercounter" ./cmd/openshuttercounter

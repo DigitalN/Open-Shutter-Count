@@ -63,6 +63,10 @@ here and for the Mac, and the app's tests (`pip install pytest` off a Mac). It a
 remakes `mac/openshuttercounter` and the app's fixtures, which come out the same every
 time, and fails if either was stale: commit what it remade, then run it again.
 
+It needs Go (`brew install go` on a Mac), and runs Go 1.27.0 whatever's installed:
+the Makefile and `mac/build.sh` pin it, and Go fetches it the first time. The tool's
+bytes depend on the Go version, and golangci-lint can't read what Go 1.27.3 compiles.
+
 There's no CI, as with Mac Engine Room. `.githooks/pre-push` runs `make check` before
 every push, and `Package a Release.command` runs the app's tests again before it builds.
 Claude sessions turn the hook on when they start (`.claude/hooks/session-start.sh`);

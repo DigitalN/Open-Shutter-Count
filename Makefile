@@ -2,6 +2,11 @@ NAME          := openshuttercounter
 COVERAGE_FILE := coverage.out
 REPOSITORY    := DigitalN/$(NAME)
 
+# One Go version everywhere, the same as mac/build.sh's: the tool's bytes depend
+# on it, and golangci-lint can't read what Go 1.27.3 compiles. Any Go 1.21 or
+# later fetches this version itself.
+export GOTOOLCHAIN := go1.27.0
+
 GOLANGCI_LINT := go tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 # Building the linter once lets it be re-run under GOOS=darwin from any
