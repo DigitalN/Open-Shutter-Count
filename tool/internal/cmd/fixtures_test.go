@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -201,7 +202,7 @@ func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
 
 	reading, readErr := s.reader.Read(context.Background(), s.device, s.info, camera)
 
-	out := buildOutput(s.info, camera, reading, true)
+	out := buildOutput(s.info, camera, reading, true, true) // as the app reads: --raw --serial
 	out.Steps = append(append([]string(nil), s.steps...), reading.Steps...)
 
 	if readErr != nil {
@@ -234,6 +235,7 @@ func TestAppFixtures(t *testing.T) {
 	r8 := fakeCamera(t, "Canon EOS R8", 0x330c, eventChannel, r8D167)
 	r8Out, r8Trace := readFixture(t, r8)
 	require.Nil(t, r8Out.Error)
+	require.Equal(t, fakeBodyID, r8Out.Reading.SerialNumber, "the app shows the body's serial number")
 
 	// libgphoto2's R6 and 90D dumps: 1000 and 1000. The 90D is an EF body
 	// that lists the event channel and not the factory channel.
@@ -293,8 +295,14 @@ func TestAppFixtures(t *testing.T) {
 
 		raw = append(raw, '\n')
 
+		// The app reads with --serial, for its result screen, so a read
+		// fixture can carry the body's serial number there, once. Nothing
+		// else may.
+		shown := `"serial_number": "` + fakeBodyID + `"`
+		rest := strings.Replace(string(raw), shown, "", 1)
+
 		for _, secret := range []string{fakeSerial, fakeBodyID, fakeUSBSerial, fakeOwner} {
-			require.NotContains(t, string(raw), secret, "%s holds something that identifies the camera", name)
+			require.NotContains(t, rest, secret, "%s holds something that identifies the camera", name)
 		}
 
 		path := filepath.Join(fixtureDir, name)

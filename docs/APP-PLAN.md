@@ -63,6 +63,12 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
    they're not fully tested. The counts show without where each was read from
    or the note on rounding. Open an Issue fills in the log, so nothing is
    attached by hand, and the issue no longer asks for the shutter mode.)
+   (Changed by the maintainer on 2026-11-05: above the counts, a panel with the
+   camera's model, its serial number and the date it was read, so someone selling
+   it can screenshot the screen for their ad. The serial number is the one on the
+   body, Canon's 0xD1AF, which comes with the event channel; a body read another
+   way, or one that doesn't report it, shows no serial number. It's only on the
+   screen: the log and the issue still leave it out.)
 
 Every outcome ends on the result screen, including no camera found and failed
 reads.
@@ -114,7 +120,7 @@ allowed when it's labelled as not fully tested". Update CLAUDE.md.
   lists, each step and what it got back, the result, and the full exchange with
   the camera at the end.
 - **No serial number**, anywhere, including the device info in the camera
-  exchange.
+  exchange. (The result screen shows the one on the body; see the wizard's step 5.)
 
 ### Nothing left behind
 

@@ -13,6 +13,7 @@ ships in the app; it's a development tool on localhost only.
 import importlib
 import json
 import sys
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -37,7 +38,8 @@ RESULTS = {
 def app_facts():
     importlib.reload(camera)
     importlib.reload(version)
-    results = {name: camera.summarize(json.loads((FIXTURES / file).read_text(encoding="utf-8")))
+    now = datetime.now().astimezone()
+    results = {name: camera.summarize(json.loads((FIXTURES / file).read_text(encoding="utf-8")), read_at=now)
                for name, file in RESULTS.items()}
     return {"version": version.VERSION, "results": results}
 

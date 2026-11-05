@@ -2,12 +2,14 @@
 
 import json
 import subprocess
+from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
 
 import camera
 from camera import Camera, ToolError, count_text, parse_read, summarize
+from conftest import BODY_SERIAL
 
 
 def fake_run(stdout="", stderr="", returncode=0, calls=None, raises=None):
@@ -52,6 +54,7 @@ def test_read_passes_a_trace_and_gives_it_back(fixture):
 
     output, messages, trace = Camera("t", run=run, note="Open Shutter Count 0.5.0").read()
     assert calls[0][:4] == ["t", "read", "--json", "--raw"]
+    assert "--serial" in calls[0]  # for the result screen
     assert calls[0][-2:] == ["--note", "Open Shutter Count 0.5.0"]
     assert output["reading"]["model"] == "EOS R8"
     assert '"entries"' in trace
@@ -88,6 +91,22 @@ def test_an_r8_reads_as_tested(fixture):
         {"label": "Electronic shutter", "text": "19,001 to 20,999"},
         {"label": "All photos", "text": "21,001 to 22,000"}]
     assert "note" not in s
+
+
+def test_a_reading_shows_the_camera_its_serial_number_and_the_date(fixture):
+    s = summarize(fixture("read-r8.json"), read_at=datetime(2026, 11, 5, 9, 30))
+    assert (s["model"], s["serial"], s["read_on"]) == ("Canon R8", BODY_SERIAL, "November 5, 2026")
+
+
+def test_a_camera_that_didnt_report_its_serial_number_shows_none(fixture):
+    output = fixture("read-r8.json")
+    del output["reading"]["serial_number"]
+    assert summarize(output)["serial"] == ""
+    assert summarize(fixture("read-80d.json"))["serial"] == ""  # read by the factory channel
+
+
+def test_a_failed_read_shows_no_serial_number(fixture):
+    assert summarize(fixture("read-powershot.json"))["serial"] == ""
 
 
 def test_another_rf_body_says_its_not_fully_tested(fixture):

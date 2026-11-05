@@ -26,7 +26,8 @@
     "model": "EOS R6",
     "confirmed": false,
     "method": "canon-event-channel-0xd167",
-    "note": "  The camera keeps these counts in thousands, rounded up, so it can only say\n  which thousand each is in. A photo's own metadata holds the exact total."
+    "note": "  The camera keeps these counts in thousands, rounded up, so it can only say\n  which thousand each is in. A photo's own metadata holds the exact total.",
+    "serial_number": "072022001307"
   },
   "counters": [
     {
@@ -65,6 +66,7 @@
     "SetRemoteMode(0): OK",
     "SetRemoteMode(1): OK",
     "SetEventMode(0): OK",
+    "0xd1af (serial number): reported",
     "0xd167: 1000000001000000e8030000e8030000"
   ]
 }

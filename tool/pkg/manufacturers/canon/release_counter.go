@@ -120,6 +120,15 @@ func (r *Reader) readReleaseCounter(device *ptp.Device, camera ptp.DeviceInfo, r
 		return fmt.Errorf("reading the event channel: %w", err)
 	}
 
+	// The serial number is kept for the app's result screen. The steps only
+	// say whether it came, since they go in the log.
+	reading.SerialNumber = table.SerialNumber()
+	if reading.SerialNumber != "" {
+		reading.Steps = append(reading.Steps, "0xd1af (serial number): reported")
+	} else {
+		reading.Steps = append(reading.Steps, "0xd1af (serial number): not reported")
+	}
+
 	raw, ok := table.Property(PropShutterReleaseCounter)
 	if !ok {
 		return notYet(reading.Model, errNoReleaseCounter)

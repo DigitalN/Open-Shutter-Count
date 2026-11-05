@@ -1,10 +1,12 @@
 package canon
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -40,6 +42,12 @@ const (
 // 16 bytes, four 32 bit words: 16, 1, then two multiples of 1,000. What those
 // two words count is not established.
 const PropShutterReleaseCounter uint32 = 0xd167
+
+// PropSerialNumber is EOS property 0xD1AF, which libgphoto2 names
+// EOS_SerialNumber: the serial number on the body, as text. libgphoto2's EOS R8
+// dump has it in the event channel's first batch, twelve digits and a NUL. It
+// isn't the serial number GetDeviceInfo gives.
+const PropSerialNumber uint32 = 0xd1af
 
 // ErrNoEventChannel means the camera doesn't list the operations needed to
 // read its event channel. Nothing was sent to it.
@@ -126,6 +134,29 @@ func (t *EventTable) Property(prop uint32) ([]byte, bool) {
 	}
 
 	return nil, false
+}
+
+// SerialNumber is the body's serial number, from PropSerialNumber, or "" if
+// the camera didn't report one that reads as plain text.
+func (t *EventTable) SerialNumber() string {
+	raw, ok := t.Property(PropSerialNumber)
+	if !ok {
+		return ""
+	}
+
+	if end := bytes.IndexByte(raw, 0); end >= 0 {
+		raw = raw[:end]
+	}
+
+	serial := strings.TrimSpace(string(raw))
+
+	for _, c := range []byte(serial) {
+		if c < ' ' || c > '~' {
+			return ""
+		}
+	}
+
+	return serial
 }
 
 // ReadEventTable reads everything a camera reports on Canon's event channel.

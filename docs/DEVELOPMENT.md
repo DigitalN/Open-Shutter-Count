@@ -11,7 +11,8 @@ the app was built to is [APP-PLAN.md](APP-PLAN.md).
   - `updater.py` and `launch.py`: the update check at every launch, and the offer to move
     into Applications. Adapted from Mac Engine Room's.
   - `camera.py`: runs the `openshuttercounter` tool inside the app (`list --json` while
-    waiting, `read --json --trace` to read) and says what the result screen shows.
+    waiting, `read --json --serial --trace` to read) and says what the result screen
+    shows. The serial number is for the screen only; `report.py` never uses it.
   - `report.py`: the log Save Log writes, and the Open an Issue link.
   - `cleanup.py`: what makes sure nothing is left behind.
   - `version.py`: the version, for the app and the tool.

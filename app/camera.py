@@ -3,7 +3,8 @@
 `list` only asks macOS which USB devices are attached: nothing is sent to the camera,
 so it's safe to run every second while waiting. `read` reads the camera and says what
 it did. Both print JSON (see tool/internal/cmd in the repository); `read --trace` also saves
-everything exchanged with the camera, minus its serial number.
+everything exchanged with the camera, minus its serial number. `read --serial` adds the serial
+number on the body, which only the result screen shows: the log and the issue leave it out.
 
 What the tool says is turned into what the result screen says by `summarize`.
 """
@@ -82,7 +83,7 @@ class Camera:
         """Reads the camera. Returns (what the tool printed, parsed; its messages; the trace)."""
         with tempfile.TemporaryDirectory(prefix="openshuttercount-") as folder:
             trace = Path(folder) / "trace.json"
-            arguments = [self._tool, "read", "--json", "--raw", "--trace", str(trace)]
+            arguments = [self._tool, "read", "--json", "--raw", "--serial", "--trace", str(trace)]
             if self._note:
                 arguments += ["--note", self._note]
             try:
@@ -140,6 +141,11 @@ def count_text(counter):
     return f"{value:,}"
 
 
+def date_text(when):
+    """'November 5, 2026'."""
+    return f"{when:%B} {when.day}, {when.year}" if when else ""
+
+
 def plain_name(model):
     """The name people call a Canon by: "Canon R8" for the EOS R8, which the camera calls
     "Canon EOS R8"."""
@@ -178,13 +184,18 @@ def unwrap(text):
     return "\n\n".join(p for p in paragraphs if p)
 
 
-def summarize(output, devices=()):
-    """What the result screen shows for what `read --json` printed.
+def summarize(output, devices=(), read_at=None):
+    """What the result screen shows for what `read --json` printed, read at `read_at`.
 
     ok says whether it read; tested is only true for the bodies the tool marks
     confirmed (the R8 and the 5D Mark IV). A reading from any other body says it's not
-    fully tested: the counts aren't proven to be what their names say."""
+    fully tested: the counts aren't proven to be what their names say.
+
+    A reading shows the camera's model, the serial number on its body (where the camera
+    reported it) and the date above the counts, for a screenshot to go with a sale. The
+    serial number is only for the screen: the log and the issue don't use it."""
     model = camera_name(output, devices)
+    read_on = date_text(read_at)
     the_camera = f"the {model}" if model else "the camera"
     error = output.get("error")
 
@@ -195,6 +206,8 @@ def summarize(output, devices=()):
             "ok": True,
             "tested": tested,
             "model": model,
+            "serial": reading.get("serial_number") or "",
+            "read_on": read_on,
             "headline": READ_IT,
             "detail": "" if tested else
                       f"Not fully tested on {the_camera}; if these numbers look wrong, please open an issue.",
@@ -227,6 +240,8 @@ def summarize(output, devices=()):
         "ok": False,
         "tested": False,
         "model": model,
+        "serial": "",
+        "read_on": read_on,
         "headline": headline,
         "detail": detail,
         "counters": [],

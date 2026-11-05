@@ -22,6 +22,11 @@ var rawFlag = &cli.BoolFlag{
 	Usage: "also show the raw replies, which is what a new camera's layout is worked out from",
 }
 
+var serialFlag = &cli.BoolFlag{
+	Name:  "serial",
+	Usage: "also show the serial number on the camera's body, where it reports it; a trace never holds it",
+}
+
 var traceFlag = &cli.StringFlag{
 	Name:    "trace",
 	Aliases: []string{"t"},
@@ -61,6 +66,7 @@ var readFlags = []cli.Flag{
 	deviceFlag,
 	jsonFlag,
 	rawFlag,
+	serialFlag,
 	traceFlag,
 	noteFlag,
 	factoryOnlyFlag,

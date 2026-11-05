@@ -249,6 +249,28 @@ func TestReadEventTableStopsDrainingACameraThatNeverRunsOut(t *testing.T) {
 	assert.Len(t, table.Replies, maxEventRounds)
 }
 
+func TestTheSerialNumberOnTheBody(t *testing.T) {
+	for name, tc := range map[string]struct {
+		records [][]byte
+		want    string
+	}{
+		"as the R8 reports it": {[][]byte{propRecord(0xd1af, []byte("072022001307\x00")...)}, "072022001307"},
+		"the last one counts": {[][]byte{
+			propRecord(0xd1af, []byte("111111111111\x00")...), propRecord(0xd1af, []byte("072022001307\x00\x00")...),
+		}, "072022001307"},
+		"not reported":           {[][]byte{propRecord(0xd167, eosD167...)}, ""},
+		"not text":               {[][]byte{propRecord(0xd1af, 0x01, 0x02, 0x03, 0x00)}, ""},
+		"only padding":           {[][]byte{propRecord(0xd1af, ' ', ' ', 0x00)}, ""},
+		"only as allowed values": {[][]byte{record(EventAvailListChanged, propRecord(0xd1af, '1')[8:]...)}, ""},
+	} {
+		records, err := ParseEvents(eventList(tc.records...))
+		require.NoError(t, err, name)
+
+		table := EventTable{Records: records}
+		assert.Equal(t, tc.want, table.SerialNumber(), name)
+	}
+}
+
 func TestScrubEventsBlanksTheSerialNumberAndOwner(t *testing.T) {
 	// 0xD1AF as libgphoto2's EOS R8 dump shows it: twelve digits and a NUL.
 	data := eventList(
