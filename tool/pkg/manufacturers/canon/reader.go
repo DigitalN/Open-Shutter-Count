@@ -123,7 +123,7 @@ func (r *Reader) Models() []manufacturers.Model {
 //     that lists both is tried here when the factory channel gave nothing.
 //
 // Anything else gets manufacturers.ErrNotSupported, having been sent nothing
-// but the standard property read. Only the EOS R8 and the EOS 5D Mark IV are
+// but the standard property read. Only the EOS R8, R5 Mark II, R3 and 5D Mark IV are
 // marked tested.
 func (r *Reader) Read(
 	_ context.Context, device *ptp.Device, info usb.DeviceInfo, camera ptp.DeviceInfo,

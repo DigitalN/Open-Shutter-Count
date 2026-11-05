@@ -239,7 +239,7 @@ func TestTheStandardPropertyWinsWhenAnswered(t *testing.T) {
 
 	assert.Equal(t, MethodStandardProperty, reading.Method)
 	assert.Equal(t, uint32(12345), reading.Counters[0].Value)
-	assert.False(t, reading.Confirmed, "only the R8 and the 5D Mark IV say tested")
+	assert.False(t, reading.Confirmed, "only the tested bodies say tested")
 }
 
 func TestTheStandardPropertyIsntAskedOfACameraThatDoesntListTheRequest(t *testing.T) {
