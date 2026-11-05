@@ -7,8 +7,6 @@ Free and open source.
 (for Macs with Apple silicon)
 
 <p align="center">
-  <img src="docs/screenshots/setup.png" width="360" alt="Open Shutter Count's checklist for setting up the camera">
-  &nbsp;
   <img src="docs/screenshots/result.png" width="360" alt="Open Shutter Count showing a Canon R8's mechanical, electronic and total counts">
 </p>
 
