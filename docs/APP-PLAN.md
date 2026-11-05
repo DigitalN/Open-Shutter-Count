@@ -45,7 +45,9 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
 2. Camera setup checklist: USB connection set to Photo Import/Remote Control
    (on the R8: MENU > Setup (wrench) > page 4 > Choose USB connection app),
    Wi-Fi and Bluetooth off, card in, data cable straight into the Mac, Image
-   Capture, Photos and EOS Utility closed.
+   Capture, Photos and EOS Utility closed. (Changed by the maintainer on
+   2026-11-05: a list to read, not boxes to tick, since Continue never needed
+   them ticked; no line under the heading; the R8 is called the Canon R8.)
 3. Waiting for the camera: checks every second and moves on by itself. If none
    is found: help for USB mode, macOS's accessory prompt, and cables. A Canon in
    the wrong USB mode (the R8 then shows up as `04a9:32a6` with no still image
@@ -55,7 +57,12 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
 5. Result: yes or no, and the counts as ranges. Only the EOS R8 and the EOS 5D
    Mark IV say "tested". Any other camera that reads says "not fully tested on
    the <model>; if these numbers look wrong, please send the log". Buttons:
-   Save Log, Open an Issue, Read Again.
+   Save Log, Open an Issue, Read Again. (Changed by the maintainer on
+   2026-11-05: a reading says "Success! We've read your shutter count.", with
+   nothing under it for the R8 and the 5D Mark IV; other bodies still say
+   they're not fully tested. The counts show without where each was read from
+   or the note on rounding. Open an Issue fills in the log, so nothing is
+   attached by hand, and the issue no longer asks for the shutter mode.)
 
 Every outcome ends on the result screen, including no camera found and failed
 reads.
@@ -99,7 +106,9 @@ allowed when it's labelled as not fully tested". Update CLAUDE.md.
 ### The log
 
 - Only written when someone clicks Save Log; saved as a `.txt` where they
-  choose.
+  choose. Open an Issue fills all of it but the camera exchange into the new
+  issue (GitHub won't take a link long enough for the exchange); Save Log still
+  writes the whole thing.
 - Holds: app name and version, repo URL, date and time of the reading, Mac model
   and macOS version, the camera's model, firmware and USB IDs, the commands it
   lists, each step and what it got back, the result, and the full exchange with

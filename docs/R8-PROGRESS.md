@@ -14,9 +14,9 @@ at all possible. Nothing is named until a test proves what it counts. A photo's
 EXIF count was ruled out: it's mechanical and electronic together, and free
 tools already read it.
 
-## Status (2026-11-04)
+## Status (2026-11-05)
 
-Readable. `Read Shutter Count` reads 0xD167 off the event channel and shows
+Readable. The app reads 0xD167 off the event channel and shows
 each count as the thousand it's in: word 3 mechanical, word 4 every photo,
 electronic the difference. The maintainer accepted that (Q18).
 
@@ -119,12 +119,14 @@ How word 3 and word 4 were identified:
 1. Done (2026-11-04 15:39): `Read Shutter Count.command` read the R8 through
    0xD167: mechanical 1,001 to 2,000, electronic 19,001 to 20,999, all photos
    21,001 to 22,000. The raw bytes matched the event channel test.
-2. Built (2026-11-04): the Open Shutter Count app, to [APP-PLAN.md](APP-PLAN.md).
-   It replaces `Read Shutter Count.command`, which is gone. Next: the maintainer
-   builds and publishes `v0.5.0` on the Mac (docs/DEVELOPMENT.md has the
-   checklist), opens it, and reads the R8. That run is the first test of
-   everything that needs macOS: the window, the move to Applications, Save Log,
-   the update check, signing and the DMG.
+2. Published (2026-11-05): the Open Shutter Count app, to [APP-PLAN.md](APP-PLAN.md),
+   as `v0.5.0`. It replaces `Read Shutter Count.command`, which is gone. Before
+   publishing, the updater was tested on the Mac against stand-in releases: it
+   updated and reopened, refused a build changed after signing, one signed ad
+   hoc, one with another bundle identifier and one older than its tag, and
+   stopped at "9.9.9 is out" when it couldn't replace itself. The maintainer
+   then read the R8 with it, and asked for simpler screens and an issue that
+   fills in the log (APP-PLAN.md has the changes).
 3. Open: an exact mechanical count (see Status); reporting this to
    libgphoto2; whether other R bodies lay 0xD167 out the same way.
 

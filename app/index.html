@@ -106,24 +106,16 @@ b { font-weight: 600; }
 .badge.info { background: var(--accent); }
 .badge svg { width: 30px; height: 30px; }
 
-/* ── checklist ───────────────────────────────── */
-.checklist { list-style: none; margin: 0; padding: 0; }
-.checklist li { border-bottom: 1px solid var(--line); }
-.checklist li:last-child { border-bottom: 0; }
-.checklist label { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; cursor: default; }
-.checklist input {
-  -webkit-appearance: none; appearance: none; flex: none; width: 18px; height: 18px; margin: 1px 0 0;
-  border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line-strong); background: var(--card-2);
-  display: grid; place-items: center;
+/* ── setup: what to do before continuing ─────── */
+.todo { list-style: none; margin: 10px 0 0; padding: 0; }
+.todo li { position: relative; padding: 10px 0 10px 20px; border-bottom: 1px solid var(--line); }
+.todo li:last-child { border-bottom: 0; }
+.todo li::before {
+  content: ""; position: absolute; left: 4px; top: 17px; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
 }
-.checklist input:checked { background: var(--accent); box-shadow: none; }
-.checklist input:checked::after {
-  content: ""; width: 5px; height: 9px; margin-top: -2px; border: solid #fff; border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-.checklist input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.checklist .what { font-weight: 500; }
-.checklist .how { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.todo .what { font-weight: 500; }
+.todo .how { color: var(--muted); font-size: 12px; margin-top: 2px; }
 .path { font-weight: 500; color: var(--text); }
 
 .help { margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
@@ -139,8 +131,6 @@ b { font-weight: 600; }
 table.counts { width: 100%; border-collapse: collapse; margin: 6px 0 4px; }
 table.counts td { padding: 10px 2px; border-top: 1px solid var(--line); vertical-align: baseline; }
 table.counts td.value { text-align: right; font-size: 17px; font-weight: 600; white-space: nowrap; }
-table.counts .where { display: block; color: var(--faint); font-size: 11px; }
-.note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
 .hint { background: var(--card-2); border-radius: 10px; padding: 12px 14px; box-shadow: inset 0 0 0 .5px var(--line-strong); text-align: left; }
 details { margin-top: 12px; color: var(--muted); font-size: 12px; }
 summary { cursor: default; }
@@ -157,7 +147,6 @@ details .pre { margin-top: 6px; user-select: text; -webkit-user-select: text; fo
 .btn.primary { background: var(--accent); color: #fff; }
 .btn:disabled { opacity: .45; filter: none; }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.after-actions { text-align: right; color: var(--muted); font-size: 11px; margin-top: 8px; }
 
 footer { padding: 8px 20px 12px; text-align: center; color: var(--faint); font-size: 11px; }
 
@@ -212,31 +201,22 @@ footer { padding: 8px 20px 12px; text-align: center; color: var(--faint); font-s
     </div>
   </section>
 
-  <!-- 2. Camera setup checklist -->
+  <!-- 2. Camera setup: what to do first -->
   <section class="wrap" id="s-setup" hidden>
     <div class="card">
       <h1>Set up the camera</h1>
-      <p class="lead">Do these first. Nothing is sent to the camera yet.</p>
-      <ul class="checklist">
-        <li><label><input type="checkbox"><div>
+      <ul class="todo">
+        <li>
           <div class="what">USB connection set to Photo Import/Remote Control</div>
-          <div class="how">On the camera: <span class="path">MENU › Setup (wrench) › Choose USB connection app</span>. On the EOS R8 it's on page 4 of the Setup menu.</div>
-        </div></label></li>
-        <li><label><input type="checkbox"><div>
-          <div class="what">Wi-Fi and Bluetooth off</div>
-          <div class="how">On many Canon bodies, Wi-Fi switches the USB port off.</div>
-        </div></label></li>
-        <li><label><input type="checkbox"><div>
-          <div class="what">A card in the camera</div>
-        </div></label></li>
-        <li><label><input type="checkbox"><div>
+          <div class="how">On the camera: <span class="path">MENU › Setup (wrench) › Choose USB connection app</span>. On the Canon R8 it's on page 4 of the Setup menu.</div>
+        </li>
+        <li><div class="what">Wi-Fi and Bluetooth are off on your camera</div></li>
+        <li><div class="what">A card in the camera</div></li>
+        <li>
           <div class="what">Plugged straight into this Mac with a data cable</div>
           <div class="how">Not through a hub or dock. Some USB-C cables only charge.</div>
-        </div></label></li>
-        <li><label><input type="checkbox"><div>
-          <div class="what">Image Capture, Photos and EOS Utility closed</div>
-          <div class="how">And any other app that uses cameras, such as Lightroom.</div>
-        </div></label></li>
+        </li>
+        <li><div class="what">Image Capture, Photos and EOS Utility closed</div></li>
       </ul>
       <div class="actions">
         <button class="btn primary" id="b-continue">Continue</button>
@@ -252,13 +232,13 @@ footer { padding: 8px 20px 12px; text-align: center; color: var(--faint); font-s
       <p class="lead">Switch it on and plug it in. This moves on by itself as soon as it's found.</p>
       <ul class="help" id="waiting-help" hidden>
         <li><b>Is its USB connection set to Photo Import/Remote Control?</b>
-          <span><span class="path">MENU › Setup (wrench) › Choose USB connection app</span>; on the EOS R8, page 4 of the Setup menu. In any other mode it can't be read.</span></li>
+          <span><span class="path">MENU › Setup (wrench) › Choose USB connection app</span>; on the Canon R8, page 4 of the Setup menu. In any other mode it can't be read.</span></li>
         <li><b>Did macOS ask to allow the accessory?</b>
           <span>On a Mac laptop with Apple silicon, macOS asks before a new USB accessory can connect. Click Allow. If you clicked Don't Allow, unplug the camera and plug it back in to be asked again. The setting is in System Settings › Privacy &amp; Security › Allow accessories to connect.</span></li>
-        <li><b>Is the cable a data cable?</b>
-          <span>A cable that only charges gets the camera no further than charging. Try another one, plugged straight into the Mac, not a hub or dock.</span></li>
-        <li><b>Are Wi-Fi and Bluetooth off, and is the camera on?</b>
-          <span>On many Canon bodies, Wi-Fi switches the USB port off.</span></li>
+        <li><b>Perhaps try another USB cable?</b>
+          <span>Not all cables are capable of reading data over USB. Try another high quality cable.</span></li>
+        <li><b>Are Wi-Fi and Bluetooth off on your camera?</b>
+          <span>On some Canon bodies, when those are on, USB ports are disabled for data.</span></li>
       </ul>
       <div class="actions center">
         <button class="btn" id="b-back">Back to the Checklist</button>
@@ -285,7 +265,6 @@ footer { padding: 8px 20px 12px; text-align: center; color: var(--faint); font-s
         <p class="detail" id="result-detail"></p>
       </div>
       <table class="counts num" id="result-counts"></table>
-      <p class="note" id="result-note" hidden></p>
       <div class="hint pre" id="result-hint" hidden></div>
       <details id="result-more" hidden><summary>What the tool said</summary><div class="pre" id="result-message"></div></details>
       <div class="actions">
@@ -294,7 +273,6 @@ footer { padding: 8px 20px 12px; text-align: center; color: var(--faint); font-s
         <span class="spacer"></span>
         <button class="btn primary" id="b-again">Read Again</button>
       </div>
-      <div class="after-actions">To open an issue, save the log first, then attach it there.</div>
     </div>
   </section>
 </main>
@@ -380,26 +358,19 @@ function renderResult(r, canSave) {
   $('result-badge').className = 'badge' + (r.ok ? '' : ' bad');
   $('result-badge').textContent = r.ok ? '✓' : '!';
   $('result-title').textContent = r.headline;
-  $('result-detail').textContent = r.detail;
+  $('result-detail').hidden = !r.detail;
+  $('result-detail').textContent = r.detail || '';
 
   const table = $('result-counts');
   table.replaceChildren();
   for (const c of r.counters) {
     const row = table.insertRow();
-    const label = row.insertCell();
-    label.textContent = c.label;
-    if (c.location) {
-      const where = document.createElement('span');
-      where.className = 'where'; where.textContent = c.location;
-      label.append(where);
-    }
+    row.insertCell().textContent = c.label;
     const value = row.insertCell();
     value.className = 'value'; value.textContent = c.text;
   }
   table.hidden = !r.counters.length;
 
-  $('result-note').hidden = !r.note;
-  $('result-note').textContent = r.note || '';
   $('result-hint').hidden = !r.hint;
   $('result-hint').textContent = r.hint || '';
   $('result-more').hidden = !r.message;

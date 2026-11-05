@@ -7,6 +7,8 @@ each step and what the camera answered, the result, and at the end the whole exc
 with the camera as openshuttercounter's trace. The tool leaves the camera's serial number
 out of all of it.
 
+Open an Issue fills in a new GitHub issue with the log, all but the camera exchange.
+
 `openshuttercounter decode <log>` reads the trace at the end of a saved log.
 """
 
@@ -19,6 +21,8 @@ from camera import count_text
 # Must match pkg/trace's LogBegin and LogEnd, so `decode` finds the trace in a log.
 TRACE_BEGIN = "-----BEGIN OPENSHUTTERCOUNTER TRACE-----"
 TRACE_END = "-----END OPENSHUTTERCOUNTER TRACE-----"
+# Starts the last part of the log, the camera exchange, which the issue leaves out.
+TRACE_HEADING = "The whole exchange with the camera. To read it: openshuttercounter decode <this file>"
 
 
 def mac_info():
@@ -106,7 +110,7 @@ def build_log(*, app_name, version, repository_url, read_at, mac, summary, outpu
         lines += ["", "What the tool said:"]
         lines += [f"  {line}" for line in tool_messages.strip().splitlines()]
 
-    lines += ["", "The whole exchange with the camera. To read it: openshuttercounter decode <this file>"]
+    lines += ["", TRACE_HEADING]
     if trace.strip():
         lines += [TRACE_BEGIN, trace.strip(), TRACE_END]
     else:
@@ -122,12 +126,24 @@ def _indented(label, text):
 
 
 ISSUE_TEMPLATE = "new-camera.yml"  # .github/ISSUE_TEMPLATE/new-camera.yml; its field ids are used below
-MAX_SAID = 1500  # characters of what the app said, to keep the link a sensible length
+MAX_SAID = 1500  # characters of what the app said
+# GitHub turns down a new-issue link longer than about 6,000 characters: signed out, it
+# sends you to sign in with the whole link inside another, and that one fails. An R8's
+# log comes to about 3,500 once it's in the link.
+MAX_URL = 5500
+CUT = "… cut to fit. Save Log writes all of it."
 
 
-def issue_url(repository_url, summary):
-    """GitHub's new-issue page with the "New camera" template, filled in as far as the app
-    can: the camera, and what the app said. The log has to be attached by hand."""
+def readable_log(log):
+    """The log without the camera exchange at the end: that's far too long for a link, and
+    it's only needed while a camera is being worked out."""
+    return log.split(TRACE_HEADING)[0].rstrip()
+
+
+def issue_url(repository_url, summary, log=""):
+    """GitHub's new-issue page with the "New camera" template, filled in: the camera, what
+    the app said, and the log without the camera exchange, cut to fit if it has to be.
+    Nothing is posted until the person submits it."""
     from urllib.parse import quote, urlencode
 
     model = summary.get("model") or ""
@@ -135,6 +151,15 @@ def issue_url(repository_url, summary):
                                          summary.get("message")) if part)
     if len(said) > MAX_SAID:
         said = said[:MAX_SAID - 1] + "…"
-    fields = {"template": ISSUE_TEMPLATE, "title": f"{model or 'A camera'}: {summary.get('headline', '')}",
-              "camera": model, "app_said": said}
-    return f"{repository_url}/issues/new?{urlencode(fields, quote_via=quote)}"
+    title = f"{model or 'A camera'}: " + ("the numbers look wrong" if summary.get("ok") else summary.get("headline", ""))
+
+    def url(text):
+        fields = {"template": ISSUE_TEMPLATE, "title": title, "camera": model, "app_said": said, "log": text}
+        return f"{repository_url}/issues/new?{urlencode(fields, quote_via=quote)}"
+
+    lines = readable_log(log).splitlines()
+    text = "\n".join(lines)
+    while len(url(text)) > MAX_URL and lines:
+        lines.pop()
+        text = "\n".join(lines + [CUT])
+    return url(text)

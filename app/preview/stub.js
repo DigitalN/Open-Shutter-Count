@@ -35,7 +35,7 @@
     setup: () => { state.step = 'setup'; state.update = { state: 'current' }; },
     waiting: () => { state.step = 'waiting'; },
     help: () => { state.step = 'waiting'; state.waiting.help = true; },
-    reading: () => { state.step = 'reading'; state.reading.camera = 'EOS R8'; },
+    reading: () => { state.step = 'reading'; state.reading.camera = 'Canon R8'; },
   };
   (scenarios[scenario] || (() => result(scenario)))();
 
@@ -43,7 +43,7 @@
     timers.forEach(clearTimeout);
     Object.assign(state, { step: 'waiting', waiting: { help: false, found: null }, result: null, can_save_log: false });
     later(1200, () => { state.waiting.help = true; });
-    later(2000, () => Object.assign(state, { step: 'reading', reading: { camera: 'EOS R8' } }));
+    later(2000, () => Object.assign(state, { step: 'reading', reading: { camera: 'Canon R8' } }));
     later(3500, () => result('r8'));
   }
 
