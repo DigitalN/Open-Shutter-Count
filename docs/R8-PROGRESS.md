@@ -139,12 +139,13 @@ How word 3 and word 4 were identified:
   whether they lay 0xD167 out the same way. libgphoto2's EOS M100 dump has
   word 3 as 0xffffffff, which the decoder refuses, so the M100 ends as "can't
   read yet".
-- No pull request has been opened, and nothing has been reported upstream.
+- Nothing has been reported upstream.
 - `mac/openshuttercounter` stays committed, so building the app on the Mac
   needs only Python (Q31).
-- The maintainer is deleting the old branches `claude/loving-goldberg-zwh734`
-  (it still has readings with the camera's serial) and
-  `claude/quirky-bell-cl8670`, and detaching the GitHub fork if it shows one.
+- Old branches are gone (2026-11-05): GitHub has only `main`, and the local
+  copy of the branch from before the readings were taken out of the history is
+  deleted. The local `upstream` remote, which pointed at mvisonneau's
+  repository, is removed. GitHub still lists this repository as a fork of his.
 - On macOS, if another app (the Camera Shutter Count app, on the maintainer's
   Mac) is using the camera, ptpcamerad holds it and won't exit when stopped.
   The tool then names the app to quit; see `darwinBusyHint`.
