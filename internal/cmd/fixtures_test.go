@@ -209,7 +209,12 @@ func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
 		out = failureOutput(out, readErr)
 	}
 
-	return out, recorder.File()
+	// The trace names the machine that made it. Make it the one the app
+	// runs on, so the fixtures are the same wherever the tests run.
+	file := recorder.File()
+	file.Host = trace.Host{OS: "darwin", Arch: "arm64"}
+
+	return out, file
 }
 
 // r8D167 is what the maintainer's EOS R8 reported after the 2026-11-04 test.
