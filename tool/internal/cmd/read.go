@@ -21,8 +21,9 @@ import (
 // failed.
 var ErrReported = errors.New("the failure was reported in the output")
 
-// readOutput is what `read --json` prints, failed or not. The camera's serial
-// number isn't in it.
+// readOutput is what `read --json` prints, failed or not. The serial number
+// on the body is only in it with --serial, which the app passes for its result
+// screen. GetDeviceInfo's serial number and the USB one never are.
 type readOutput struct {
 	Device   *deviceOutput   `json:"device,omitempty"`
 	Camera   *cameraOutput   `json:"camera,omitempty"`
@@ -57,6 +58,7 @@ type readingOutput struct {
 	Method       string `json:"method"`
 	RatedLife    uint32 `json:"rated_life,omitempty"`
 	Note         string `json:"note,omitempty"`
+	SerialNumber string `json:"serial_number,omitempty"`
 }
 
 type counterOutput struct {
@@ -114,7 +116,7 @@ func Read(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	out := buildOutput(session.info, camera, reading, cmd.Bool("raw"))
+	out := buildOutput(session.info, camera, reading, cmd.Bool("raw"), cmd.Bool("serial"))
 	out.Steps = slices.Concat(session.steps, reading.Steps)
 
 	if readErr != nil {
@@ -183,7 +185,9 @@ func describeUSB(info usb.DeviceInfo) *deviceOutput {
 	}
 }
 
-func buildOutput(info usb.DeviceInfo, camera ptp.DeviceInfo, reading manufacturers.Reading, withRaw bool) readOutput {
+func buildOutput(
+	info usb.DeviceInfo, camera ptp.DeviceInfo, reading manufacturers.Reading, withRaw, withSerial bool,
+) readOutput {
 	out := readOutput{
 		Device: describeUSB(info),
 		Reading: &readingOutput{
@@ -195,6 +199,10 @@ func buildOutput(info usb.DeviceInfo, camera ptp.DeviceInfo, reading manufacture
 			Note:         reading.Note,
 		},
 		Counters: make([]counterOutput, 0, len(reading.Counters)),
+	}
+
+	if withSerial {
+		out.Reading.SerialNumber = reading.SerialNumber
 	}
 
 	if camera.Model != "" || len(camera.Operations) > 0 {
@@ -247,6 +255,10 @@ func render(cmd *cli.Command, out readOutput) error {
 
 	fmt.Printf("\n  %s %s  (USB %s:%s)\n\n",
 		out.Reading.Manufacturer, out.Reading.Model, out.Device.VendorID, out.Device.ProductID)
+
+	if out.Reading.SerialNumber != "" {
+		fmt.Printf("  %-22s %16s\n\n", "Serial number", out.Reading.SerialNumber)
+	}
 
 	for _, c := range out.Counters {
 		value := humanInt(c.Value)

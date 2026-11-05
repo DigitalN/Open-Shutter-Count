@@ -180,8 +180,8 @@ class Wizard:
                      usb_devices=everything)
 
     def _finish(self, generation, output, messages, trace, devices=(), usb_devices=None):
-        summary = camera_module.summarize(output, devices)
         read_at = self._now()
+        summary = camera_module.summarize(output, devices, read_at)
         with self._lock:
             if generation != self._generation:
                 return

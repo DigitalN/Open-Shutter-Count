@@ -47,11 +47,20 @@ func TestNoSerialNumberInTheOutput(t *testing.T) {
 		Model: "Canon EOS R8", DeviceVersion: "3-1.5.0", SerialNumber: "SERIAL456", Operations: []uint16{0x1001, 0x9116},
 	}
 
-	raw, err := json.Marshal(buildOutput(info, camera, manufacturers.Reading{Model: "EOS R8"}, true))
+	reading := manufacturers.Reading{Model: "EOS R8", SerialNumber: "BODYSERIAL789"}
+
+	raw, err := json.Marshal(buildOutput(info, camera, reading, true, false))
 	require.NoError(t, err)
 	assert.NotContains(t, string(raw), "SERIAL")
 	assert.Contains(t, string(raw), `"operations":["0x1001","0x9116"]`)
 	assert.Contains(t, string(raw), `"firmware":"3-1.5.0"`)
+
+	// With --serial, only the one on the body, for the app's result screen.
+	raw, err = json.Marshal(buildOutput(info, camera, reading, true, true))
+	require.NoError(t, err)
+	assert.Contains(t, string(raw), `"serial_number":"BODYSERIAL789"`)
+	assert.NotContains(t, string(raw), "SERIAL123")
+	assert.NotContains(t, string(raw), "SERIAL456")
 
 	listed, err := json.Marshal(listOutput(registry(nil, false), []usb.DeviceInfo{info}))
 	require.NoError(t, err)

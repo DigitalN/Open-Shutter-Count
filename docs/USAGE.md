@@ -19,6 +19,7 @@ Releases only carry the app.
 ```bash
 openshuttercounter                          # read the connected camera
 openshuttercounter --raw                    # also show the raw replies
+openshuttercounter --serial                 # also show the serial number on the body
 openshuttercounter --json                   # machine readable output
 openshuttercounter --trace session.json     # record the whole conversation
 openshuttercounter list                     # what is connected

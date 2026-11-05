@@ -57,7 +57,8 @@ This allows us to quickly test new cameras as they are added.
    cable, and Image Capture, Photos and EOS Utility closed.
 3. Switch the camera on and plug it in. On a Mac laptop, click
    **Allow** if macOS asks whether the accessory can connect.
-4. It reads the camera and shows the counts.
+4. It reads the camera and shows the counts, with the camera's model, its serial number
+   and the date above them, ready to screenshot for an ad if you're selling it.
 
 If it couldn't read your camera, or the numbers look wrong, click **Open an Issue**. It opens
 a new GitHub issue with the log filled in, for you to look over before you submit it.
@@ -72,6 +73,8 @@ a new GitHub issue with the log filled in, for you to look over before you submi
   has the camera's model, firmware and what it answered, your Mac's model and macOS
   version, and nothing that identifies you or your camera: no serial number, owner or
   copyright name.
+- **The serial number is only on the screen**: the result screen shows the one on the
+  camera's body, for a screenshot. It isn't in the log or the issue.
 - **Nothing is left behind**: no log file, no preferences, no saved window, and the
   update download is deleted. macOS keeps its own records, such as the accessory
   approval and Open Anyway.

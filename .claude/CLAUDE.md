@@ -101,6 +101,10 @@ is also how a fix gets tested on the camera.
   tested; a reading from any other body says it's not fully tested.
 - No serial number in anything the tool or the app writes: traces blank it, and
   Canon's owner, nickname, artist and copyright properties too (`tool/pkg/trace`,
-  `canon.ScrubEvents`).
+  `canon.ScrubEvents`). The one exception is the result screen, which shows the
+  serial number on the body (Canon's 0xD1AF, from the event channel the read
+  already drains) so it can be screenshotted for a sale. The maintainer chose this
+  on 2026-11-05. Only `read --serial` prints it, and the app passes that; the log,
+  the issue and traces still never hold it.
 - When the camera stops answering, the maintainer switches it off and on (battery out
   if it won't switch off).

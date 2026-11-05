@@ -140,6 +140,10 @@ How word 3 and word 4 were identified:
   word 3 as 0xffffffff, which the decoder refuses, so the M100 ends as "can't
   read yet".
 - Nothing has been reported upstream.
+- The result screen shows the serial number on the body (2026-11-05), from 0xD1AF
+  on the event channel. libgphoto2's EOS R8 dump has it there; whether the
+  maintainer's R8 does isn't confirmed yet. The log's steps say
+  `0xd1af (serial number): reported` or `not reported`, without the number.
 - `tool/mac/openshuttercounter` stays committed, so building the app on the Mac
   needs only Python (Q31).
 - Old branches are gone (2026-11-05): GitHub has only `main`, and the local

@@ -96,6 +96,11 @@ type Reading struct {
 	// Note is shown under the counters, to say how to read them.
 	Note string `json:"note,omitempty"`
 
+	// SerialNumber is the serial number on the body, where the camera
+	// reported it. Only `read --serial` prints it, for the app's result
+	// screen; nothing written to a file holds it.
+	SerialNumber string `json:"-"`
+
 	// Steps says what was sent to the camera and what it answered, in
 	// order. A failed read carries them too.
 	Steps []string `json:"steps,omitempty"`

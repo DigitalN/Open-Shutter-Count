@@ -44,7 +44,8 @@ def test_nothing_in_the_log_identifies_the_camera(fixture):
         log = log_for(fixture, name, trace=fixture(trace))
         for secret in SECRETS:
             assert secret not in log, (name, secret)
-        assert "serial" not in log.lower()
+        # The steps say whether the camera reported its serial number, and nothing more.
+        assert "serial" not in log.lower().replace("0xd1af (serial number): reported", "")
 
 
 def test_a_failed_read_says_why(fixture):

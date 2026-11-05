@@ -1,11 +1,12 @@
 """The wizard, end to end, with a stand-in updater and camera. Its threads run inline."""
 
 import json
+from datetime import datetime
 
 import camera
 import updater
 import wizard as wizard_module
-from conftest import SECRETS
+from conftest import BODY_SERIAL, SECRETS
 from updater import Outcome
 
 
@@ -60,7 +61,8 @@ def make(fixture, outcome=Outcome(updater.CURRENT), **camera_kwargs):
     cam = FakeCamera(fixture, **camera_kwargs)
     w = Inline(FakeUpdater(outcome), cam, app_name="Open Shutter Count", version="0.5.0",
                repository_url="https://github.com/DigitalN/openshuttercounter",
-               mac_info=lambda: {"model": "MacBookPro18,1", "macos": "27.2"}, clock=clock, sleep=clock.sleep)
+               mac_info=lambda: {"model": "MacBookPro18,1", "macos": "27.2"}, clock=clock, sleep=clock.sleep,
+               now=lambda: datetime(2026, 11, 5, 9, 30).astimezone())
     return w, cam, clock
 
 
@@ -90,6 +92,9 @@ def test_a_whole_read(fixture):
     assert s["result"]["ok"] and s["result"]["tested"]
     assert s["can_save_log"]
     assert cam.reads == 1
+    # Above the counts, for a screenshot: only the screen has the serial number.
+    assert (s["result"]["model"], s["result"]["serial"], s["result"]["read_on"]) == (
+        "Canon R8", BODY_SERIAL, "November 5, 2026")
 
     name, text = w.log()
     assert name.startswith("Open Shutter Count log ")
