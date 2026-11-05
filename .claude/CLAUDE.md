@@ -32,7 +32,13 @@ signed with the same Apple Development certificate as Mac Engine Room (team
 `XT4LT7MS6Y`). A release is `v<version>` with the DMG as its only file. Versions
 start at 0.5.0 and go up by 0.0.1. Installed copies update from the latest
 release at every launch, so a new release is also how a fix gets tested on the
-camera. The checklist is in docs/DEVELOPMENT.md.
+camera.
+
+Claude opens every pull request into `main` and merges it once CI is green. For
+a release, Claude works through the checklist in docs/DEVELOPMENT.md; its top
+says which steps are Claude's and which need the maintainer's Mac. Claude does
+its steps, then hands the maintainer the Mac steps with the version and the
+release notes written out.
 
 ## How testing works
 

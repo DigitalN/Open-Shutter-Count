@@ -86,6 +86,11 @@ Releases are public, and installed copies update themselves from the latest one 
 their next launch, so a mistake reaches everyone. A new release is also how a fix is
 tested on the camera: there's no separate test build.
 
+Claude opens and merges the pull requests, and does *Before building* and *After
+publishing* except the last step, plus the release notes. The rest needs the
+maintainer's Mac and certificate: building and checking the disk image, testing
+updating, publishing, and opening an older copy to see it update.
+
 ### Before building
 
 - [ ] Everything going out is merged into `main`, and the Mac's `main` matches GitHub
