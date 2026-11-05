@@ -209,10 +209,18 @@ func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
 		out = failureOutput(out, readErr)
 	}
 
-	// The trace names the machine that made it. Make it the one the app
-	// runs on, so the fixtures are the same wherever the tests run.
+	// The trace names the machine that made it and when each container
+	// went by. Make it the machine the app runs on, a millisecond apart from
+	// a fixed start, so the fixtures are the same wherever and whenever
+	// they're made, and `make check` can tell a stale one.
 	file := recorder.File()
 	file.Host = trace.Host{OS: "darwin", Arch: "arm64"}
+
+	start := time.Date(2026, 11, 4, 12, 0, 0, 0, time.UTC)
+	for i := range file.Entries {
+		at := start.Add(time.Duration(i) * time.Millisecond)
+		file.Entries[i].At = &at
+	}
 
 	return out, file
 }

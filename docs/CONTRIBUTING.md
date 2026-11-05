@@ -142,10 +142,9 @@ bodies also advertise `UpdateFirmware`, `FormatStore` and `DeleteObject`.
 ## Development
 
 ```bash
-make test        # tests, with the race detector
-make lint-mac    # lint the macOS USB backend, from any machine
+make check       # everything that has to pass before a push
+make test        # the Go tests, with the race detector
 make build-mac   # rebuild mac/openshuttercounter and libusb
-python3 -m pytest app/tests    # the app
 ```
 
 Two things are worth knowing before changing anything under
@@ -157,5 +156,5 @@ Two things are worth knowing before changing anything under
   framing test fails, the change is wrong: do not update the fixture to match
   the code, and do not run the result against a camera.
 - **The USB backend only compiles for macOS.** Elsewhere a stub stands in,
-  so run `make lint-mac` as well as `make lint` if you're not on a Mac. There's
-  no CI: run the tests before opening a pull request.
+  and `make check` vets and lints it for the Mac from any machine. There's no
+  CI: `make check` runs before every push (see docs/DEVELOPMENT.md).

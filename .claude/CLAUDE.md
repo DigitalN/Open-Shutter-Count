@@ -12,6 +12,10 @@ the R8 did, and what's next. The app was built to
 [docs/DEVELOPMENT.md](../docs/DEVELOPMENT.md) has how it fits together, the
 release checklist and how updates work.
 
+Matt Pocock's skills are project skills in `.claude/skills/`, named without a
+prefix: `/mattpocock-skills:<name>` is `/<name>`, so read
+`.claude/skills/<name>/SKILL.md` and follow it.
+
 ## Layout
 
 - The top level is kept for what a user needs: the README, LICENSE and
@@ -26,56 +30,36 @@ release checklist and how updates work.
 
 ## Releases
 
-Built, signed and packaged on the maintainer's Mac with
-`app/scripts/package.sh` (or `Package a Release.command`), from `main` only,
-signed with the same Apple Development certificate as Mac Engine Room (team
-`XT4LT7MS6Y`). A release is `v<version>` with the DMG as its only file. Versions
-start at 0.5.0 and go up by 0.0.1. Installed copies update from the latest
-release at every launch, so a new release is also how a fix gets tested on the
-camera.
+A release is `v<version>` with the DMG as its only file, built from `main` on
+the maintainer's Mac and signed with Mac Engine Room's Apple Development
+certificate (team `XT4LT7MS6Y`). Versions start at 0.5.0 and go up by 0.0.1.
+Installed copies update from the latest release at every launch, so a release
+is also how a fix gets tested on the camera.
 
-Releasing works as in Mac Engine Room:
-
-- Claude opens every pull request into `main` and merges it once the checks
-  below pass; there's no CI.
-- A release means the whole release checklist in docs/DEVELOPMENT.md, every
-  time, without being reminded: version bump, tests, building and checking the
-  DMG, release notes, publishing, drafting the previous release, the README, and
-  checking the live page afterwards.
-- Merging to `main` is not a release. If user-facing changes are merged but
-  unreleased, say so: installed copies only update when a release is published.
-- When the maintainer says a pull request is merged, do the release straight
-  away without asking: the version bump on a `claude/release-<version>` branch,
-  its pull request, merging that yourself, then building, publishing, drafting
-  the previous release and the checks.
-- Check each step's result before the next step that can't be undone. Don't
-  chain a check and a publish with `&&`.
-- Building, signing and publishing need the maintainer's Mac, whose keychain
-  holds the certificate. A session running on the Mac does all of it. A cloud
-  session can't reach the Mac: it does everything up to the build, then says so
-  and hands the maintainer the rest, with the release notes written out.
+- Claude opens every pull request into `main` and merges it once `make check`
+  passes.
+- When the maintainer says a pull request is merged, Claude works through the
+  whole release checklist in docs/DEVELOPMENT.md straight away, without asking.
+  Merging isn't a release: if user-facing changes are merged but unreleased,
+  say so.
+- Building, signing and publishing need the certificate in the Mac's keychain.
+  A session on the Mac (`uname` says `Darwin`) does all of it. A cloud session
+  says so as soon as a release comes up, does the steps before the build, and
+  hands over the rest with the release notes written out.
 
 ## How testing works
 
-- Claude can't reach the Mac or the camera. The maintainer makes a release and
-  opens the app, and sends the log Save Log wrote (no serial number in it) or
-  what the screen said. `Find Shutter Counter.command` still saves `.txt` logs
-  in `mac/readings/` for working out a camera; probes (`.json`) are ignored
-  because they hold the camera's serial number. Earlier readings were taken out
-  of the repo and its history for privacy; docs/R8-PROGRESS.md quotes what they
-  showed.
-- After any Go change, rebuild the Mac binary with `bash mac/build.sh` (works
-  on Linux; reproducible; the Go linker ad-hoc signs it; it takes the version
-  from `app/version.py`) and commit `mac/openshuttercounter` with the change.
-- After changing what `read --json` or `list --json` prints, or what a read
-  sends, regenerate the app's fixtures:
-  `UPDATE_FIXTURES=1 go test ./internal/cmd -run TestAppFixtures`.
-- Checks before pushing: `go vet ./...` here and with `GOOS=darwin`;
-  `go test ./...`; the repo's linter here and for the Mac:
-  `go build -o .bin/golangci-lint github.com/golangci/golangci-lint/v2/cmd/golangci-lint`
-  then `.bin/golangci-lint run ./...` and `GOOS=darwin .bin/golangci-lint run ./...`,
-  then `rm -rf .bin`; and `python3 -m pytest app/tests`. The tool only reads
-  cameras on macOS: off a Mac, `pkg/usb` is a stub that finds none.
+- A session on the Mac reaches the Mac; a cloud session reaches neither the Mac
+  nor the camera. Either way, reads are the maintainer's: they open the app and
+  send the log Save Log wrote (no serial number in it) or what the screen said.
+  `Find Shutter Counter.command` still saves `.txt` logs in `mac/readings/` for
+  working out a camera; probes (`.json`) are ignored because they hold the
+  camera's serial number. Earlier readings were taken out of the repo and its
+  history for privacy; docs/R8-PROGRESS.md quotes what they showed.
+- Run `make check` before every push; the pre-push hook runs it too. It also
+  remakes `mac/openshuttercounter` and the app's fixtures, and fails if either
+  was stale: commit what it remade. The tool only reads cameras on macOS: off a
+  Mac, `pkg/usb` is a stub that finds none.
 - The page can be checked on Linux with `python3 app/preview/serve.py` and a
   browser (scenarios at the top of `app/preview/stub.js`). The rest of the app
   (AppKit, the updater, signing) is checked by the maintainer's release run.

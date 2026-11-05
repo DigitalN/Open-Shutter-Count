@@ -1,0 +1,6 @@
+#!/bin/sh
+# There's no CI, so this is the check: nothing is pushed unless `make check`
+# passes. .claude/hooks/session-start.sh points git at this folder.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+echo "pre-push: running make check" >&2
+exec make --no-print-directory check >&2
