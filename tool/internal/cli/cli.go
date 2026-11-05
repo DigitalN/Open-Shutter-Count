@@ -63,9 +63,10 @@ file. Without --events it sends nothing else: no vendor or factory commands.
 With --events, on a Canon body, it also reads Canon's event channel the way
 EOS Utility and libgphoto2 do: SetRemoteMode(1), SetEventMode(1), GetEvent
 until the camera has nothing more to report, and RequestDevicePropValue(0xD167)
-if that property wasn't reported. Then SetRemoteMode(0), SetRemoteMode(1) and
-SetEventMode(0), as libgphoto2 does when it stops tethering. Each is sent only
-if the camera lists it.
+if that property wasn't reported, then RequestDevicePropValue(0xD1AF), the
+serial number on the body, if that wasn't either. Then SetRemoteMode(0),
+SetRemoteMode(1) and SetEventMode(0), as libgphoto2 does when it stops
+tethering. Each is sent only if the camera lists it.
 
 Two probes taken an exact number of photos apart, compared with 'compare',
 show whether anything is the shutter count.`,

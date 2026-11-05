@@ -124,9 +124,10 @@ var (
 )
 
 // fakeCamera is a Canon body that answers like the maintainer's EOS R8 does,
-// listing the channels given. Its event channel reports d167 along with its
-// serial number and owner; its factory channel answers each read with the next
-// of mpu.
+// listing the channels given. Its event channel reports d167 and its owner
+// unasked, and its serial number (0xD1AF) only when it's asked for, which the
+// R8 didn't report unasked; its factory channel answers each read with the
+// next of mpu.
 func fakeCamera(
 	t *testing.T, model string, productID uint16, channels []uint16, d167 []byte, mpu ...[]byte,
 ) *scriptedCamera {
@@ -143,7 +144,7 @@ func fakeCamera(
 	raw, err := info.MarshalBinary()
 	require.NoError(t, err)
 
-	events, reads := 0, 0
+	events, reads, asked := 0, 0, false
 
 	return &scriptedCamera{
 		info: usb.DeviceInfo{
@@ -160,17 +161,26 @@ func fakeCamera(
 				return raw, ptp.RCOK
 			case ptp.OpGetDevicePropValue:
 				return nil, ptp.RCOperationNotSupported
+			case canon.OpEOSRequestDevicePropValue:
+				asked = true // d167 comes unasked, so this is 0xd1af
+
+				return nil, ptp.RCOK
 			case canon.OpEOSGetEvent:
 				events++
-				if events > 1 {
-					return eventList(), ptp.RCOK
+
+				switch {
+				case events == 1:
+					return eventList(
+						eventRecord(canon.EventPropValueChanged, 0xd115, []byte(fakeOwner+"\x00")),
+						eventRecord(canon.EventPropValueChanged, canon.PropShutterReleaseCounter, d167),
+					), ptp.RCOK
+				case asked:
+					asked = false
+
+					return eventList(eventRecord(canon.EventPropValueChanged, 0xd1af, []byte(fakeBodyID+"\x00"))), ptp.RCOK
 				}
 
-				return eventList(
-					eventRecord(canon.EventPropValueChanged, 0xd1af, []byte(fakeBodyID+"\x00")),
-					eventRecord(canon.EventPropValueChanged, 0xd115, []byte(fakeOwner+"\x00")),
-					eventRecord(canon.EventPropValueChanged, canon.PropShutterReleaseCounter, d167),
-				), ptp.RCOK
+				return eventList(), ptp.RCOK
 			case canon.OpFactoryRecv:
 				reads++
 				if reads > len(mpu) {

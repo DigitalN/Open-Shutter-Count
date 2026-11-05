@@ -141,9 +141,16 @@ How word 3 and word 4 were identified:
   read yet".
 - Nothing has been reported upstream.
 - The result screen shows the serial number on the body (2026-11-05), from 0xD1AF
-  on the event channel. libgphoto2's EOS R8 dump has it there; whether the
-  maintainer's R8 does isn't confirmed yet. The log's steps say
-  `0xd1af (serial number): reported` or `not reported`, without the number.
+  on the event channel. 0.5.2 only read it if the camera reported it unasked, and
+  the R8 showed none. Its 2026-11-04 trace confirms it: 161 properties in the first
+  GetEvent, none of them 0xD1AF, and the serial's last digits (which the maintainer
+  gave) nowhere in the trace as text or a number. GetDeviceInfo's serial is a 31
+  character hex ID, not the body's. From 0.5.3 a read asks for 0xD1AF with
+  RequestDevicePropValue once it has 0xD167 (approved 2026-11-05). Whether the R8
+  answers isn't known yet: the log's steps say `RequestDevicePropValue(0xd1af)`
+  and what it answered, then `0xd1af (serial number): reported` or `not reported`,
+  without the number. The maintainer can check the screen's serial against the
+  last digits they know.
 - `tool/mac/openshuttercounter` stays committed, so building the app on the Mac
   needs only Python (Q31).
 - Old branches are gone (2026-11-05): GitHub has only `main`, and the local

@@ -66,9 +66,10 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
    (Changed by the maintainer on 2026-11-05: above the counts, a panel with the
    camera's model, its serial number and the date it was read, so someone selling
    it can screenshot the screen for their ad. The serial number is the one on the
-   body, Canon's 0xD1AF, which comes with the event channel; a body read another
-   way, or one that doesn't report it, shows no serial number. It's only on the
-   screen: the log and the issue still leave it out.)
+   body, Canon's 0xD1AF, off the event channel; a body read another way, or one
+   that won't give it, shows no serial number. It's only on the screen: the log
+   and the issue still leave it out. The R8 didn't report it unasked, so the
+   maintainer approved asking for it with RequestDevicePropValue the same day.)
 
 Every outcome ends on the result screen, including no camera found and failed
 reads.
