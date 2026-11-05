@@ -107,6 +107,12 @@ func (c *camera) Write(p []byte, _ time.Duration) (int, error) {
 		return 0, err
 	}
 
+	// A data phase going out (the factory channel's) was answered with its
+	// command.
+	if head.Type == ptp.ContainerData {
+		return len(p), nil
+	}
+
 	head.Payload = p[ptp.HeaderLen:]
 	params := head.Params()
 
@@ -241,4 +247,25 @@ func TestReadEventTableStopsDrainingACameraThatNeverRunsOut(t *testing.T) {
 	table, err := ReadEventTable(ptp.New(cam), eventOps, nil)
 	require.NoError(t, err)
 	assert.Len(t, table.Replies, maxEventRounds)
+}
+
+func TestScrubEventsBlanksTheSerialNumberAndOwner(t *testing.T) {
+	// 0xD1AF as libgphoto2's EOS R8 dump shows it: twelve digits and a NUL.
+	data := eventList(
+		propRecord(0xd167, eosD167...),
+		propRecord(0xd1af, []byte("072022001307\x00")...),
+		propRecord(0xd115, []byte("Jane Doe\x00\x00\x00\x00")...),
+		record(EventAvailListChanged, append(binary.LittleEndian.AppendUint32(nil, 0xd1af), 1, 0, 0, 0)...),
+	)
+
+	found := ScrubEvents(OpEOSGetEvent, nil, data)
+	assert.Equal(t, []string{"072022001307", "Jane Doe"}, found)
+
+	records, err := ParseEvents(data)
+	require.NoError(t, err, "the scrubbed reply still parses")
+	assert.Equal(t, eosD167, records[0].Data)
+	assert.Equal(t, []byte("xxxxxxxxxxxx\x00"), records[1].Data)
+	assert.Equal(t, []byte("xxxxxxxx\x00\x00\x00\x00"), records[2].Data)
+
+	assert.Nil(t, ScrubEvents(0x1015, nil, data), "only GetEvent replies are read")
 }

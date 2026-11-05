@@ -10,6 +10,7 @@ package manufacturers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -80,9 +81,8 @@ type Reading struct {
 	// what was found if it was not.
 	Model string `json:"model"`
 
-	// Confirmed carries the model's confirmation state through to the
-	// output, so a reading from an unrecognised body is never presented as
-	// though it were established.
+	// Confirmed says this body has been tested: what each counter counts
+	// was worked out on one. Anything else is labelled as not fully tested.
 	Confirmed bool `json:"confirmed"`
 
 	// Method names how the values were obtained, for example the standard
@@ -95,7 +95,15 @@ type Reading struct {
 
 	// Note is shown under the counters, to say how to read them.
 	Note string `json:"note,omitempty"`
+
+	// Steps says what was sent to the camera and what it answered, in
+	// order. A failed read carries them too.
+	Steps []string `json:"steps,omitempty"`
 }
+
+// ErrNotSupported means the camera was recognised as one this build can't
+// read yet. Only standard read requests were sent to it.
+var ErrNotSupported = errors.New("this camera can't be read yet")
 
 // Reader reads actuation counters from one manufacturer's cameras.
 type Reader interface {
@@ -108,8 +116,10 @@ type Reader interface {
 	// Models lists the bodies this reader knows about.
 	Models() []Model
 
-	// Read reports what the camera says. The PTP session is already open.
-	Read(ctx context.Context, device *ptp.Device, info usb.DeviceInfo) (Reading, error)
+	// Read reports what the camera says. The PTP session is already open,
+	// and camera is what it answered to GetDeviceInfo. On failure the
+	// Reading still carries the Steps taken.
+	Read(ctx context.Context, device *ptp.Device, info usb.DeviceInfo, camera ptp.DeviceInfo) (Reading, error)
 }
 
 // Registry is the set of readers a build knows about.

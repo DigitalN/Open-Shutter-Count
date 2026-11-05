@@ -1,0 +1,30 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "32f4",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "camera": {
+    "manufacturer": "Canon.Inc",
+    "model": "Canon PowerShot G7 X Mark III",
+    "firmware": "3-1.5.0",
+    "operations": [
+      "0x1001",
+      "0x1002",
+      "0x1003",
+      "0x1014",
+      "0x1015"
+    ]
+  },
+  "steps": [
+    "OpenSession: OK",
+    "GetDeviceInfo: OK, Canon PowerShot G7 X Mark III, firmware 3-1.5.0, 5 operations",
+    "GetDevicePropValue(0xd1ac): OperationNotSupported",
+    "it lists neither Canon's factory channel nor its event channel: nothing else is sent"
+  ],
+  "error": {
+    "kind": "not_supported",
+    "message": "this camera can't be read yet: the PowerShot G7 X Mark III doesn't answer the standard shutter count property, and lists neither Canon's factory channel nor its event channel"
+  }
+}

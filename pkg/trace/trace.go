@@ -11,6 +11,7 @@
 package trace
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -111,6 +112,8 @@ type File struct {
 }
 
 // Recorder collects containers as they are exchanged and writes them out.
+// What it gives back has the camera's serial number blanked, and whatever
+// else its scrubbers find that identifies the camera or its owner.
 //
 // It implements ptp.Recorder, so attaching one to a device is all that is
 // needed:
@@ -122,14 +125,18 @@ type File struct {
 type Recorder struct {
 	mu sync.Mutex
 
-	file    File
-	opcodes map[uint32]uint16
-	now     func() time.Time
+	file      File
+	opcodes   map[uint32]uint16
+	scrubbers []Scrubber
+	now       func() time.Time
 }
 
-// NewRecorder starts a recording.
-func NewRecorder(toolVersion string) *Recorder {
+// NewRecorder starts a recording. The serial number in GetDeviceInfo and the
+// standard Artist and CopyrightInfo properties are always blanked; scrubbers
+// adds to that, for what a manufacturer's own commands report.
+func NewRecorder(toolVersion string, scrubbers ...Scrubber) *Recorder {
 	return &Recorder{
+		scrubbers: append([]Scrubber{ScrubDeviceInfo, ScrubProperties(PropArtist, PropCopyrightInfo)}, scrubbers...),
 		file: File{
 			Tool:          "openshuttercounter",
 			ToolVersion:   toolVersion,
@@ -185,15 +192,12 @@ func (r *Recorder) Record(direction ptp.Direction, c ptp.Container) {
 	})
 }
 
-// File returns the recording so far.
+// File returns the recording so far, scrubbed.
 func (r *Recorder) File() File {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	out := r.file
-	out.Entries = append([]Entry(nil), r.file.Entries...)
-
-	return out
+	return scrub(r.file, r.scrubbers)
 }
 
 // Write emits the recording as JSON.
@@ -240,8 +244,23 @@ func ReadFile(path string) (File, error) {
 	return Read(raw)
 }
 
-// Read parses a trace from bytes, detecting which format it is in.
+// The lines a saved log wraps its trace in. Read finds the trace between them,
+// so a log can be decoded like a trace file.
+const (
+	LogBegin = "-----BEGIN OPENSHUTTERCOUNTER TRACE-----"
+	LogEnd   = "-----END OPENSHUTTERCOUNTER TRACE-----"
+)
+
+// Read parses a trace from bytes, detecting which format it is in: a trace
+// file, a log with a trace in it, or a USB capture.
 func Read(raw []byte) (File, error) {
+	if begin := bytes.Index(raw, []byte(LogBegin)); begin >= 0 && !looksLikeJSON(raw) {
+		raw = raw[begin+len(LogBegin):]
+		if end := bytes.Index(raw, []byte(LogEnd)); end >= 0 {
+			raw = raw[:end]
+		}
+	}
+
 	if looksLikeJSON(raw) {
 		var file File
 

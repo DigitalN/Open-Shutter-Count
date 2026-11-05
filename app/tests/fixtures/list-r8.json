@@ -1,0 +1,10 @@
+[
+  {
+    "path": "usb:001:002",
+    "bus": 1,
+    "address": 2,
+    "vendor_id": 1193,
+    "product_id": 13068,
+    "name": "Canon EOS R8"
+  }
+]

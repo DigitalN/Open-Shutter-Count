@@ -101,10 +101,10 @@ func TestLookupModel(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestFallbackModelIsNotClaimedAsConfirmed(t *testing.T) {
-	m := FallbackModel(0x1234)
+func TestGuessModelIsNotClaimedAsConfirmed(t *testing.T) {
+	m := GuessModel(0x3294)
 	assert.False(t, m.Confirmed)
-	assert.NotEmpty(t, m.Counters)
+	assert.Equal(t, models[0].Counters, m.Counters, "the 5D Mark IV's addresses")
 }
 
 func mustHex(t *testing.T, s string) []byte {

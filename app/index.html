@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- No network access of any kind: everything is inline and data comes from the
+     pywebview bridge (window.pywebview.api), which is not an HTTP connection.
+     'unsafe-eval' is required because pywebview delivers API return values with
+     eval(); this page never evaluates strings itself. -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data:; font-src 'none'; connect-src 'none'; media-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="light dark">
+<title>Open Shutter Count</title>
+<style>
+/* Mac Engine Room's colours, fonts and light and dark mode. */
+:root {
+  --bg: #f5f5f7; --card: #ffffff; --card-2: #fafafa; --text: #1d1d1f; --muted: #6e6e73;
+  --faint: #aeaeb2; --line: rgba(0,0,0,.08); --line-strong: rgba(0,0,0,.14);
+  --accent: #007aff; --good: #28a745; --warn: #f08c00; --danger: #d70015;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 0 0 .5px rgba(0,0,0,.06);
+  --seg-bg: rgba(0,0,0,.06); --seg-on: #ffffff;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1c1c1e; --card: #2c2c2e; --card-2: #323234; --text: #f5f5f7; --muted: #a1a1a6;
+    --faint: #636366; --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.16);
+    --accent: #0a84ff; --good: #32d74b; --warn: #ffb340; --danger: #ff6961;
+    --shadow: 0 0 0 .5px rgba(255,255,255,.08);
+    --seg-bg: rgba(255,255,255,.08); --seg-on: #636366;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1c1c1e; --card: #2c2c2e; --card-2: #323234; --text: #f5f5f7; --muted: #a1a1a6;
+  --faint: #636366; --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.16);
+  --accent: #0a84ff; --good: #32d74b; --warn: #ffb340; --danger: #ff6961;
+  --shadow: 0 0 0 .5px rgba(255,255,255,.08);
+  --seg-bg: rgba(255,255,255,.08); --seg-on: #636366;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--text);
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased; user-select: none; -webkit-user-select: none;
+  display: flex; flex-direction: column;
+}
+.num { font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* ── top bar ─────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--bg);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; white-space: nowrap; }
+.brand svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.steps { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.steps li {
+  font-size: 11px; color: var(--faint); padding: 2px 8px; border-radius: 10px; white-space: nowrap;
+}
+.steps li.done { color: var(--muted); }
+.steps li.now { color: var(--text); background: var(--seg-bg); font-weight: 600; }
+
+main { flex: 1; overflow-y: auto; padding: 18px 20px 20px; }
+.wrap { max-width: 560px; margin: 0 auto; }
+.card { background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 20px 22px; }
+.card + .card { margin-top: 14px; }
+h1 { font-size: 20px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 4px; }
+h2 {
+  margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: .02em; color: var(--muted);
+  text-transform: uppercase;
+}
+p { margin: 0 0 10px; }
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.lead { color: var(--muted); margin-bottom: 16px; }
+.pre { white-space: pre-wrap; }
+b { font-weight: 600; }
+
+.notice {
+  display: flex; gap: 10px; align-items: flex-start; margin: 0 auto 14px; max-width: 560px;
+  padding: 10px 14px; border-radius: 10px; background: var(--card); box-shadow: var(--shadow);
+  border-left: 3px solid var(--warn); font-size: 12px;
+}
+
+/* ── centred status (update, waiting, reading) ── */
+.status { text-align: center; padding: 28px 10px 22px; }
+.status h1 { margin-top: 16px; }
+.status .lead { margin: 0 auto; max-width: 420px; }
+.spinner {
+  width: 34px; height: 34px; margin: 0 auto; border-radius: 50%;
+  border: 3px solid var(--seg-bg); border-top-color: var(--accent);
+  animation: spin .9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+.badge {
+  width: 52px; height: 52px; margin: 0 auto; border-radius: 50%; display: grid; place-items: center;
+  font-size: 26px; font-weight: 700; color: #fff; background: var(--good);
+}
+.badge.bad { background: var(--warn); }
+.badge.info { background: var(--accent); }
+.badge svg { width: 30px; height: 30px; }
+
+/* ── checklist ───────────────────────────────── */
+.checklist { list-style: none; margin: 0; padding: 0; }
+.checklist li { border-bottom: 1px solid var(--line); }
+.checklist li:last-child { border-bottom: 0; }
+.checklist label { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; cursor: default; }
+.checklist input {
+  -webkit-appearance: none; appearance: none; flex: none; width: 18px; height: 18px; margin: 1px 0 0;
+  border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line-strong); background: var(--card-2);
+  display: grid; place-items: center;
+}
+.checklist input:checked { background: var(--accent); box-shadow: none; }
+.checklist input:checked::after {
+  content: ""; width: 5px; height: 9px; margin-top: -2px; border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.checklist input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.checklist .what { font-weight: 500; }
+.checklist .how { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.path { font-weight: 500; color: var(--text); }
+
+.help { margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
+.help li { padding: 9px 0; border-top: 1px solid var(--line); }
+.help b { display: block; margin-bottom: 2px; }
+.help span { color: var(--muted); font-size: 12px; }
+
+/* ── result ──────────────────────────────────── */
+.result-head { text-align: center; padding: 8px 0 14px; }
+.result-head h1 { margin-top: 12px; }
+.result-head .detail { color: var(--muted); max-width: 440px; margin: 0 auto; }
+.result-head.untested .detail { color: var(--text); }
+table.counts { width: 100%; border-collapse: collapse; margin: 6px 0 4px; }
+table.counts td { padding: 10px 2px; border-top: 1px solid var(--line); vertical-align: baseline; }
+table.counts td.value { text-align: right; font-size: 17px; font-weight: 600; white-space: nowrap; }
+table.counts .where { display: block; color: var(--faint); font-size: 11px; }
+.note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.hint { background: var(--card-2); border-radius: 10px; padding: 12px 14px; box-shadow: inset 0 0 0 .5px var(--line-strong); text-align: left; }
+details { margin-top: 12px; color: var(--muted); font-size: 12px; }
+summary { cursor: default; }
+details .pre { margin-top: 6px; user-select: text; -webkit-user-select: text; font: 11px/1.45 ui-monospace, "SF Mono", Menlo, monospace; }
+
+/* ── buttons ─────────────────────────────────── */
+.actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
+.actions.center { justify-content: center; }
+.actions .spacer { flex: 1; }
+.btn {
+  border: 0; border-radius: 7px; padding: 6px 14px; background: var(--seg-bg); color: var(--text); font-weight: 500;
+}
+.btn:hover { filter: brightness(.96); }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn:disabled { opacity: .45; filter: none; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.after-actions { text-align: right; color: var(--muted); font-size: 11px; margin-top: 8px; }
+
+footer { padding: 8px 20px 12px; text-align: center; color: var(--faint); font-size: 11px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(20px); opacity: 0;
+  background: var(--text); color: var(--bg); padding: 8px 14px; border-radius: 8px; transition: all .25s;
+  pointer-events: none; z-index: 10; max-width: 90%; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%); }
+
+@media (max-width: 540px) {
+  .steps li:not(.now) { display: none; }
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M12 7.4L21.94 13.14M15.98 9.7L15.98 21.17M15.98 14.3L6.05 20.04M12 16.6L2.06 10.86M8.02 14.3L8.02 2.83M8.02 9.7L17.95 3.96"/>
+    </svg>
+    Open Shutter Count
+  </div>
+  <ol class="steps" id="steps">
+    <li data-step="update">Update</li>
+    <li data-step="setup">Set up</li>
+    <li data-step="waiting">Connect</li>
+    <li data-step="reading">Read</li>
+    <li data-step="result">Result</li>
+  </ol>
+</header>
+
+<main>
+  <div class="notice" id="update-note" hidden><span id="update-note-text"></span></div>
+
+  <!-- 1. Checking for updates, or updating -->
+  <section class="wrap" id="s-update" hidden>
+    <div class="card status" id="update-busy">
+      <div class="spinner"></div>
+      <h1 id="update-title">Checking for updates…</h1>
+      <p class="lead" id="update-lead">Open Shutter Count checks for a new version every time it opens.</p>
+    </div>
+    <div class="card status" id="update-blocked" hidden>
+      <div class="badge info">↓</div>
+      <h1 id="blocked-title">A new version is out</h1>
+      <p class="lead" id="blocked-lead"></p>
+      <div class="actions center">
+        <button class="btn" id="b-quit">Quit</button>
+        <button class="btn primary" id="b-download">Download the New Version</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Camera setup checklist -->
+  <section class="wrap" id="s-setup" hidden>
+    <div class="card">
+      <h1>Set up the camera</h1>
+      <p class="lead">Do these first. Nothing is sent to the camera yet.</p>
+      <ul class="checklist">
+        <li><label><input type="checkbox"><div>
+          <div class="what">USB connection set to Photo Import/Remote Control</div>
+          <div class="how">On the camera: <span class="path">MENU › Setup (wrench) › Choose USB connection app</span>. On the EOS R8 it's on page 4 of the Setup menu.</div>
+        </div></label></li>
+        <li><label><input type="checkbox"><div>
+          <div class="what">Wi-Fi and Bluetooth off</div>
+          <div class="how">On many Canon bodies, Wi-Fi switches the USB port off.</div>
+        </div></label></li>
+        <li><label><input type="checkbox"><div>
+          <div class="what">A card in the camera</div>
+        </div></label></li>
+        <li><label><input type="checkbox"><div>
+          <div class="what">Plugged straight into this Mac with a data cable</div>
+          <div class="how">Not through a hub or dock. Some USB-C cables only charge.</div>
+        </div></label></li>
+        <li><label><input type="checkbox"><div>
+          <div class="what">Image Capture, Photos and EOS Utility closed</div>
+          <div class="how">And any other app that uses cameras, such as Lightroom.</div>
+        </div></label></li>
+      </ul>
+      <div class="actions">
+        <button class="btn primary" id="b-continue">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Waiting for the camera -->
+  <section class="wrap" id="s-waiting" hidden>
+    <div class="card status">
+      <div class="spinner"></div>
+      <h1>Looking for the camera…</h1>
+      <p class="lead">Switch it on and plug it in. This moves on by itself as soon as it's found.</p>
+      <ul class="help" id="waiting-help" hidden>
+        <li><b>Is its USB connection set to Photo Import/Remote Control?</b>
+          <span><span class="path">MENU › Setup (wrench) › Choose USB connection app</span>; on the EOS R8, page 4 of the Setup menu. In any other mode it can't be read.</span></li>
+        <li><b>Did macOS ask to allow the accessory?</b>
+          <span>On a Mac laptop with Apple silicon, macOS asks before a new USB accessory can connect. Click Allow. If you clicked Don't Allow, unplug the camera and plug it back in to be asked again. The setting is in System Settings › Privacy &amp; Security › Allow accessories to connect.</span></li>
+        <li><b>Is the cable a data cable?</b>
+          <span>A cable that only charges gets the camera no further than charging. Try another one, plugged straight into the Mac, not a hub or dock.</span></li>
+        <li><b>Are Wi-Fi and Bluetooth off, and is the camera on?</b>
+          <span>On many Canon bodies, Wi-Fi switches the USB port off.</span></li>
+      </ul>
+      <div class="actions center">
+        <button class="btn" id="b-back">Back to the Checklist</button>
+        <button class="btn" id="b-stop">Stop Looking</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Reading -->
+  <section class="wrap" id="s-reading" hidden>
+    <div class="card status">
+      <div class="spinner"></div>
+      <h1 id="reading-title">Reading the camera…</h1>
+      <p class="lead">Don't unplug it. This takes a few seconds.</p>
+    </div>
+  </section>
+
+  <!-- 5. Result -->
+  <section class="wrap" id="s-result" hidden>
+    <div class="card">
+      <div class="result-head" id="result-head">
+        <div class="badge" id="result-badge"></div>
+        <h1 id="result-title"></h1>
+        <p class="detail" id="result-detail"></p>
+      </div>
+      <table class="counts num" id="result-counts"></table>
+      <p class="note" id="result-note" hidden></p>
+      <div class="hint pre" id="result-hint" hidden></div>
+      <details id="result-more" hidden><summary>What the tool said</summary><div class="pre" id="result-message"></div></details>
+      <div class="actions">
+        <button class="btn" id="b-save">Save Log…</button>
+        <button class="btn" id="b-issue">Open an Issue</button>
+        <span class="spacer"></span>
+        <button class="btn primary" id="b-again">Read Again</button>
+      </div>
+      <div class="after-actions">To open an issue, save the log first, then attach it there.</div>
+    </div>
+  </section>
+</main>
+
+<footer id="footer"></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+const api = () => window.pywebview.api;
+const ORDER = ['update', 'setup', 'waiting', 'reading', 'result'];
+const POLL_MS = 400;
+
+let toastTimer;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+function call(name, ...args) {
+  try {
+    return Promise.resolve(api()[name](...args)).catch(e => { report(e); return null; });
+  } catch (e) { report(e); return Promise.resolve(null); }
+}
+function report(e) {
+  try { api().log_error(String(e && e.stack || e)); } catch (_) { /* nothing to tell */ }
+}
+window.addEventListener('error', e => report(e.error || e.message));
+window.addEventListener('unhandledrejection', e => report(e.reason));
+
+// Only rewrite what changed, so a poll doesn't keep WebKit relaying the page out.
+let last = '';
+function render(s) {
+  const key = JSON.stringify(s);
+  if (key === last) return;
+  last = key;
+
+  const at = ORDER.indexOf(s.step);
+  for (const li of $('steps').children) {
+    const i = ORDER.indexOf(li.dataset.step);
+    li.className = i === at ? 'now' : i < at ? 'done' : '';
+  }
+  for (const step of ORDER) $(`s-${step}`).hidden = step !== s.step;
+
+  $('update-note').hidden = !s.update_note;
+  $('update-note-text').textContent = s.update_note || '';
+
+  const dev = s.update && s.update.state === 'skipped';
+  $('footer').textContent = `Version ${s.version}` + (dev ? ` · development copy, not updated (${s.update.reason})` : '');
+
+  if (s.step === 'update') renderUpdate(s.update);
+  if (s.step === 'waiting') $('waiting-help').hidden = !s.waiting.help;
+  if (s.step === 'reading') $('reading-title').textContent = `Reading the ${s.reading.camera || 'camera'}…`;
+  if (s.step === 'result' && s.result) renderResult(s.result, s.can_save_log);
+}
+
+function renderUpdate(u) {
+  const blocked = u.state === 'blocked';
+  $('update-busy').hidden = blocked;
+  $('update-blocked').hidden = !blocked;
+  if (blocked) {
+    $('blocked-title').textContent = `Version ${u.version} is out`;
+    $('blocked-lead').textContent = `This copy can't update itself: ${u.reason}. Download the new version, `
+      + 'put it in your Applications folder, and open it from there. This version can\'t read the camera until then.';
+    return;
+  }
+  const title = {
+    downloading: `Updating to version ${u.version}…`,
+    installing: `Installing version ${u.version}…`,
+    installed: `Reopening in version ${u.version}…`,
+  }[u.state] || 'Checking for updates…';
+  $('update-title').textContent = title;
+  $('update-lead').textContent = u.state === 'checking'
+    ? 'Open Shutter Count checks for a new version every time it opens.'
+    : 'It reopens by itself when it\'s done.';
+}
+
+function renderResult(r, canSave) {
+  $('result-head').className = 'result-head' + (r.ok && !r.tested ? ' untested' : '');
+  $('result-badge').className = 'badge' + (r.ok ? '' : ' bad');
+  $('result-badge').textContent = r.ok ? '✓' : '!';
+  $('result-title').textContent = r.headline;
+  $('result-detail').textContent = r.detail;
+
+  const table = $('result-counts');
+  table.replaceChildren();
+  for (const c of r.counters) {
+    const row = table.insertRow();
+    const label = row.insertCell();
+    label.textContent = c.label;
+    if (c.location) {
+      const where = document.createElement('span');
+      where.className = 'where'; where.textContent = c.location;
+      label.append(where);
+    }
+    const value = row.insertCell();
+    value.className = 'value'; value.textContent = c.text;
+  }
+  table.hidden = !r.counters.length;
+
+  $('result-note').hidden = !r.note;
+  $('result-note').textContent = r.note || '';
+  $('result-hint').hidden = !r.hint;
+  $('result-hint').textContent = r.hint || '';
+  $('result-more').hidden = !r.message;
+  $('result-message').textContent = r.message || '';
+  $('b-save').disabled = !canSave;
+}
+
+async function poll() {
+  const s = await call('state');
+  if (s) render(s);
+  setTimeout(poll, POLL_MS);
+}
+
+function wire() {
+  $('b-continue').onclick = () => call('setup_done').then(poll1);
+  $('b-back').onclick = () => call('back_to_setup').then(poll1);
+  $('b-stop').onclick = () => call('stop_looking').then(poll1);
+  $('b-again').onclick = () => call('read_again').then(poll1);
+  $('b-download').onclick = () => call('download_update');
+  $('b-quit').onclick = () => call('quit');
+  $('b-issue').onclick = () => call('open_issue');
+  $('b-save').onclick = async () => {
+    const saved = await call('save_log');
+    if (saved && saved.path) toast(`Saved ${saved.name}`);
+    else if (saved && saved.error) toast(`Couldn't save the log: ${saved.error}`);
+  };
+}
+async function poll1() { const s = await call('state'); if (s) render(s); }
+
+function start() { wire(); poll(); }
+if (window.pywebview && window.pywebview.api) start();
+else window.addEventListener('pywebviewready', start, { once: true });
+</script>
+</body>
+</html>

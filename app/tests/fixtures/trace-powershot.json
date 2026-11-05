@@ -1,0 +1,86 @@
+{
+  "tool": "openshuttercounter",
+  "tool_version": "0.5.0",
+  "format_version": 1,
+  "host": {
+    "os": "linux",
+    "arch": "amd64"
+  },
+  "device": {
+    "path": "usb:001:002",
+    "bus": 1,
+    "address": 2,
+    "vendor_id": 1193,
+    "product_id": 13044,
+    "product": "Canon Digital Camera"
+  },
+  "notes": "Open Shutter Count 0.5.0",
+  "entries": [
+    {
+      "index": 1,
+      "at": "2026-11-04T23:08:24.960643356Z",
+      "direction": "out",
+      "type": 1,
+      "code": 4098,
+      "opcode": 4098,
+      "transaction": 1,
+      "payload": "01000000"
+    },
+    {
+      "index": 2,
+      "at": "2026-11-04T23:08:24.960647835Z",
+      "direction": "in",
+      "type": 3,
+      "code": 8193,
+      "opcode": 4098,
+      "transaction": 1
+    },
+    {
+      "index": 3,
+      "at": "2026-11-04T23:08:24.960649097Z",
+      "direction": "out",
+      "type": 1,
+      "code": 4097,
+      "opcode": 4097,
+      "transaction": 2
+    },
+    {
+      "index": 4,
+      "at": "2026-11-04T23:08:24.960659328Z",
+      "direction": "in",
+      "type": 2,
+      "code": 4097,
+      "opcode": 4097,
+      "transaction": 2,
+      "payload": "64000600000064000000000500000001100210031014101510000000000000000000000000000000000a430061006e006f006e002e0049006e00630000001e430061006e006f006e00200050006f00770065007200530068006f0074002000470037002000580020004d00610072006b00200049004900490000000833002d0031002e0035002e003000000021780078007800780078007800780078007800780078007800780078007800780078007800780078007800780078007800780078007800780078007800780078000000"
+    },
+    {
+      "index": 5,
+      "at": "2026-11-04T23:08:24.960663125Z",
+      "direction": "in",
+      "type": 3,
+      "code": 8193,
+      "opcode": 4097,
+      "transaction": 2
+    },
+    {
+      "index": 6,
+      "at": "2026-11-04T23:08:24.96066678Z",
+      "direction": "out",
+      "type": 1,
+      "code": 4117,
+      "opcode": 4117,
+      "transaction": 3,
+      "payload": "acd10000"
+    },
+    {
+      "index": 7,
+      "at": "2026-11-04T23:08:24.960672672Z",
+      "direction": "in",
+      "type": 3,
+      "code": 8197,
+      "opcode": 4117,
+      "transaction": 3
+    }
+  ]
+}

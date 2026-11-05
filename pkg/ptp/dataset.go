@@ -290,3 +290,116 @@ func (r *dataset) value(t uint16) []byte {
 
 	return r.b[start:r.off]
 }
+
+// ScrubSerialNumber blanks the serial number in a GetDeviceInfo dataset, in
+// place, with an x for each character, and returns what it was. The dataset
+// still parses; its serial number then reads xxxx. A dataset that doesn't
+// parse as far as the serial number is left alone.
+func ScrubSerialNumber(b []byte) string {
+	r := &dataset{b: b}
+
+	r.u16()
+	r.u32()
+	r.u16()
+	r.str()
+	r.u16()
+
+	for range 5 { // operations, events, properties, capture and image formats
+		r.u16Array()
+	}
+
+	for range 3 { // manufacturer, model, device version
+		r.str()
+	}
+
+	if r.err != nil || r.off >= len(b) {
+		return ""
+	}
+
+	return BlankString(b[r.off:])
+}
+
+// BlankString blanks the PTP string at the start of b, in place, with an x
+// for each character, and returns what it was. Its length and terminating
+// NUL are kept, so whatever holds it still parses. b is left alone if it
+// doesn't start with a whole PTP string.
+func BlankString(b []byte) string {
+	r := &dataset{b: b}
+
+	s := r.str()
+	if r.err != nil {
+		return ""
+	}
+
+	for i := 1; i+2 <= r.off; i += 2 {
+		if binary.LittleEndian.Uint16(b[i:]) != 0 {
+			b[i], b[i+1] = 'x', 0
+		}
+	}
+
+	return s
+}
+
+// StringLen is how many bytes the PTP string at the start of b takes, or -1
+// if b doesn't start with a whole one.
+func StringLen(b []byte) int {
+	r := &dataset{b: b}
+	r.str()
+
+	if r.err != nil {
+		return -1
+	}
+
+	return r.off
+}
+
+// MarshalBinary renders the dataset the way a camera sends it, which is what
+// tests of anything that reads one need.
+func (i DeviceInfo) MarshalBinary() ([]byte, error) {
+	var b []byte
+
+	b = binary.LittleEndian.AppendUint16(b, i.StandardVersion)
+	b = binary.LittleEndian.AppendUint32(b, i.VendorExtensionID)
+	b = binary.LittleEndian.AppendUint16(b, i.VendorExtensionVersion)
+	b = append(b, MarshalString(i.VendorExtensionDesc)...)
+	b = binary.LittleEndian.AppendUint16(b, i.FunctionalMode)
+
+	for _, array := range [][]uint16{i.Operations, i.Events, i.Properties, i.CaptureFormats, i.ImageFormats} {
+		b = binary.LittleEndian.AppendUint32(b, uint32(len(array))) //nolint:gosec // a dataset's arrays are small
+		for _, v := range array {
+			b = binary.LittleEndian.AppendUint16(b, v)
+		}
+	}
+
+	for _, s := range []string{i.Manufacturer, i.Model, i.DeviceVersion, i.SerialNumber} {
+		if len(utf16.Encode([]rune(s))) > maxStringUnits {
+			return nil, fmt.Errorf("%q is too long for a PTP string", s)
+		}
+
+		b = append(b, MarshalString(s)...)
+	}
+
+	return b, nil
+}
+
+// maxStringUnits is the most characters a PTP string holds, its NUL aside.
+const maxStringUnits = 254
+
+// MarshalString renders a PTP string: a character count including the
+// terminating NUL, then the characters in UTF-16LE. The empty string is a
+// lone zero. A string longer than a PTP string holds is cut short.
+func MarshalString(s string) []byte {
+	units := utf16.Encode([]rune(s))
+	if len(units) == 0 {
+		return []byte{0}
+	}
+
+	units = units[:min(len(units), maxStringUnits)]
+
+	out := []byte{byte(len(units) + 1)} //nolint:gosec // at most maxStringUnits, cut above
+	for _, u := range units {
+		out = binary.LittleEndian.AppendUint16(out, u)
+	}
+
+	return append(out, 0, 0)
+}

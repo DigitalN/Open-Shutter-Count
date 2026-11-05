@@ -1,0 +1,7 @@
+{
+  "error": {
+    "kind": "no_camera",
+    "message": "no camera found",
+    "hint": "Check that:\n  - the camera is switched on and connected directly, not through a hub\n  - the cable is a data cable rather than charge only\n  - built-in Wi-Fi is fully disabled: on many bodies it disables the USB port\n  - there is a card in the camera\n  - USB 2 ports are noticeably more reliable than USB 3 with these bodies\n\nIf your camera is from a manufacturer this build does not know yet, it will\nnot be listed at all. Adding one is welcome; see docs/CONTRIBUTING.md."
+  }
+}

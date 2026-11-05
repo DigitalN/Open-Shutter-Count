@@ -1,0 +1,61 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "3294",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "camera": {
+    "manufacturer": "Canon.Inc",
+    "model": "Canon EOS 80D",
+    "firmware": "3-1.5.0",
+    "operations": [
+      "0x1001",
+      "0x1002",
+      "0x1003",
+      "0x1014",
+      "0x1015",
+      "0x9052",
+      "0x9053",
+      "0x9114",
+      "0x9115",
+      "0x9116",
+      "0x9127"
+    ]
+  },
+  "reading": {
+    "manufacturer": "Canon",
+    "model": "EOS 80D",
+    "confirmed": false,
+    "method": "canon-factory-channel"
+  },
+  "counters": [
+    {
+      "label": "Shutter actuations",
+      "location": "MPU 0x1001",
+      "value": 26354,
+      "raw": "00660000000000f20000"
+    },
+    {
+      "label": "Mirror actuations",
+      "location": "MPU 0x100b",
+      "value": 26354,
+      "raw": "0066000000000000f200"
+    },
+    {
+      "label": "Total counter",
+      "location": "MPU 0x1015",
+      "value": 26369,
+      "raw": "00670000000000000001"
+    }
+  ],
+  "steps": [
+    "OpenSession: OK",
+    "GetDeviceInfo: OK, Canon EOS 80D, firmware 3-1.5.0, 11 operations",
+    "GetDevicePropValue(0xd1ac): OperationNotSupported",
+    "it lists Canon's factory channel: reading it at the EOS 5D Mark IV's MPU addresses",
+    "MonReadAndGetData(0x1001, 10): 00660000000000f20000",
+    "MonReadAndGetData(0x100b, 10): 0066000000000000f200",
+    "MonReadAndGetData(0x1015, 10): 00670000000000000001"
+  ]
+}

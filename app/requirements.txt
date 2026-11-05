@@ -1,0 +1,9 @@
+# Pinned so a build never silently pulls in newer (unreviewed) versions. The same as
+# Mac Engine Room's.
+pywebview==6.1
+pyobjc-core==12.1
+pyobjc-framework-Cocoa==12.1
+pyobjc-framework-WebKit==12.1
+pyinstaller==6.19.0
+# For the tests, which Package a Release.command runs first.
+pytest==9.2.0

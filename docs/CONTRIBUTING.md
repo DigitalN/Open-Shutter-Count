@@ -3,14 +3,18 @@
 The most useful thing you can contribute is a reading from your own camera —
 whether or not it worked.
 
-Right now exactly one body has been confirmed by someone holding it. Every
-other camera is either an educated guess or not supported at all, and the only
-way that changes is people running this on their own gear and saying what
+Right now two bodies have been tested by someone holding them: the EOS R8 and the
+EOS 5D Mark IV. Other bodies are read the way one of those is, by what they
+list (see "What it sends" in [USAGE.md](USAGE.md)), and older ones that answer
+the standard shutter count property are read too, but each of those readings is
+labelled not fully tested. Everything else can't be read yet. The
+only way that changes is people running this on their own gear and saying what
 happened.
 
 ## Telling us about your camera
 
-Run it:
+In the Open Shutter Count app, click **Save Log** on the result screen, then
+**Open an Issue**, and attach the log. From the command line:
 
 ```bash
 openshuttercounter --trace mycamera.json
@@ -28,9 +32,10 @@ these outcomes are worth reporting:
   useful, and still a trace worth having.
 
 A trace is a record of everything exchanged with the camera: the commands sent
-and the replies received. It contains no photographs, no personal data and
-nothing about the contents of your card. It does include the camera's USB
-serial number, so remove that from the file if you would rather not publish it.
+and the replies received. It contains no photographs and nothing about the
+contents of your card. The camera's serial numbers, and on Canon bodies the
+owner, artist and copyright names, are blanked (`xxxx`) before it's written.
+The app's log has the same trace at the end.
 
 ## Confirming a camera
 

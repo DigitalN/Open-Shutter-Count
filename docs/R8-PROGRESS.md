@@ -1,9 +1,9 @@
 # EOS R8 progress
 
-Work is on branch `claude/happy-knuth-9mtrso`. The maintainer's local copy is
-`~/Documents/GitHub/openshuttercounter`. New readings arrive as commits in
-`mac/readings/` (only the `.txt` logs: traces and probes hold the camera's
-serial number, so they're ignored). The readings and the test photo cited
+The maintainer's local copy is `~/Documents/GitHub/openshuttercounter`. Readings
+now come from the Open Shutter Count app: its saved log has no serial number in
+it. `Find Shutter Counter.command` still saves `.txt` logs in `mac/readings/`
+(probes hold the camera's serial number, so they're ignored). The readings and the test photo cited
 below were taken out of the repo and its history on 2026-11-04 for privacy;
 the figures quoted here are what they showed.
 
@@ -119,18 +119,27 @@ How word 3 and word 4 were identified:
 1. Done (2026-11-04 15:39): `Read Shutter Count.command` read the R8 through
    0xD167: mechanical 1,001 to 2,000, electronic 19,001 to 20,999, all photos
    21,001 to 22,000. The raw bytes matched the event channel test.
-2. A small UI for reading the count, designed in another chat. The first
-   release waits for it. `openshuttercounter --json` gives each count's range
-   (`min` and `value`).
+2. Built (2026-11-04): the Open Shutter Count app, to [APP-PLAN.md](APP-PLAN.md).
+   It replaces `Read Shutter Count.command`, which is gone. Next: the maintainer
+   builds and publishes `v0.5.0` on the Mac (docs/DEVELOPMENT.md has the
+   checklist), opens it, and reads the R8. That run is the first test of
+   everything that needs macOS: the window, the move to Applications, Save Log,
+   the update check, signing and the DMG.
 3. Open: an exact mechanical count (see Status); reporting this to
    libgphoto2; whether other R bodies lay 0xD167 out the same way.
 
 ## Loose ends
 
-- The Terminal window closing after Return hasn't been confirmed working.
+- The Terminal window closing after Return (`Find Shutter Counter.command`)
+  hasn't been confirmed working.
+- Other bodies that list the event channel (RF bodies, the 90D, newer EOS M)
+  are now read the R8's way, labelled not fully tested. Their logs will show
+  whether they lay 0xD167 out the same way. libgphoto2's EOS M100 dump has
+  word 3 as 0xffffffff, which the decoder refuses, so the M100 ends as "can't
+  read yet".
 - No pull request has been opened, and nothing has been reported upstream.
-- `mac/openshuttercounter` stays committed so a branch can be tested by
-  pulling it (Q31).
+- `mac/openshuttercounter` stays committed, so building the app on the Mac
+  needs only Python (Q31).
 - The maintainer is deleting the old branches `claude/loving-goldberg-zwh734`
   (it still has readings with the camera's serial) and
   `claude/quirky-bell-cl8670`, and detaching the GitHub fork if it shows one.

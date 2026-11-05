@@ -20,7 +20,7 @@ func (f fakeReader) Name() string     { return f.name }
 func (f fakeReader) VendorID() uint16 { return f.vendorID }
 func (f fakeReader) Models() []Model  { return nil }
 
-func (f fakeReader) Read(_ context.Context, _ *ptp.Device, _ usb.DeviceInfo) (Reading, error) {
+func (f fakeReader) Read(_ context.Context, _ *ptp.Device, _ usb.DeviceInfo, _ ptp.DeviceInfo) (Reading, error) {
 	return Reading{Manufacturer: f.name}, nil
 }
 
