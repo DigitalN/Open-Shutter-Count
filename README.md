@@ -22,7 +22,7 @@ Free and open source.
 | Camera | What it reads |
 |---|---|
 | Canon R3, R5 Mark II, R6 Mark II, R7, R8 | Mechanical and electronic shot counts, kept separate. Each to within a thousand, as the camera only keeps them that way. |
-| Canon EOS 5D Mark IV | Exact shutter and mirror counts. |
+| Canon 5D Mark IV, 6D Mark II | Exact shutter and mirror counts. |
 
 **Should work, but not 100% confirmed**
 
