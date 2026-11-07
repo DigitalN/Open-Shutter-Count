@@ -159,5 +159,8 @@ How word 3 and word 4 were identified:
   repository, is removed. The repository is standalone since 2026-11-07: the maintainer
   renamed it `DigitalN/Open-Shutter-Count` and left GitHub's fork network.
 - On macOS, if another app (the Camera Shutter Count app, on the maintainer's
-  Mac) is using the camera, ptpcamerad holds it and won't exit when stopped.
-  The tool then names the app to quit; see `darwinBusyHint`.
+  Mac) is using the camera, ptpcamerad holds it and may not exit when stopped.
+  The tool then names the app to quit; see `darwinBusyHint`. On macOS 26.6.2
+  ptpcamerad also ignored the plain stop (SIGTERM) and kept the camera (issue
+  #34), so since that fix the tool kills it with SIGKILL after the first try,
+  and the log says so.
