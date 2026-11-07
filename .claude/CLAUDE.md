@@ -100,8 +100,8 @@ is also how a fix gets tested on the camera.
   including 0x9108 GetDeviceInfoEx.
 - No guessing in what the tool prints, except where the guess is labelled as
   not fully tested: a value isn't named (mechanical, electronic, total) as fact
-  until a test proves what it counts. Only the EOS R8, R7, R5 Mark II, R3 and
-  5D Mark IV are tested; a reading from any other body says it's not fully tested.
+  until a test proves what it counts. Only the EOS R8, R7, R6 Mark II, R5 Mark II,
+  R3 and 5D Mark IV are tested; a reading from any other body says it's not fully tested.
 - No serial number in anything the tool or the app writes: traces blank it, and
   Canon's owner, nickname, artist and copyright properties too (`tool/pkg/trace`,
   `canon.ScrubEvents`). The one exception is the result screen, which shows the

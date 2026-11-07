@@ -23,8 +23,8 @@ that list it (the EOS 5D Mark IV's way), or Canon's event channel, the way EOS
 Utility talks to the camera, on RF bodies and others that list it (the EOS
 R8's way). Anything else can't be read yet, and is sent nothing more.
 
-Only the EOS R8, R7, R5 Mark II, R3 and 5D Mark IV are tested. A reading from
-any other body says it's not fully tested.
+Only the EOS R8, R7, R6 Mark II, R5 Mark II, R3 and 5D Mark IV are tested. A
+reading from any other body says it's not fully tested.
 
 Running it with no command reads the connected camera.
 
