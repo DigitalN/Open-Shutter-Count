@@ -539,8 +539,8 @@ func (d *darwinDevice) bulk(endpoint uint8, p []byte, timeout time.Duration) (in
 // releaseSystemCameraDaemon stops ptpcamerad, the macOS daemon that claims
 // cameras as soon as they appear and stops anything else opening them.
 //
-// It asks with SIGTERM, which ptpcamerad can ignore (macOS 26.6.2 does while
-// it has work open). With force it sends SIGKILL instead, which it can't.
+// It asks with SIGTERM, which ptpcamerad can ignore: on macOS 26.6.2 it kept
+// the camera (issue #34). With force it sends SIGKILL instead, which it can't.
 func releaseSystemCameraDaemon(ctx context.Context, force bool) error {
 	args := []string{"ptpcamerad"}
 	if force {
