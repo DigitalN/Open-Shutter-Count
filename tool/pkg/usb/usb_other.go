@@ -15,6 +15,6 @@ func open(_ DeviceInfo) (Device, error) {
 	return nil, ErrNotSupported
 }
 
-func releaseSystemCameraDaemon(_ context.Context) error { return nil }
+func releaseSystemCameraDaemon(_ context.Context, _ bool) error { return nil }
 
 func deviceOwners(_ context.Context, _ DeviceInfo) ([]Owner, string, error) { return nil, "", nil }

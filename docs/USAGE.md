@@ -49,8 +49,8 @@ probes. That's how a new camera gets worked out; see
 
 USB goes through libusb, loaded at runtime. The copy in `tool/mac/` ships with it;
 otherwise `brew install libusb`. macOS gives every camera to `ptpcamerad`;
-the tool stops it and retries when the camera is busy, and macOS restarts it
-afterwards.
+the tool stops it when the camera is busy, force-stops it if it doesn't let go,
+retries, and macOS restarts it afterwards.
 
 ## What it sends
 

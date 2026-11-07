@@ -64,7 +64,7 @@ func TestDarwinBusyHintNamesTheApp(t *testing.T) {
 }
 
 func TestDarwinBusyHintBlamesPtpcameradsClients(t *testing.T) {
-	for _, owners := range [][]usb.Owner{nil, {{PID: 589, Name: "ptpcamerad", Exclusive: true}}} {
+	for _, owners := range [][]usb.Owner{nil, {ptpcameradOwner}} {
 		assert.Contains(t, darwinBusyHint(owners), "won't let go while\nan app is using it")
 	}
 }

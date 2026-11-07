@@ -14,7 +14,8 @@ yet.
 | `readings/` | Created on the first run. Each run saves what it printed, with debug logs, and a trace of everything sent to and from the camera. Probes include the camera's serial number, so git ignores the `.json` files and only the `.txt` logs can be committed. |
 
 The tool stops `ptpcamerad`, the macOS service that grabs cameras as they're
-plugged in, if it's holding the camera. macOS starts it again afterwards.
+plugged in, if it's holding the camera, and force-stops it if it doesn't let go.
+macOS starts it again afterwards.
 
 On the EOS R8 the counts are read through Canon's event channel, the way EOS
 Utility talks to the camera. The R8 keeps them in thousands, rounded up:

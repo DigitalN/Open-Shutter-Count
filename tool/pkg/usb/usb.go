@@ -156,7 +156,8 @@ func Open(info DeviceInfo) (Device, error) {
 // cameras as soon as they are plugged in, so the interface can be taken.
 //
 // ptpcamerad grabs every camera, and launchd restarts it on demand once we
-// are done.
-func ReleaseSystemCameraDaemon(ctx context.Context) error {
-	return releaseSystemCameraDaemon(ctx)
+// are done. It asks the service to exit, which it can ignore while it has
+// work open; with force it kills it instead.
+func ReleaseSystemCameraDaemon(ctx context.Context, force bool) error {
+	return releaseSystemCameraDaemon(ctx, force)
 }

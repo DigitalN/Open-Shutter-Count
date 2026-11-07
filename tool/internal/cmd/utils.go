@@ -192,11 +192,20 @@ then unplug it and plug it back in. On Canon mirrorless bodies that is the
 Setup menu > Choose USB connection app > Photo Import/Remote Control (on the
 EOS R8, page 4 of the Setup menu).`
 
+// What openDevice opens the camera, stops macOS's camera service and asks what
+// has the camera with. Tests swap them for stand-ins, since neither a camera
+// nor ptpcamerad is there.
+var (
+	openCamera       = usb.Open
+	stopCameraDaemon = usb.ReleaseSystemCameraDaemon
+	cameraOwners     = usb.DeviceOwners
+)
+
 // openDevice claims the camera, working around whatever is holding it.
 func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	logger := logs.LoggerFromContext(ctx)
 
-	device, err := usb.Open(info)
+	device, err := openCamera(info)
 	if err == nil {
 		return device, nil
 	}
@@ -213,11 +222,21 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	// launchd starts it again as soon as an app asks for a camera. So stop
 	// it, then try to open the camera every few milliseconds until it comes
 	// back. launchd brings it back for good once we are done.
+	//
+	// The first try asks it to exit (SIGTERM). macOS 26.6.2 can ignore that
+	// and keep the camera (issue #34), so every try after the first kills it
+	// (SIGKILL). A camera that opens after the first try never sees a kill.
 	logger.Info("the camera is held by another process, stopping ptpcamerad and retrying")
 
 	for attempt := 1; attempt <= darwinOpenAttempts; attempt++ {
-		if stopErr := usb.ReleaseSystemCameraDaemon(ctx); stopErr != nil {
-			logger.Debug("could not stop ptpcamerad", zap.Error(stopErr))
+		force := attempt > 1
+		if attempt == 2 {
+			logger.Info("ptpcamerad didn't let go, killing it and retrying")
+		}
+
+		if stopErr := stopCameraDaemon(ctx, force); stopErr != nil {
+			// killall exits 1 when no ptpcamerad is running, which is no loss.
+			logger.Debug("could not stop ptpcamerad", zap.Bool("force", force), zap.Error(stopErr))
 		}
 
 		device, err = openWhileFree(ctx, info)
@@ -232,7 +251,7 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 		}
 	}
 
-	owners, summary, ownersErr := usb.DeviceOwners(ctx, info)
+	owners, summary, ownersErr := cameraOwners(ctx, info)
 	logger.Debug("what has the camera open",
 		zap.Stringers("owners", owners), zap.String("ioreg", summary), zap.Error(ownersErr))
 
@@ -241,12 +260,13 @@ func openDevice(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 
 // openWhileFree tries to open the camera every darwinPollInterval for up to
 // darwinRetryDelay, to catch it between ptpcamerad exiting and coming back.
-// ptpcamerad doesn't exit while an app is using it, and then this can't help.
+// If an app is using the camera, launchd may start ptpcamerad again at once, or
+// the app holds the camera itself, and then this can't help.
 func openWhileFree(ctx context.Context, info usb.DeviceInfo) (usb.Device, error) {
 	deadline := time.Now().Add(darwinRetryDelay)
 
 	for {
-		device, err := usb.Open(info)
+		device, err := openCamera(info)
 		if err == nil || !errors.Is(err, usb.ErrBusy) || time.Now().After(deadline) {
 			return device, err
 		}
@@ -260,9 +280,11 @@ func openWhileFree(ctx context.Context, info usb.DeviceInfo) (usb.Device, error)
 }
 
 // How often opening a busy camera is retried on macOS after stopping
-// ptpcamerad, for how long each time, and how often within that.
-const (
-	darwinOpenAttempts = 5
+// ptpcamerad, for how long each time, and how often within that. The timings
+// are variables so tests can shorten them.
+const darwinOpenAttempts = 5
+
+var (
 	darwinRetryDelay   = 500 * time.Millisecond
 	darwinPollInterval = 100 * time.Millisecond
 )
