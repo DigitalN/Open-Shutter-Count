@@ -118,8 +118,8 @@ def test_a_release_copy_fetches_from_github_and_not_its_api():
     assert fetched.text == TESTED_JSON and fetched.origin == "GitHub"
     assert calls[0][0] == "/usr/bin/curl"
     assert calls[0][-1] == tested_list.URL == (
-        "https://raw.githubusercontent.com/DigitalN/openshuttercounter/main/tool/pkg/manufacturers/canon/tested.json")
-    assert launch.REPOSITORY in tested_list.URL and "api.github.com" not in tested_list.URL
+        f"https://raw.githubusercontent.com/{launch.REPOSITORY}/main/tool/pkg/manufacturers/canon/tested.json")
+    assert "api.github.com" not in tested_list.URL
     assert calls[0][calls[0].index("--max-time") + 1] == "15", "the update check's limit"
 
 
