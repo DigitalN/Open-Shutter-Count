@@ -3,8 +3,9 @@
 The most useful thing you can contribute is a reading from your own camera —
 whether or not it worked.
 
-Right now six bodies have been tested by someone holding them: the EOS R8, R7,
-R6 Mark II, R5 Mark II, R3 and 5D Mark IV. Other bodies are read the way one of those is, by
+The bodies that have been tested by someone holding them are in the tested list,
+[`tool/pkg/manufacturers/canon/tested.json`](../tool/pkg/manufacturers/canon/tested.json),
+and the README's table names them. Other bodies are read the way a tested one is, by
 what they list (see "What it sends" in [USAGE.md](USAGE.md)), and older ones that answer
 the standard shutter count property are read too, but each of those readings is
 labelled not fully tested. Everything else can't be read yet. The
@@ -24,7 +25,7 @@ Then open an issue with the trace attached and say what happened. All three of
 these outcomes are worth reporting:
 
 - **It printed numbers that look right.** Confirm them with the two-trace
-  method below and your camera goes straight into the supported list.
+  method below and your camera goes straight into the tested list.
 - **It printed numbers that look wrong.** Wildly off, all zeroes, stuck. The
   trace shows what the camera actually replied, which is usually enough to work
   out where the real counter lives.
@@ -59,25 +60,38 @@ openshuttercounter decode after.json  --only 9052,9053
 ```
 
 If every counter advanced by exactly the number of frames you took, that is a
-confirmed camera. Open a pull request adding it to the model list for its
-manufacturer — for Canon that is
-[`tool/pkg/manufacturers/canon/models.go`](../tool/pkg/manufacturers/canon/models.go) —
-attaching both traces and saying how many frames you took:
+confirmed camera. Open a pull request adding it to the tested list,
+[`tool/pkg/manufacturers/canon/tested.json`](../tool/pkg/manufacturers/canon/tested.json),
+one entry on a line of its own, attaching both traces and saying how many frames you
+took:
+
+```json
+{"model": "EOS 80D", "method": "canon-factory-channel", "note": "firmware 1.0.2; 20 frames between traces"},
+```
+
+`model` is the name the camera reports, exactly as `"model"` in `read --json` (or the
+app's log) gives it, and `method` is the `"method"` the reading used. `note` is for
+people; nothing reads it. Once that's merged, installed copies of the app pick it up the
+next time they open: no release is needed. [DEVELOPMENT.md](DEVELOPMENT.md) has
+"Marking a camera tested".
+
+A body read at the 5D Mark IV's addresses whose counters turn out to be somewhere else
+needs an address map of its own in
+[`tool/pkg/manufacturers/canon/models.go`](../tool/pkg/manufacturers/canon/models.go):
 
 ```go
 {
-    Name:        "EOS 80D",
-    ProductID:   0x****,
-    RatedLife:   100000,
-    Confirmed:   true,
-    ConfirmedOn: "firmware 1.0.2",
+    Name:      "EOS 80D",
+    ProductID: 0x****,
+    RatedLife: 100000,
     Counters: []Counter{
         {Label: "Shutter actuations", Address: 0x****, Length: 10},
     },
 },
 ```
 
-The USB product ID comes from `openshuttercounter list`.
+That's code, so it goes out in a release, with the camera's tested list entry in the
+same pull request. The USB product ID comes from `openshuttercounter list`.
 
 If the numbers did **not** move by the frame count, they are not your body's
 counters. Attach both traces to an issue anyway: the two together are exactly

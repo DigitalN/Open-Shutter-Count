@@ -21,17 +21,16 @@ const releaseCounterLen = 16
 // up to a multiple of it.
 const releaseCounterStep = 1000
 
-// eventModel is a body whose 0xD167 words were worked out on the body itself.
+// eventModel is a body read on the event channel, named by its USB product ID.
 type eventModel struct {
-	Name        string
-	ProductID   uint16
-	ConfirmedOn string
+	Name      string
+	ProductID uint16
 }
 
-// eventModels lists the bodies whose 0xD167 words are established. Every other
-// body that lists the event channel is read the same way and labelled as not
-// fully tested. The
-// product ID only names the body in the device list.
+// eventModels names bodies read on the event channel by their USB product ID,
+// for the device list and `models`. Every body that lists the event channel is
+// read the same way; whether its reading says tested is up to the tested list
+// (tested.json).
 //
 // On the EOS R8 (2026-11-04, firmware 1.5.0, docs/R8-PROGRESS.md): word 4 is
 // every photo, electronic included, rounded up to a thousand. It read 22000
@@ -41,7 +40,7 @@ type eventModel struct {
 // electronic, would put around 20,000 photos on a shutter the owner has barely
 // used.
 var eventModels = []eventModel{
-	{Name: "EOS R8", ProductID: 0x330c, ConfirmedOn: "firmware 1.5.0"},
+	{Name: "EOS R8", ProductID: 0x330c},
 }
 
 // ReleaseCounter is 0xD167 decoded: each count is given to within a range,
@@ -103,17 +102,17 @@ var errNoReleaseCounter = errors.New("the camera didn't report property 0xd167")
 const releaseCounterNote = `  The camera keeps these counts in thousands, rounded up, so it can only say
   which thousand each is in. A photo's own metadata holds the exact total.`
 
-// readReleaseCounter reads 0xD167 off the event channel. On a body other than
-// the tested ones, a camera that doesn't report 0xD167 in the R8's layout is
-// one that can't be read yet.
+// readReleaseCounter reads 0xD167 off the event channel. On a body the tested
+// list doesn't have with this method, a camera that doesn't report 0xD167 in
+// the R8's layout is one that can't be read yet.
 func (r *Reader) readReleaseCounter(device *ptp.Device, camera ptp.DeviceInfo, reading *manufacturers.Reading) error {
-	isTested := tested[reading.Model]
+	isTested := r.tested.Has(reading.Model, MethodEventChannel)
 
 	table, err := ReadEventTable(device, camera, r.logger)
 	reading.Steps = append(reading.Steps, table.Steps...)
 
 	if errors.Is(err, ErrNoEventChannel) {
-		return notYet(reading.Model, err)
+		return r.notYet(reading.Model, MethodEventChannel, err)
 	}
 
 	if err != nil {
@@ -131,14 +130,14 @@ func (r *Reader) readReleaseCounter(device *ptp.Device, camera ptp.DeviceInfo, r
 
 	raw, ok := table.Property(PropShutterReleaseCounter)
 	if !ok {
-		return notYet(reading.Model, errNoReleaseCounter)
+		return r.notYet(reading.Model, MethodEventChannel, errNoReleaseCounter)
 	}
 
 	reading.Steps = append(reading.Steps, "0xd167: "+hex.EncodeToString(raw))
 
 	counts, err := DecodeReleaseCounter(raw)
 	if err != nil {
-		return notYet(reading.Model, err)
+		return r.notYet(reading.Model, MethodEventChannel, err)
 	}
 
 	counter := func(label, location string, rng Range) manufacturers.Counter {

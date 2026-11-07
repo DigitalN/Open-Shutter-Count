@@ -24,11 +24,50 @@ import (
 //
 // Adding another one is a matter of writing a package under
 // pkg/manufacturers/ and naming it here; nothing else in the CLI is
-// manufacturer aware.
-func registry(logger *zap.Logger, factoryOnly bool) *manufacturers.Registry {
+// manufacturer aware. opts go to the Canon reader after the rest, such as
+// canon.WithTestedList.
+func registry(logger *zap.Logger, factoryOnly bool, opts ...canon.Option) *manufacturers.Registry {
 	return manufacturers.NewRegistry(
-		canon.New(canon.WithLogger(logger), canon.WithFactoryOnly(factoryOnly)),
+		canon.New(append([]canon.Option{canon.WithLogger(logger), canon.WithFactoryOnly(factoryOnly)}, opts...)...),
 	)
+}
+
+// testedList is the list --tested-list names, or the built-in one. It never
+// fails the command: a list that can't be used gives the built-in one, and
+// the report says why.
+func testedList(cmd *cli.Command) (canon.TestedList, canon.TestedListReport) {
+	return canon.LoadTestedList(cmd.String("tested-list"))
+}
+
+// logTestedList says which tested list was used, where the output doesn't:
+// as a warning if a given one, or any of its entries, couldn't be used.
+func logTestedList(ctx context.Context, report canon.TestedListReport) {
+	logger := logs.LoggerFromContext(ctx)
+
+	say := logger.Info
+	if report.Reason != "" || len(report.Skipped) > 0 {
+		say = logger.Warn
+	}
+
+	for _, step := range report.Steps() {
+		say(step)
+	}
+}
+
+// testedListOutput is which tested list a command used, in its JSON.
+type testedListOutput struct {
+	// Source is "given" or "built in".
+	Source string `json:"source"`
+
+	// Entries is how many entries counted.
+	Entries int `json:"entries"`
+
+	// Reason says why a given list wasn't used.
+	Reason string `json:"reason,omitempty"`
+}
+
+func describeTestedList(report canon.TestedListReport) *testedListOutput {
+	return &testedListOutput{Source: report.Source, Entries: report.Entries, Reason: report.Reason}
 }
 
 func configure(ctx context.Context, cmd *cli.Command) (context.Context, error) {
@@ -284,10 +323,11 @@ type session struct {
 // to identify it or its owner.
 //
 // If a camera was picked but couldn't be opened, the session returned with
-// the error says which camera it was, and has nothing to close.
-func openSession(ctx context.Context, cmd *cli.Command) (*session, error) {
+// the error says which camera it was, and has nothing to close. readerOpts go
+// to the Canon reader.
+func openSession(ctx context.Context, cmd *cli.Command, readerOpts ...canon.Option) (*session, error) {
 	logger := logs.LoggerFromContext(ctx)
-	reg := registry(logger, cmd.Bool("factory-only"))
+	reg := registry(logger, cmd.Bool("factory-only"), readerOpts...)
 
 	info, err := selectDevice(reg, cmd.String("device"))
 	if err != nil {

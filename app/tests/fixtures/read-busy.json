@@ -5,6 +5,10 @@
     "product": "Canon Digital Camera",
     "path": "usb:001:002"
   },
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  },
   "error": {
     "kind": "busy",
     "message": "libusb_open: LIBUSB_ERROR_ACCESS: device is claimed by another process",

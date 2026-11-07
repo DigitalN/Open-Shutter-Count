@@ -1,9 +1,9 @@
 """Open Shutter Count: reads a Canon camera's shutter count over USB, step by step.
 
 The window is a pywebview page (index.html) that talks to Python over pywebview's
-in-process bridge, so the app opens no network ports. Its only network request is the
-update check at launch (updater.py). The camera is read by the openshuttercounter tool
-in the app bundle (camera.py).
+in-process bridge, so the app opens no network ports. Its only network requests are made
+at launch: the update check (updater.py) and the list of tested cameras (tested_list.py).
+The camera is read by the openshuttercounter tool in the app bundle (camera.py).
 
 Nothing is left behind: no log file, no preferences, no window state, and a web view
 that stores nothing (cleanup.py). Python's own messages go to stderr only.
@@ -18,6 +18,7 @@ import camera
 import cleanup
 import launch
 import report
+from tested_list import TestedList
 from updater import Updater
 from version import VERSION
 from wizard import Wizard
@@ -113,8 +114,12 @@ class OpenShutterCountApp:
         self._updater = Updater(self._app_path, VERSION,
                                 on_status=lambda state, version: self._wizard.on_update_status(state, version),
                                 quit_app=self.quit)
-        self._wizard = Wizard(self._updater, camera.Camera(camera.tool_path(), note=f"{APP_NAME} {VERSION}"),
-                              app_name=APP_NAME, version=self._updater.current, repository_url=launch.REPOSITORY_URL)
+        # Fetched once, alongside the update check; reads wait for it and reuse it.
+        tested_list = TestedList(self._app_path)
+        self._wizard = Wizard(self._updater,
+                              camera.Camera(camera.tool_path(), note=f"{APP_NAME} {VERSION}", tested_list=tested_list),
+                              app_name=APP_NAME, version=self._updater.current, repository_url=launch.REPOSITORY_URL,
+                              tested_list=tested_list)
 
     def quit(self):
         import AppKit

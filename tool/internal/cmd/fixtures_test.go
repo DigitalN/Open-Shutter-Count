@@ -194,28 +194,33 @@ func fakeCamera(
 	}
 }
 
-// readFixture reads a scripted camera the way Read does, recording a trace.
+// readFixture reads a scripted camera the way Read does, with the built-in
+// tested list, recording a trace.
 func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
+	t.Helper()
+
+	return readFixtureWith(t, cam, "")
+}
+
+// readFixtureWith reads a scripted camera the way Read does, as if
+// --tested-list named testedListPath (none if it's empty).
+func readFixtureWith(t *testing.T, cam *scriptedCamera, testedListPath string) (readOutput, trace.File) {
 	t.Helper()
 
 	recorder := trace.NewRecorder("0.5.0", canon.ScrubEvents, trace.ScrubProperties(canon.IdentifyingProperties...))
 	recorder.Annotate("Open Shutter Count 0.5.0")
 	recorder.Describe(cam.info)
 
-	s := &session{info: cam.info, reader: canon.New(), device: ptp.New(cam, ptp.WithRecorder(recorder))}
+	tested, listed := canon.LoadTestedList(testedListPath)
+
+	s := &session{
+		info: cam.info, reader: canon.New(canon.WithTestedList(tested)), device: ptp.New(cam, ptp.WithRecorder(recorder)),
+	}
 	require.NoError(t, s.device.OpenSession())
 	s.steps = append(s.steps, "OpenSession: OK")
 
-	camera, err := s.deviceInfo()
-	require.NoError(t, err)
-
-	reading, readErr := s.reader.Read(context.Background(), s.device, s.info, camera)
-
-	out := buildOutput(s.info, camera, reading, true, true) // as the app reads: --raw --serial
-	out.Steps = append(append([]string(nil), s.steps...), reading.Steps...)
-
+	out, readErr := readCamera(context.Background(), s, listed, true, true) // as the app reads: --raw --serial
 	if readErr != nil {
-		out.Reading, out.Counters = nil, nil
 		out = failureOutput(out, readErr)
 	}
 
@@ -268,16 +273,19 @@ func TestAppFixtures(t *testing.T) {
 	powershotOut, powershotTrace := readFixture(t, powershot)
 	require.NotNil(t, powershotOut.Error)
 
-	device := describeUSB(r8.info)
+	// Read says which tested list it would have used even when it couldn't
+	// open the camera: here, the built-in one.
+	_, builtIn := canon.LoadTestedList("")
+
 	failed := func(err error) readOutput {
-		return failureOutput(readOutput{Device: device, Steps: nil}, err)
+		return failureOutput(unopened(builtIn, &session{info: r8.info}), err)
 	}
 
 	busy := withHint(fmt.Errorf("libusb_open: LIBUSB_ERROR_ACCESS: %w", usb.ErrBusy),
 		darwinBusyHint([]usb.Owner{{Name: "EOS Utility"}}))
 	wrongMode := withHint(fmt.Errorf("usb:001:003: %w; it offers: interface 0 class 0xff/0xf0", usb.ErrNoStillImage),
 		noStillImageHint)
-	wrongModeDevice := &deviceOutput{VendorID: "04a9", ProductID: "32a6", Path: "usb:001:003"}
+	wrongModeCamera := &session{info: usb.DeviceInfo{VendorID: canon.VendorID, ProductID: 0x32a6, Path: "usb:001:003"}}
 	r8Listed := usb.DeviceInfo{
 		Path: fakePath, Bus: 1, Address: 2, VendorID: canon.VendorID, ProductID: 0x330c, Serial: fakeUSBSerial,
 	}
@@ -289,8 +297,8 @@ func TestAppFixtures(t *testing.T) {
 		"read-80d.json":            d80Out,
 		"read-powershot.json":      powershotOut,
 		"read-busy.json":           failed(busy),
-		"read-wrong-usb-mode.json": failureOutput(readOutput{Device: wrongModeDevice}, wrongMode),
-		"read-no-camera.json":      failureOutput(readOutput{}, noDeviceError{}),
+		"read-wrong-usb-mode.json": failureOutput(unopened(builtIn, wrongModeCamera), wrongMode),
+		"read-no-camera.json":      failureOutput(unopened(builtIn, nil), noDeviceError{}),
 		"read-no-answer.json":      failed(fmt.Errorf("the camera didn't answer, even after a reset: %w", usb.ErrTimeout)),
 		"list-r8.json":             listOutput(registry(nil, false), []usb.DeviceInfo{r8Listed}),
 		"trace-r8.json":            r8Trace,

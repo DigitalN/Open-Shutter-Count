@@ -23,8 +23,11 @@ that list it (the EOS 5D Mark IV's way), or Canon's event channel, the way EOS
 Utility talks to the camera, on RF bodies and others that list it (the EOS
 R8's way). Anything else can't be read yet, and is sent nothing more.
 
-Only the EOS R8, R7, R6 Mark II, R5 Mark II, R3 and 5D Mark IV are tested. A
-reading from any other body says it's not fully tested.
+A reading says it's tested when the tested list built into the tool
+(tool/pkg/manufacturers/canon/tested.json) has the body, read the same way.
+Any other reading says it's not fully tested. --tested-list uses another list
+instead, as the app does with the one on GitHub; the list never changes what's
+sent to the camera.
 
 Running it with no command reads the connected camera.
 
@@ -125,6 +128,7 @@ show whether anything is the shutter count.`,
 				Action: cmd.Execute(cmd.Models),
 				Flags: []cli.Flag{
 					jsonFlag,
+					testedListFlag,
 				},
 			},
 			{

@@ -8,8 +8,9 @@ blocks reading instead of carrying on. Nothing is remembered between launches.
 A release counts when it's the repository's latest (not a draft or pre-release), its tag
 is the version (`v0.5.0`), and the `.dmg` from `app/scripts/package.sh` is attached.
 
-This is the app's only network access. It goes through /usr/bin/curl, which uses the
-system's certificates (the bundled Python has none of its own).
+This and the tested list (tested_list.py) are the app's only network access. It goes
+through /usr/bin/curl, which uses the system's certificates (the bundled Python has none
+of its own).
 
 An app downloaded this way isn't marked as coming from the internet, so macOS doesn't ask
 to approve it again. The signature check is what makes that safe: only an app signed with

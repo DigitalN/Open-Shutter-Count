@@ -72,5 +72,9 @@
     "SetEventMode(0): OK",
     "0xd1af (serial number): reported",
     "0xd167: 1000000001000000d0070000f0550000"
-  ]
+  ],
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  }
 }

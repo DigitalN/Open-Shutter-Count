@@ -39,11 +39,9 @@ type Model struct {
 
 	// Confirmed records whether somebody with this body has checked the
 	// readings against a known number of frames and reported back. An
-	// unconfirmed entry is a reasonable guess, and the CLI says so.
+	// unconfirmed entry is a reasonable guess, and the CLI says so. For
+	// Canon it comes from the tested list.
 	Confirmed bool `json:"confirmed"`
-
-	// ConfirmedOn describes the firmware it was confirmed against.
-	ConfirmedOn string `json:"confirmed_on,omitempty"`
 
 	// RatedLife is the manufacturer's shutter durability rating, used only
 	// to put a reading in context. Zero means unknown.

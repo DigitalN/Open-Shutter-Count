@@ -30,16 +30,9 @@ type Model struct {
 	// to put the reading in context. Zero means unknown.
 	RatedLife uint32 `json:"rated_life,omitempty"`
 
-	// Counters is the MPU address map.
+	// Counters is the MPU address map. Whether a reading taken with it says
+	// tested is up to the tested list (tested.json).
 	Counters []Counter `json:"counters"`
-
-	// Confirmed records whether somebody with this body checked the
-	// readings against a known number of frames and reported back. An
-	// unconfirmed map is a reasonable guess and the CLI says so.
-	Confirmed bool `json:"confirmed"`
-
-	// ConfirmedOn describes the firmware it was confirmed against.
-	ConfirmedOn string `json:"confirmed_on,omitempty"`
 }
 
 // The factory channel is only sent to the bodies below, and to bodies that list
@@ -59,11 +52,9 @@ type Model struct {
 // deliberately.
 var models = []Model{
 	{
-		Name:        "EOS 5D Mark IV",
-		ProductID:   0x3281,
-		RatedLife:   150000,
-		Confirmed:   true,
-		ConfirmedOn: "firmware 1.2.1",
+		Name:      "EOS 5D Mark IV",
+		ProductID: 0x3281,
+		RatedLife: 150000,
 		Counters: []Counter{
 			{Label: "Shutter actuations", Address: 0x1001, Length: 10},
 			{Label: "Mirror actuations", Address: 0x100b, Length: 10},
@@ -91,25 +82,11 @@ func LookupModel(productID uint16) (Model, bool) {
 	return Model{}, false
 }
 
-// tested are the bodies whose readings were worked out on the body itself.
-// Any other camera that reads is labelled as not fully tested.
-var tested = map[string]bool{
-	"EOS 5D Mark IV": true,
-	"EOS R8":         true,
-	"EOS R3":         true,
-	"EOS R7":         true,
-	// Canon's USB names for the Mark II bodies may be the short ones ("EOS
-	// R5m2"); both spellings are listed until a log shows which.
-	"EOS R5 Mark II": true,
-	"EOS R5m2":       true,
-	"EOS R6 Mark II": true,
-	"EOS R6m2":       true,
-}
-
 // GuessModel is what a body that lists the factory channel but has no map of
 // its own is read with: the 5D Mark IV's addresses. The channel itself is very
 // likely the same across these bodies, but the addresses aren't known to be, so
-// the reading says it's not fully tested. MonReadAndGetData only reads.
+// the reading says it's not fully tested unless the tested list has the body
+// with the factory channel. MonReadAndGetData only reads.
 func GuessModel(productID uint16) Model {
 	reference := models[0]
 
@@ -117,6 +94,5 @@ func GuessModel(productID uint16) Model {
 		Name:      fmt.Sprintf("Canon body (USB %04x:%04x)", VendorID, productID),
 		ProductID: productID,
 		Counters:  reference.Counters,
-		Confirmed: false,
 	}
 }

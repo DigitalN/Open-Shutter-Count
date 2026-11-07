@@ -5,6 +5,10 @@
     "product": "Canon Digital Camera",
     "path": "usb:001:002"
   },
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  },
   "error": {
     "kind": "no_answer",
     "message": "the camera didn't answer, even after a reset: transfer timed out"

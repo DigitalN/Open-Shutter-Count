@@ -13,6 +13,7 @@ from datetime import datetime
 
 import camera as camera_module
 import report
+import tested_list as tested_list_module
 import updater as updater_module
 
 log = logging.getLogger("openshuttercount")
@@ -26,10 +27,15 @@ UPDATE, SETUP, WAITING, READING, RESULT = "update", "setup", "waiting", "reading
 
 
 class Wizard:
+    """`tested_list` is the tested_list.TestedList the camera reads with, if any: it's
+    fetched alongside the update check, and the log says which list counted."""
+
     def __init__(self, updater, camera, *, app_name, version, repository_url, mac_info=report.mac_info,
-                 clock=time.monotonic, sleep=time.sleep, now=lambda: datetime.now().astimezone()):
+                 clock=time.monotonic, sleep=time.sleep, now=lambda: datetime.now().astimezone(),
+                 tested_list=None):
         self._updater = updater
         self._camera = camera
+        self._tested_list = tested_list
         self._app_name, self._version, self._repository_url = app_name, version, repository_url
         self._mac_info = mac_info
         self._clock, self._sleep, self._now = clock, sleep, now
@@ -60,7 +66,10 @@ class Wizard:
             }
 
     def start(self):
-        """Checks for an update, before anything else."""
+        """Checks for an update, before anything else, and fetches the tested list alongside
+        it on a thread of its own. The update step doesn't wait for the list; a read does."""
+        if self._tested_list is not None:
+            self._tested_list.start()
         self._spawn(self._check_for_update, name="update-check")
 
     def setup_done(self):
@@ -186,10 +195,14 @@ class Wizard:
             if generation != self._generation:
                 return
             note = self._update_note()
+        # After a read the fetch is done; with none (no camera found), it can't take
+        # longer than its limit.
+        fetched = self._tested_list.wait() if self._tested_list is not None else None
         text = report.build_log(
             app_name=self._app_name, version=self._version, repository_url=self._repository_url,
             read_at=read_at, mac=self._mac_info(), summary=summary, output=output, tool_messages=messages,
-            trace=trace, update_note=note, usb_devices=usb_devices)
+            trace=trace, update_note=note, usb_devices=usb_devices,
+            tested_list=tested_list_module.log_line(fetched, output.get("tested_list")))
         with self._lock:
             if generation != self._generation:
                 return

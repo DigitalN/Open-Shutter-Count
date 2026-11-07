@@ -44,6 +44,12 @@ var factoryOnlyFlag = &cli.BoolFlag{
 	Usage: "skip the standard shutter counter property and use Canon's factory channel (only on bodies that list it)",
 }
 
+var testedListFlag = &cli.StringFlag{
+	Name: "tested-list",
+	Usage: "use the tested bodies listed in `file` (laid out like tool/pkg/manufacturers/canon/tested.json) " +
+		"instead of the list built in; one that can't be used is ignored, and the built-in list is used",
+}
+
 var allDevicesFlag = &cli.BoolFlag{
 	Name:  "all",
 	Usage: "list every USB device, not only cameras from known manufacturers",
@@ -70,4 +76,5 @@ var readFlags = []cli.Flag{
 	traceFlag,
 	noteFlag,
 	factoryOnlyFlag,
+	testedListFlag,
 }

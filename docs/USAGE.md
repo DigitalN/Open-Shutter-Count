@@ -22,6 +22,7 @@ openshuttercounter --raw                    # also show the raw replies
 openshuttercounter --serial                 # also show the serial number on the body
 openshuttercounter --json                   # machine readable output
 openshuttercounter --trace session.json     # record the whole conversation
+openshuttercounter --tested-list list.json  # say tested by another list (below)
 openshuttercounter list                     # what is connected
 openshuttercounter models                   # cameras this build knows
 openshuttercounter decode session.json      # print a recorded conversation
@@ -72,8 +73,29 @@ camera lists in GetDeviceInfo:
 The R8 and the 90D don't list the factory channel, and both hung when it was
 sent anyway, so it's never sent to a body that doesn't list it.
 
-Only the EOS R8, R7, R6 Mark II, R5 Mark II, R3 and 5D Mark IV are tested; any
-other reading says it's not fully tested.
+## Which readings say tested
+
+A reading says it's tested when the tested list has the camera's model and the way it
+was read: `method` in `read --json`, one of `ptp-property-0xd1ac`,
+`canon-factory-channel` or `canon-event-channel-0xd167`. Any other reading says it's not
+fully tested. The tool has the list built in, from
+[`tool/pkg/manufacturers/canon/tested.json`](../tool/pkg/manufacturers/canon/tested.json).
+The list never changes what's sent to the camera: only that label, and whether a failed
+read is one that can't be read yet.
+
+`--tested-list <file>`, on a read and on `models`, uses the list in that file instead,
+laid out like `tested.json`. The app passes the copy it fetches from GitHub this way. A
+usable list replaces the built-in one entirely, so it can take cameras off as well as
+add them. It never makes the command fail:
+
+- a file that can't be read, doesn't parse, or has no usable entry is ignored, and the
+  built-in list is used;
+- an entry with no model or an unknown method is skipped, and fields the tool doesn't
+  know are ignored;
+- the steps say what happened (`models` prints them; a read without `--json` logs
+  them), and `read --json` says which list it used in `tested_list`: `source` is
+  `given` or `built in`, `entries` is how many entries counted, and `reason` says why a
+  given list wasn't used.
 
 ## Safety
 
@@ -91,7 +113,7 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 | `mac/` | The Mac binary and libusb, which the app bundles, and `Find Shutter Counter.command` |
 | `cmd/`, `internal/` | The CLI |
 | `pkg/manufacturers` | What a camera maker has to provide to be readable |
-| `pkg/manufacturers/canon` | Canon's factory and event channels, decoding, model list |
+| `pkg/manufacturers/canon` | Canon's factory and event channels, decoding, model list, and `tested.json` |
 | `pkg/ptp` | PTP over USB, enough of it to send vendor opcodes |
 | `pkg/usb` | USB on macOS, through libusb |
 | `pkg/trace`, `pkg/pcap` | Recording conversations, and reading USB captures |

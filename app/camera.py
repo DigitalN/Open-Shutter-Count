@@ -5,6 +5,7 @@ so it's safe to run every second while waiting. `read` reads the camera and says
 it did. Both print JSON (see tool/internal/cmd in the repository); `read --trace` also saves
 everything exchanged with the camera, minus its serial number. `read --serial` adds the serial
 number on the body, which only the result screen shows: the log and the issue leave it out.
+`read --tested-list` gives it the list of tested cameras fetched at launch (tested_list.py).
 
 What the tool says is turned into what the result screen says by `summarize`.
 """
@@ -55,12 +56,15 @@ def tool_path():
 
 
 class Camera:
-    """Runs the tool. `run` is subprocess.run, replaceable in tests."""
+    """Runs the tool. `run` is subprocess.run, replaceable in tests. `tested_list` is the
+    tested_list.TestedList fetched at launch, if any: a read waits for it, and passes it
+    with --tested-list if it came."""
 
-    def __init__(self, tool, run=subprocess.run, note=""):
+    def __init__(self, tool, run=subprocess.run, note="", tested_list=None):
         self._tool = str(tool)
         self._run = run
         self._note = note
+        self._tested_list = tested_list
 
     def list(self, everything=False):
         """The cameras attached, as the tool lists them; with `everything`, every USB device."""
@@ -80,10 +84,21 @@ class Camera:
         return [d for d in devices if isinstance(d, dict)]
 
     def read(self):
-        """Reads the camera. Returns (what the tool printed, parsed; its messages; the trace)."""
+        """Reads the camera. Returns (what the tool printed, parsed; its messages; the trace).
+
+        The trace, and the tested list if one was fetched, go in a temporary folder that's
+        deleted straight after."""
+        fetched = self._tested_list.wait() if self._tested_list is not None else None
         with tempfile.TemporaryDirectory(prefix="openshuttercount-") as folder:
             trace = Path(folder) / "trace.json"
             arguments = [self._tool, "read", "--json", "--raw", "--serial", "--trace", str(trace)]
+            if fetched is not None and fetched.text is not None:
+                listed = Path(folder) / "tested.json"
+                try:
+                    listed.write_text(fetched.text, encoding="utf-8")
+                    arguments += ["--tested-list", str(listed)]
+                except OSError:
+                    pass  # the tool's built-in list, then
             if self._note:
                 arguments += ["--note", self._note]
             try:
@@ -187,10 +202,10 @@ def unwrap(text):
 def summarize(output, devices=(), read_at=None):
     """What the result screen shows for what `read --json` printed, read at `read_at`.
 
-    ok says whether it read; tested is only true for the bodies the tool marks
-    confirmed (the R8, R7, R6 Mark II, R5 Mark II, R3 and 5D Mark IV). A reading
-    from any other body says it's not fully tested: the counts aren't proven to be what their
-    names say.
+    ok says whether it read; tested is only true for a reading the tool marks confirmed,
+    which it does when the tested list has the camera, read the way it was read. Any other
+    reading says it's not fully tested: the counts aren't proven to be what their names
+    say.
 
     A reading shows the camera's model, the serial number on its body (where the camera
     reported it) and the date above the counts, for a screenshot to go with a sale. The
