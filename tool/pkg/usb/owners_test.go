@@ -31,9 +31,9 @@ const ioregSample = `+-o Magic Keyboard@01200000  <class IOUSBHostDevice, id 0x1
   | |
   | +-o ptpcamerad  <class AppleUSBHostInterfaceUserClient, id 0x10001490e, !registered>
   | |     "IOUserClientCreator" = "pid 69966, ptpcamerad"
-  | +-o openshuttercounter  <class AppleUSBHostInterfaceUserClient, id 0x100014a9b, !registered>
+  | +-o openshuttercount  <class AppleUSBHostInterfaceUserClient, id 0x100014a9b, !registered>
   | |     "IOUserClientCreator" = "pid 74749, openshuttercount"
-  | +-o openshuttercounter  <class AppleUSBHostInterfaceUserClient, id 0x100014a9c, !registered>
+  | +-o openshuttercount  <class AppleUSBHostInterfaceUserClient, id 0x100014a9c, !registered>
   |       "IOUserClientCreator" = "pid 74749, openshuttercount"
   +-o iAP Interface@1  <class IOUSBHostInterface, id 0x100014904, registered, matched, active>
   | +-o accessoryd  <class AppleUSBHostInterfaceUserClient, id 0x100014909, !registered>
@@ -47,14 +47,14 @@ func TestParseIORegOwners(t *testing.T) {
 
 	assert.Equal(t, []Owner{
 		{PID: 69966, Name: "ptpcamerad", Exclusive: true},
-		{PID: 74749, Name: "openshuttercounter"},
+		{PID: 74749, Name: "openshuttercount"},
 		{PID: 73425, Name: "accessoryd"},
 		{PID: 69958, Name: "camerashuttercount"},
 	}, owners)
 
 	assert.Equal(t, `IOUSBHostInterface IOUSBHostInterface@0: ptpcamerad (pid 69966, exclusive)
 AppleUSBHostInterfaceUserClient ptpcamerad: ptpcamerad (pid 69966)
-AppleUSBHostInterfaceUserClient openshuttercounter: openshuttercounter (pid 74749)
+AppleUSBHostInterfaceUserClient openshuttercount: openshuttercount (pid 74749)
 AppleUSBHostInterfaceUserClient accessoryd: accessoryd (pid 73425)
 AppleUSBHostDeviceUserClient camerashuttercount: camerashuttercount (pid 69958)`, summary)
 	assert.NotContains(t, summary, "hidd")

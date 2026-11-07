@@ -1,10 +1,10 @@
-# openshuttercounter (DigitalN fork)
+# Open Shutter Count
 
-An independent project that started from Maxime Visonneau's
-openshuttercounter. Don't point anything at mvisonneau's repositories or
-accounts; LICENSE keeps his copyright line because MIT requires it. The goal here is reading the shutter count of the maintainer's Canon EOS R8
-on their Mac (MacBookPro18,1, M1 Pro, macOS 27.2) without using Terminal. That's
-the Open Shutter Count app.
+An independent project that started from Maxime Visonneau's openshuttercounter.
+Don't point anything at mvisonneau's repositories or accounts; LICENSE keeps his
+copyright line because MIT requires it. The goal here is reading the shutter
+count of the maintainer's Canon EOS R8 on their Mac (MacBookPro18,1, M1 Pro,
+macOS 27.2) without using Terminal. That's the Open Shutter Count app.
 
 Read [docs/R8-PROGRESS.md](../docs/R8-PROGRESS.md) first: what's been done, what
 the R8 did, and what's next. The app was built to
@@ -16,6 +16,17 @@ Matt Pocock's skills are project skills in `.claude/skills/`, named without a
 prefix: `/mattpocock-skills:<name>` is `/<name>`, so read
 `.claude/skills/<name>/SKILL.md` and follow it.
 
+## Name
+
+- The app is Open Shutter Count. Where spaces can't go, use `openshuttercount` (files,
+  commands, identifiers) or `Open-Shutter-Count` (the repository, its URLs, the DMG).
+  `make check` fails on the old name (`.github/check-name.sh`).
+- The bundle ID, `com.digitaln.openshuttercount`, never changes: installed copies only
+  accept an update with the same one.
+- Installed copies ask GitHub for the old repository name forever, and its redirect
+  answers them. So never create a repository under DigitalN called
+  `openshuttercounter`, the old name, also Maxime Visonneau's project's.
+
 ## Layout
 
 - The top level holds three folders and only the files GitHub, git, make and
@@ -26,9 +37,9 @@ prefix: `/mattpocock-skills:<name>` is `/<name>`, so read
   the app and the tool. `scripts/` builds, packages and draws the icon;
   `tests/` and `preview/` are below.
 - `tool/`: the tool, a Go module of its own
-  (`github.com/DigitalN/openshuttercounter/tool`; the Makefile runs Go there).
+  (`github.com/DigitalN/Open-Shutter-Count/tool`; the Makefile runs Go there).
   `tool/mac/` has the tool and libusb the app bundles, `launcher.sh` and
-  `Find Shutter Counter.command` (for working out new cameras).
+  `Find Shutter Count.command` (for working out new cameras).
 - `docs/`: CONTRIBUTING.md, DEVELOPMENT.md, PROTOCOL.md (5D Mark IV factory
   channel), R8-PROGRESS.md, APP-PLAN.md, USAGE.md, THIRD-PARTY-NOTICES.
 
@@ -63,12 +74,12 @@ is also how a fix gets tested on the camera.
 - A session on the Mac reaches the Mac; a cloud session reaches neither the Mac
   nor the camera. Either way, reads are the maintainer's: they open the app and
   send the log Save Log wrote (no serial number in it) or what the screen said.
-  `Find Shutter Counter.command` still saves `.txt` logs in `tool/mac/readings/` for
+  `Find Shutter Count.command` still saves `.txt` logs in `tool/mac/readings/` for
   working out a camera; probes (`.json`) are ignored because they hold the
   camera's serial number. Earlier readings were taken out of the repo and its
   history for privacy; docs/R8-PROGRESS.md quotes what they showed.
 - Run `make check` before every push; the pre-push hook runs it too. It also
-  remakes `tool/mac/openshuttercounter` and the app's fixtures, and fails if either
+  remakes `tool/mac/openshuttercount` and the app's fixtures, and fails if either
   was stale: commit what it remade. The tool only reads cameras on macOS: off a
   Mac, `tool/pkg/usb` is a stub that finds none.
 - The page can be checked on Linux with `python3 app/preview/serve.py` and a

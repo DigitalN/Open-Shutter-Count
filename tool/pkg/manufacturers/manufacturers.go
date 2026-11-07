@@ -1,4 +1,4 @@
-// Package manufacturers defines what openshuttercounter needs from a camera
+// Package manufacturers defines what openshuttercount needs from a camera
 // maker in order to report its actuation counters, so that support for a
 // second one is a matter of adding a package rather than rearranging this one.
 //
@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 // CounterSpec describes a counter a model is known to expose.
@@ -152,7 +152,7 @@ func (r *Registry) For(info usb.DeviceInfo) (Reader, error) {
 	}
 
 	return nil, fmt.Errorf(
-		"no reader knows USB vendor %04x; openshuttercounter supports %s so far",
+		"no reader knows USB vendor %04x; openshuttercount supports %s so far",
 		info.VendorID, r.describe(),
 	)
 }

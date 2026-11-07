@@ -15,8 +15,8 @@ def test_the_version_is_three_numbers():
 def test_the_committed_tool_is_this_version():
     """tool/mac/build.sh builds it with app/version.py's version; rebuild and commit it after
     raising the version. app/scripts/build.sh checks the same on the Mac."""
-    tool = (ROOT / "tool" / "mac" / "openshuttercounter").read_bytes()
-    assert VERSION.encode() in tool, "run bash tool/mac/build.sh and commit tool/mac/openshuttercounter"
+    tool = (ROOT / "tool" / "mac" / "openshuttercount").read_bytes()
+    assert VERSION.encode() in tool, "run bash tool/mac/build.sh and commit tool/mac/openshuttercount"
 
 
 def test_the_spec_and_the_tool_build_read_it_from_version_py():

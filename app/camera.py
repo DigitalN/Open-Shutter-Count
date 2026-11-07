@@ -1,4 +1,4 @@
-"""Talking to the camera, through the openshuttercounter tool bundled with the app.
+"""Talking to the camera, through the openshuttercount tool bundled with the app.
 
 `list` only asks macOS which USB devices are attached: nothing is sent to the camera,
 so it's safe to run every second while waiting. `read` reads the camera and says what
@@ -51,8 +51,8 @@ class ToolError(Exception):
 def tool_path():
     """The bundled tool: beside the app's executable, or tool/mac/ when running from source."""
     if getattr(sys, "frozen", False):
-        return Path(sys.executable).parent / "openshuttercounter"
-    return Path(__file__).resolve().parent.parent / "tool" / "mac" / "openshuttercounter"
+        return Path(sys.executable).parent / "openshuttercount"
+    return Path(__file__).resolve().parent.parent / "tool" / "mac" / "openshuttercount"
 
 
 class Camera:
@@ -72,7 +72,7 @@ class Camera:
         try:
             result = self._run(arguments, capture_output=True, text=True, timeout=LIST_TIMEOUT)
         except (OSError, subprocess.TimeoutExpired) as e:
-            raise ToolError(f"The openshuttercounter tool didn't run: {e}") from None
+            raise ToolError(f"The openshuttercount tool didn't run: {e}") from None
         if result.returncode != 0:
             raise ToolError((result.stdout + result.stderr).strip() or f"exit status {result.returncode}")
         try:
@@ -108,7 +108,7 @@ class Camera:
                                  RESTART_CAMERA)
                 return output, _text(e.stderr), _read_text(trace)
             except OSError as e:
-                return failure(FAILED, f"The openshuttercounter tool didn't run: {e}"), "", ""
+                return failure(FAILED, f"The openshuttercount tool didn't run: {e}"), "", ""
             return parse_read(result.stdout, result.stderr, result.returncode), result.stderr, _read_text(trace)
 
 

@@ -1,7 +1,7 @@
-Open Shutter Count, and the openshuttercounter tool inside it, include the software
+Open Shutter Count, and the openshuttercount tool inside it, include the software
 below. Each part is listed with what it's used for, where it comes from, and its
 license. The Open Shutter Count app bundles Python, pywebview, PyObjC, PyInstaller's
-bootloader, libusb and the openshuttercounter tool; the tool is built from this
+bootloader, libusb and the openshuttercount tool; the tool is built from this
 repository's Go code and the Go modules listed at the end.
 
 --------------------------------------------------------------------------------
@@ -398,7 +398,7 @@ not linked into a combined executable.)
 libusb 1.0.30
 https://github.com/libusb/libusb
 
-How the openshuttercounter tool reaches USB devices on a Mac. It's shipped unchanged,
+How the openshuttercount tool reaches USB devices on a Mac. It's shipped unchanged,
 as its own library (Contents/MacOS/libusb-1.0.dylib in the app,
 tool/mac/libusb-1.0.dylib in this repository), from the libusb-package 1.0.30.0 wheel
 (https://github.com/pyocd/libusb-package). Its source is at
@@ -916,7 +916,7 @@ That's all there is to it!
 The Go programming language
 https://go.dev
 
-The openshuttercounter tool is written in Go, and built with its standard library.
+The openshuttercount tool is written in Go, and built with its standard library.
 
 Copyright 2009 The Go Authors.
 

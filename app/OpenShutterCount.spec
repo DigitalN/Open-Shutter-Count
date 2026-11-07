@@ -1,5 +1,5 @@
 # PyInstaller spec for Open Shutter Count. Built by app/scripts/build.sh, which then puts
-# the openshuttercounter tool and libusb (tool/mac/) in Contents/MacOS, side by side, and signs
+# the openshuttercount tool and libusb (tool/mac/) in Contents/MacOS, side by side, and signs
 # the whole app.
 
 import os

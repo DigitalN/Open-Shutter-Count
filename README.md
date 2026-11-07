@@ -3,7 +3,7 @@
 A small Mac app that reads your Canon camera's shutter count over USB, step by step.
 Free and open source.
 
-**[Download the latest version](https://github.com/DigitalN/openshuttercounter/releases/latest)**
+**[Download the latest version](https://github.com/DigitalN/Open-Shutter-Count/releases/latest)**
 (for Macs with Apple silicon)
 
 <p align="center">
@@ -35,7 +35,7 @@ Free and open source.
 ## Install
 
 1. **Download** `Open-Shutter-Count-….dmg` from the
-   [latest release](https://github.com/DigitalN/openshuttercounter/releases/latest) and
+   [latest release](https://github.com/DigitalN/Open-Shutter-Count/releases/latest) and
    open it.
 2. **Drag Open Shutter Count into Applications**, as the arrow shows.
 3. **Open it** from Applications.

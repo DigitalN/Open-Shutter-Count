@@ -14,7 +14,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
 )
 
 // Link types, from the pcap link type registry.

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DigitalN/openshuttercounter/tool/internal/cli"
-	"github.com/DigitalN/openshuttercounter/tool/internal/cmd"
+	"github.com/DigitalN/Open-Shutter-Count/tool/internal/cli"
+	"github.com/DigitalN/Open-Shutter-Count/tool/internal/cmd"
 )
 
 func main() {

@@ -18,7 +18,7 @@ In the Open Shutter Count app, click **Save Log** on the result screen, then
 **Open an Issue**, and attach the log. From the command line:
 
 ```bash
-openshuttercounter --trace mycamera.json
+openshuttercount --trace mycamera.json
 ```
 
 Then open an issue with the trace attached and say what happened. All three of
@@ -45,18 +45,18 @@ exactly the number of frames taken. That needs two traces and about ten
 minutes, and nothing besides the camera itself.
 
 ```bash
-openshuttercounter --trace before.json
+openshuttercount --trace before.json
 
 # take an exact number of frames — 20 is plenty
 
-openshuttercounter --trace after.json --note "20 frames between traces"
+openshuttercount --trace after.json --note "20 frames between traces"
 ```
 
 Compare them:
 
 ```bash
-openshuttercounter decode before.json --only 9052,9053
-openshuttercounter decode after.json  --only 9052,9053
+openshuttercount decode before.json --only 9052,9053
+openshuttercount decode after.json  --only 9052,9053
 ```
 
 If every counter advanced by exactly the number of frames you took, that is a
@@ -91,7 +91,7 @@ needs an address map of its own in
 ```
 
 That's code, so it goes out in a release, with the camera's tested list entry in the
-same pull request. The USB product ID comes from `openshuttercounter list`.
+same pull request. The USB product ID comes from `openshuttercount list`.
 
 If the numbers did **not** move by the frame count, they are not your body's
 counters. Attach both traces to an issue anyway: the two together are exactly
@@ -158,7 +158,7 @@ bodies also advertise `UpdateFirmware`, `FormatStore` and `DeleteObject`.
 ```bash
 make check       # everything that has to pass before a push
 make test        # the Go tests, with the race detector
-make build-mac   # rebuild tool/mac/openshuttercounter and libusb
+make build-mac   # rebuild tool/mac/openshuttercount and libusb
 ```
 
 Two things are worth knowing before changing anything under

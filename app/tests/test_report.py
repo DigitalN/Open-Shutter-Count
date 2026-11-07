@@ -16,14 +16,14 @@ READ_AT = datetime(2026, 11, 4, 15, 39, 2, tzinfo=timezone(timedelta(hours=-7), 
 def log_for(fixture, name, trace="", **kwargs):
     output = fixture(name)
     return build_log(app_name="Open Shutter Count", version="0.5.0",
-                     repository_url="https://github.com/DigitalN/openshuttercounter", read_at=READ_AT, mac=MAC,
+                     repository_url="https://github.com/DigitalN/Open-Shutter-Count", read_at=READ_AT, mac=MAC,
                      summary=summarize(output), output=output, trace=trace, **kwargs)
 
 
 def test_the_log_holds_what_the_plan_lists(fixture):
     log = log_for(fixture, "read-r8.json", trace=fixture("trace-r8.json"), tool_messages="trace written")
     for wanted in [
-        "Open Shutter Count 0.5.0", "https://github.com/DigitalN/openshuttercounter",
+        "Open Shutter Count 0.5.0", "https://github.com/DigitalN/Open-Shutter-Count",
         "Read on 2026-11-04 at 15:39:02 MST (UTC-0700)",
         "Mac: MacBookPro18,1, macOS 27.2 (27C55), arm64",
         "Camera: Canon EOS R8", "Firmware: 3-1.5.0", 'USB: 04a9:330c "Canon Digital Camera"',
@@ -74,12 +74,12 @@ def test_the_file_name():
     assert file_name(READ_AT) == "Open Shutter Count log 2026-11-04 15-39.txt"
 
 
-REPOSITORY = "https://github.com/DigitalN/openshuttercounter"
+REPOSITORY = "https://github.com/DigitalN/Open-Shutter-Count"
 
 
 def issue_fields(url):
     parts = urlparse(url)
-    assert parts.path == "/DigitalN/openshuttercounter/issues/new"
+    assert parts.path == "/DigitalN/Open-Shutter-Count/issues/new"
     return {k: v[0] for k, v in parse_qs(parts.query).items()}
 
 

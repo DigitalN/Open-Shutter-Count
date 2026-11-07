@@ -7,13 +7,13 @@ import (
 var deviceFlag = &cli.StringFlag{
 	Name:    "device",
 	Aliases: []string{"d"},
-	Sources: cli.EnvVars("OPENSHUTTERCOUNTER_DEVICE"),
+	Sources: cli.EnvVars("OPENSHUTTERCOUNT_DEVICE"),
 	Usage:   "which camera to talk to: a device `path`, a bus:address pair or a vendor:product ID",
 }
 
 var jsonFlag = &cli.BoolFlag{
 	Name:    "json",
-	Sources: cli.EnvVars("OPENSHUTTERCOUNTER_JSON"),
+	Sources: cli.EnvVars("OPENSHUTTERCOUNT_JSON"),
 	Usage:   "emit machine readable output",
 }
 
@@ -30,7 +30,7 @@ var serialFlag = &cli.BoolFlag{
 var traceFlag = &cli.StringFlag{
 	Name:    "trace",
 	Aliases: []string{"t"},
-	Sources: cli.EnvVars("OPENSHUTTERCOUNTER_TRACE"),
+	Sources: cli.EnvVars("OPENSHUTTERCOUNT_TRACE"),
 	Usage:   "record everything exchanged with the camera to `file`, to attach to a report",
 }
 
@@ -66,7 +66,7 @@ var onlyFlag = &cli.StringFlag{
 }
 
 // readFlags are shared by the root action and the read command, so that
-// `openshuttercounter --trace x.json` and `openshuttercounter read --trace
+// `openshuttercount --trace x.json` and `openshuttercount read --trace
 // x.json` behave identically.
 var readFlags = []cli.Flag{
 	deviceFlag,

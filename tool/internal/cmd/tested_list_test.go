@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v3"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers/canon"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers/canon"
 )
 
 func writeTestedList(t *testing.T, text string) string {

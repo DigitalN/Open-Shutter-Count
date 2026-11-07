@@ -24,8 +24,8 @@ def fake_run(stdout="", stderr="", returncode=0, calls=None, raises=None):
 
 def test_list_runs_the_tool_and_sends_nothing_else(fixture):
     calls = []
-    devices = Camera("/x/openshuttercounter", run=fake_run(json.dumps(fixture("list-r8.json")), calls=calls)).list()
-    assert calls == [["/x/openshuttercounter", "list", "--json"]]
+    devices = Camera("/x/openshuttercount", run=fake_run(json.dumps(fixture("list-r8.json")), calls=calls)).list()
+    assert calls == [["/x/openshuttercount", "list", "--json"]]
     assert devices[0]["name"] == "Canon EOS R8"
     assert "serial" not in devices[0]
 

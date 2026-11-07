@@ -10,7 +10,7 @@ the app was built to is [APP-PLAN.md](APP-PLAN.md).
   (`wizard.py`): update, set up, wait for the camera, read, result.
   - `updater.py` and `launch.py`: the update check at every launch, and the offer to move
     into Applications. Adapted from Mac Engine Room's.
-  - `camera.py`: runs the `openshuttercounter` tool inside the app (`list --json` while
+  - `camera.py`: runs the `openshuttercount` tool inside the app (`list --json` while
     waiting, `read --json --serial --trace` to read) and says what the result screen
     shows. The serial number is for the screen only; `report.py` never uses it.
   - `tested_list.py`: fetches the tested list from `main` at every launch, which a read
@@ -18,13 +18,13 @@ the app was built to is [APP-PLAN.md](APP-PLAN.md).
   - `report.py`: the log Save Log writes, and the Open an Issue link.
   - `cleanup.py`: what makes sure nothing is left behind.
   - `version.py`: the version, for the app and the tool.
-- `tool/`: the `openshuttercounter` command line tool, a Go module of its own.
+- `tool/`: the `openshuttercount` command line tool, a Go module of its own.
   - `cmd/`, `internal/` and `pkg/`: its Go code. The reading rule is in
     `pkg/manufacturers/canon/reader.go`.
   - `pkg/manufacturers/canon/tested.json`: the tested list, the one list of cameras whose
     readings say tested. It's built into the tool, and installed copies of the app fetch
     it from `main` at launch, so its path is permanent.
-  - `mac/openshuttercounter` and `mac/libusb-1.0.dylib`: the tool and libusb, built on
+  - `mac/openshuttercount` and `mac/libusb-1.0.dylib`: the tool and libusb, built on
     Linux or a Mac by `mac/build.sh` and committed, so the Mac needs only Python. The
     app bundle has them side by side in `Contents/MacOS`.
 - `docs/`: these pages, and `THIRD-PARTY-NOTICES`, the licenses of what the app bundles.
@@ -58,7 +58,7 @@ To run from source without building (on a Mac, with the packages installed):
 python3 app/main.py
 ```
 
-A copy run from source doesn't check for updates, and uses `tool/mac/openshuttercounter`.
+A copy run from source doesn't check for updates, and uses `tool/mac/openshuttercount`.
 
 ## Tests
 
@@ -68,7 +68,7 @@ make check
 
 runs everything that has to pass before a push: `go vet`, the Go tests and the linter,
 here and for the Mac, and the app's tests (`pip install pytest` off a Mac). It also
-remakes `tool/mac/openshuttercounter` and the app's fixtures, which come out the same
+remakes `tool/mac/openshuttercount` and the app's fixtures, which come out the same
 every time, and fails if either was stale: commit what it remade, then run it again.
 
 It needs Go (`brew install go` on a Mac), and runs Go 1.27.0 whatever's installed:
@@ -122,7 +122,7 @@ Run the steps one at a time, and read each result before a step that can't be un
 - [ ] `VERSION` in `app/version.py` is raised by 0.0.1 (`0.5.10` after `0.5.9`), on a
   `claude/release-<version>` branch whose pull request Claude opens and merges. It must
   be higher than the latest release, or installed copies won't update.
-- [ ] `make check` passes on that branch. It remakes `tool/mac/openshuttercounter` with
+- [ ] `make check` passes on that branch. It remakes `tool/mac/openshuttercount` with
   the new version, so commit that with the bump; `app/scripts/build.sh` refuses to build
   if the two differ.
 - [ ] The signing certificate is valid and not about to expire:
@@ -144,7 +144,7 @@ Run the steps one at a time, and read each result before a step that can't be un
   M=$(hdiutil attach -nobrowse -readonly -noautoopen dist/Open-Shutter-Count-0.5.0.dmg | grep -o '/Volumes/.*$')
   defaults read "$M/Open Shutter Count.app/Contents/Info" CFBundleShortVersionString
   codesign --verify --deep --strict "$M/Open Shutter Count.app" && codesign -dvv "$M/Open Shutter Count.app" 2>&1 | grep TeamIdentifier
-  "$M/Open Shutter Count.app/Contents/MacOS/openshuttercounter" --version
+  "$M/Open Shutter Count.app/Contents/MacOS/openshuttercount" --version
   hdiutil detach "$M"
   ```
 
@@ -166,9 +166,9 @@ None of these needs a camera. Leave the camera unplugged.
   mkdir -p /tmp/osc-list
   echo '{"tested": [{"model": "EOS 5D Mark IV", "method": "canon-factory-channel"}]}' > /tmp/osc-list/stand-in.json
   echo '{"tested": [' > /tmp/osc-list/broken.json
-  tool/mac/openshuttercounter models --tested-list /tmp/osc-list/stand-in.json  # the R8 isn't confirmed
-  tool/mac/openshuttercounter models --tested-list /tmp/osc-list/broken.json    # both are, with a note
-  tool/mac/openshuttercounter read --json --tested-list /tmp/osc-list/broken.json  # the usual no_camera
+  tool/mac/openshuttercount models --tested-list /tmp/osc-list/stand-in.json  # the R8 isn't confirmed
+  tool/mac/openshuttercount models --tested-list /tmp/osc-list/broken.json    # both are, with a note
+  tool/mac/openshuttercount read --json --tested-list /tmp/osc-list/broken.json  # the usual no_camera
   ```
 - [ ] The built app fetches from a stand-in: open it with
   `open -n --env OPENSHUTTERCOUNT_TESTED_LIST=file:///tmp/osc-list/stand-in.json "$APP"`,
@@ -191,10 +191,10 @@ None of these needs a camera. Leave the camera unplugged.
 
 ### After publishing
 
-- [ ] `https://github.com/DigitalN/openshuttercounter/releases/latest` goes to the new
+- [ ] `https://github.com/DigitalN/Open-Shutter-Count/releases/latest` goes to the new
   tag, and GitHub's API shows only the `.dmg`:
   ```bash
-  curl -s https://api.github.com/repos/DigitalN/openshuttercounter/releases/latest | grep -E '"tag_name"|"name": "Open-Shutter-Count'
+  curl -s https://api.github.com/repos/DigitalN/Open-Shutter-Count/releases/latest | grep -E '"tag_name"|"name": "Open-Shutter-Count'
   ```
 - [ ] The DMG downloaded from the page is identical to the one in `dist/`
   (`shasum -a 256`).
@@ -261,7 +261,7 @@ tested, one entry on each line:
   the pull request with the fix, released at the same time.
 - **In the app** (`app/tested_list.py`): once per launch, on its own thread alongside the
   update check, it fetches
-  `https://raw.githubusercontent.com/DigitalN/openshuttercounter/main/tool/pkg/manufacturers/canon/tested.json`
+  `https://raw.githubusercontent.com/DigitalN/Open-Shutter-Count/main/tool/pkg/manufacturers/canon/tested.json`
   through `/usr/bin/curl`, with the update check's 15-second limit. Not GitHub's API,
   which the update check uses and which allows 60 requests an hour from one address.
   The update step doesn't wait for it; a read does, for no longer than that limit, and
@@ -293,10 +293,10 @@ No release is needed: installed copies pick it up the next time they open.
    github.com.
 4. It's live within about five minutes, as GitHub's raw files are cached. Check:
    ```bash
-   curl -s https://raw.githubusercontent.com/DigitalN/openshuttercounter/main/tool/pkg/manufacturers/canon/tested.json
+   curl -s https://raw.githubusercontent.com/DigitalN/Open-Shutter-Count/main/tool/pkg/manufacturers/canon/tested.json
    ```
 
-`tool/mac/openshuttercounter` has the list built in, so `make check` remakes it after any
+`tool/mac/openshuttercount` has the list built in, so `make check` remakes it after any
 change to the file. After a direct edit on github.com the next `make check` remakes it:
 commit it with that pull request. Merging a list-only change isn't a release, and
 doesn't leave anything merged but unreleased.

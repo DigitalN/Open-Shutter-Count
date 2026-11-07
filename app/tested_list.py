@@ -1,7 +1,7 @@
 """The list of tested cameras, fetched from GitHub once per launch.
 
 A reading says "tested" when the list has the camera's model and the way it was read;
-any other says it's not fully tested. The openshuttercounter tool has the list built in
+any other says it's not fully tested. The openshuttercount tool has the list built in
 (tool/pkg/manufacturers/canon/tested.json in the repository). This fetches the same file
 from the repository's main branch and hands it to the tool's read with --tested-list, so
 a camera can be marked tested without a release.

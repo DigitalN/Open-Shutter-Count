@@ -1,4 +1,4 @@
-// Package usb provides the small amount of USB plumbing openshuttercounter
+// Package usb provides the small amount of USB plumbing openshuttercount
 // needs in order to speak PTP to a camera: enumerate still image devices,
 // claim the interface and move bulk transfers in both directions.
 //

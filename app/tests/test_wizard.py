@@ -60,7 +60,7 @@ def make(fixture, outcome=Outcome(updater.CURRENT), **camera_kwargs):
     clock = Clock()
     cam = FakeCamera(fixture, **camera_kwargs)
     w = Inline(FakeUpdater(outcome), cam, app_name="Open Shutter Count", version="0.5.0",
-               repository_url="https://github.com/DigitalN/openshuttercounter",
+               repository_url="https://github.com/DigitalN/Open-Shutter-Count",
                mac_info=lambda: {"model": "MacBookPro18,1", "macos": "27.2"}, clock=clock, sleep=clock.sleep,
                now=lambda: datetime(2026, 11, 5, 9, 30).astimezone())
     return w, cam, clock
