@@ -91,7 +91,7 @@ func (m *fakeMac) install(t *testing.T) (context.Context, *observer.ObservedLogs
 	openCamera = m.open
 	stopCameraDaemon = m.stop
 	cameraOwners = func(context.Context, usb.DeviceInfo) ([]usb.Owner, string, error) {
-		return []usb.Owner{{PID: 589, Name: "ptpcamerad", Exclusive: true}}, "", nil
+		return []usb.Owner{ptpcameradOwner}, "", nil
 	}
 	darwinRetryDelay = 3 * time.Millisecond
 	darwinPollInterval = time.Millisecond
@@ -102,9 +102,10 @@ func (m *fakeMac) install(t *testing.T) (context.Context, *observer.ObservedLogs
 }
 
 func messages(observed *observer.ObservedLogs) []string {
-	var out []string
+	entries := observed.All()
+	out := make([]string, 0, len(entries))
 
-	for _, entry := range observed.All() {
+	for _, entry := range entries {
 		out = append(out, entry.Message)
 	}
 
@@ -115,6 +116,10 @@ const (
 	stoppingMessage = "the camera is held by another process, stopping ptpcamerad and retrying"
 	killingMessage  = "ptpcamerad didn't let go, killing it and retrying"
 )
+
+// ptpcameradOwner is what ioreg shows holding the camera when the service
+// won't let go.
+var ptpcameradOwner = usb.Owner{PID: 589, Name: "ptpcamerad", Exclusive: true}
 
 func TestOpenDeviceFreeCameraStopsNothing(t *testing.T) {
 	mac := &fakeMac{}
@@ -191,7 +196,7 @@ func TestOpenDeviceGivesUpWithTheBusyHint(t *testing.T) {
 	assert.Nil(t, device)
 
 	assert.Equal(t, []bool{false, true, true, true, true}, mac.stops)
-	assert.Contains(t, err.Error(), darwinBusyHint([]usb.Owner{{PID: 589, Name: "ptpcamerad", Exclusive: true}}))
+	assert.Contains(t, err.Error(), darwinBusyHint([]usb.Owner{ptpcameradOwner}))
 	assert.Equal(t, kindBusy, errorKind(err))
 }
 
