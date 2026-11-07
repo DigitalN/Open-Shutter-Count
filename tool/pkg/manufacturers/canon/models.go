@@ -98,10 +98,12 @@ var tested = map[string]bool{
 	"EOS R8":         true,
 	"EOS R3":         true,
 	"EOS R7":         true,
-	// Canon's USB name for the R5 Mark II is probably "EOS R5m2" (as with the
-	// R6 Mark II); both spellings are listed until a log shows which.
+	// Canon's USB names for the Mark II bodies may be the short ones ("EOS
+	// R5m2"); both spellings are listed until a log shows which.
 	"EOS R5 Mark II": true,
 	"EOS R5m2":       true,
+	"EOS R6 Mark II": true,
+	"EOS R6m2":       true,
 }
 
 // GuessModel is what a body that lists the factory channel but has no map of

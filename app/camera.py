@@ -188,8 +188,8 @@ def summarize(output, devices=(), read_at=None):
     """What the result screen shows for what `read --json` printed, read at `read_at`.
 
     ok says whether it read; tested is only true for the bodies the tool marks
-    confirmed (the R8, R7, R5 Mark II, R3 and 5D Mark IV). A reading from any other
-    body says it's not fully tested: the counts aren't proven to be what their
+    confirmed (the R8, R7, R6 Mark II, R5 Mark II, R3 and 5D Mark IV). A reading
+    from any other body says it's not fully tested: the counts aren't proven to be what their
     names say.
 
     A reading shows the camera's model, the serial number on its body (where the camera
