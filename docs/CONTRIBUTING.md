@@ -3,9 +3,9 @@
 The most useful thing you can contribute is a reading from your own camera —
 whether or not it worked.
 
-Right now six bodies have been tested by someone holding them: the EOS R8, R7, R5
-Mark II, R3, 6D Mark II and 5D Mark IV. Other bodies are read the way one of those is, by what they
-list (see "What it sends" in [USAGE.md](USAGE.md)), and older ones that answer
+Right now five bodies have been tested by someone holding them: the EOS R8, R7,
+R5 Mark II, R3 and 5D Mark IV. Other bodies are read the way one of those is, by
+what they list (see "What it sends" in [USAGE.md](USAGE.md)), and older ones that answer
 the standard shutter count property are read too, but each of those readings is
 labelled not fully tested. Everything else can't be read yet. The
 only way that changes is people running this on their own gear and saying what
