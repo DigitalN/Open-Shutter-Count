@@ -1,10 +1,10 @@
-# Used by Find Shutter Counter.command; not run on its own.
+# Used by Find Shutter Count.command; not run on its own.
 #
 # Set $here to this folder before sourcing it. It sets $tool, $readings and
 # $stamp, and defines check_setup, start, run and finish. Set $log before
 # calling start.
 
-tool="$here/openshuttercounter"
+tool="$here/openshuttercount"
 readings="$here/readings"
 stamp="$(date +%Y-%m-%d_%H-%M-%S)"
 

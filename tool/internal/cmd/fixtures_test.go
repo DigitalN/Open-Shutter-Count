@@ -16,10 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers/canon"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/trace"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers/canon"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/trace"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 // The app's tests read what this tool prints from app/tests/fixtures, and those

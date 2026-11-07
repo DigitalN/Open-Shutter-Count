@@ -11,10 +11,10 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers/canon"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers/canon"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 // ErrReported means the command failed and has already said why, in its JSON
@@ -340,7 +340,7 @@ const untestedNotice = `
   Not fully tested on the %s. If these numbers look wrong, please send
   a trace, and say how many photos the camera has taken if you know:
 
-    openshuttercounter --trace mycamera.json
+    openshuttercount --trace mycamera.json
 
   docs/CONTRIBUTING.md has the details.
 `

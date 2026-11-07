@@ -1,4 +1,4 @@
-module github.com/DigitalN/openshuttercounter/tool
+module github.com/DigitalN/Open-Shutter-Count/tool
 
 go 1.27.0
 

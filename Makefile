@@ -1,6 +1,6 @@
-NAME          := openshuttercounter
+NAME          := openshuttercount
 COVERAGE_FILE := $(CURDIR)/coverage.out
-REPOSITORY    := DigitalN/$(NAME)
+REPOSITORY    := DigitalN/Open-Shutter-Count
 
 # One Go version everywhere, the same as tool/mac/build.sh's: the tool's bytes depend
 # on it, and golangci-lint can't read what Go 1.27.3 compiles. Any Go 1.21 or
@@ -76,7 +76,7 @@ all: lint lint-mac test coverage ## Lint here and for the Mac, and test
 
 # The Mac binary and the app's fixtures, which are made from the Go code and
 # committed. Both come out byte for byte the same every time they're made.
-GENERATED := tool/mac/openshuttercounter tool/mac/libusb-1.0.dylib app/tests/fixtures
+GENERATED := tool/mac/openshuttercount tool/mac/libusb-1.0.dylib app/tests/fixtures
 GENERATED_SUM = find $(GENERATED) -type f -exec cksum {} + | sort
 
 .PHONY: generated
@@ -91,10 +91,15 @@ generated: ## Remake the Mac binary and the app's fixtures; fail if they were st
 		exit 1; \
 	fi
 
+# Fails if the project's old name is back in a tracked file. See .github/check-name.sh.
+.PHONY: check-name
+check-name: ## Fail if the project's old name has come back
+	@bash .github/check-name.sh
+
 # Everything that has to pass before a push. There's no CI: .github/hooks/pre-push
 # runs this, and .claude/hooks/session-start.sh turns that hook on.
 .PHONY: check
-check: generated $(GOLANGCI_BIN) ## Everything that must pass before a push
+check: check-name generated $(GOLANGCI_BIN) ## Everything that must pass before a push
 	$(GO) vet ./...
 	GOOS=darwin $(GO) vet ./...
 	$(GO) test -count=1 ./...

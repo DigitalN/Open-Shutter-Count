@@ -1,4 +1,4 @@
-# Using openshuttercounter from the command line
+# Using openshuttercount from the command line
 
 The [Open Shutter Count app](../README.md) is easier. This page is for the tool
 inside it, on its own, on a Mac.
@@ -9,7 +9,7 @@ The build in `tool/mac/` of this repository, with the copy of libusb beside it, 
 one the app bundles. Or, with Go installed:
 
 ```bash
-go install github.com/DigitalN/openshuttercounter/tool/cmd/openshuttercounter@latest
+go install github.com/DigitalN/Open-Shutter-Count/tool/cmd/openshuttercount@latest
 ```
 
 Releases only carry the app.
@@ -17,20 +17,20 @@ Releases only carry the app.
 ## Commands
 
 ```bash
-openshuttercounter                          # read the connected camera
-openshuttercounter --raw                    # also show the raw replies
-openshuttercounter --serial                 # also show the serial number on the body
-openshuttercounter --json                   # machine readable output
-openshuttercounter --trace session.json     # record the whole conversation
-openshuttercounter --tested-list list.json  # say tested by another list (below)
-openshuttercounter list                     # what is connected
-openshuttercounter models                   # cameras this build knows
-openshuttercounter decode session.json      # print a recorded conversation
-openshuttercounter probe --out before.json  # save everything the camera reports
-openshuttercounter compare before.json after.json --frames 20
+openshuttercount                          # read the connected camera
+openshuttercount --raw                    # also show the raw replies
+openshuttercount --serial                 # also show the serial number on the body
+openshuttercount --json                   # machine readable output
+openshuttercount --trace session.json     # record the whole conversation
+openshuttercount --tested-list list.json  # say tested by another list (below)
+openshuttercount list                     # what is connected
+openshuttercount models                   # cameras this build knows
+openshuttercount decode session.json      # print a recorded conversation
+openshuttercount probe --out before.json  # save everything the camera reports
+openshuttercount compare before.json after.json --frames 20
 ```
 
-`decode` reads traces written by openshuttercounter, logs saved by the app (the
+`decode` reads traces written by openshuttercount, logs saved by the app (the
 trace is at the end), and USB captures in pcap or pcapng format. Traces leave
 out the camera's serial number, and on Canon bodies its owner, artist and
 copyright names. `probe --events` also reads a Canon body's event channel,
@@ -110,7 +110,7 @@ checks that. More in [PROTOCOL.md](PROTOCOL.md#safety).
 |---|---|
 | `app/` | The Open Shutter Count app; [DEVELOPMENT.md](DEVELOPMENT.md) |
 | `tool/` | This tool, a Go module of its own; the paths below are inside it |
-| `mac/` | The Mac binary and libusb, which the app bundles, and `Find Shutter Counter.command` |
+| `mac/` | The Mac binary and libusb, which the app bundles, and `Find Shutter Count.command` |
 | `cmd/`, `internal/` | The CLI |
 | `pkg/manufacturers` | What a camera maker has to provide to be readable |
 | `pkg/manufacturers/canon` | Canon's factory and event channels, decoding, model list, and `tested.json` |

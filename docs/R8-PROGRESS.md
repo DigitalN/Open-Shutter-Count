@@ -1,8 +1,8 @@
 # EOS R8 progress
 
-The maintainer's local copy is `~/Documents/GitHub/openshuttercounter`. Readings
+The maintainer's local copy is `~/Documents/GitHub/Open-Shutter-Count`. Readings
 now come from the Open Shutter Count app: its saved log has no serial number in
-it. `Find Shutter Counter.command` still saves `.txt` logs in `tool/mac/readings/`
+it. `Find Shutter Count.command` still saves `.txt` logs in `tool/mac/readings/`
 (probes hold the camera's serial number, so they're ignored). The readings and the test photo cited
 below were taken out of the repo and its history on 2026-11-04 for privacy;
 the figures quoted here are what they showed.
@@ -132,7 +132,7 @@ How word 3 and word 4 were identified:
 
 ## Loose ends
 
-- The Terminal window closing after Return (`Find Shutter Counter.command`)
+- The Terminal window closing after Return (`Find Shutter Count.command`)
   hasn't been confirmed working.
 - Other bodies that list the event channel (RF bodies, the 90D, newer EOS M)
   are now read the R8's way, labelled not fully tested. Their logs will show
@@ -151,12 +151,13 @@ How word 3 and word 4 were identified:
   showed its serial number. The log's steps say `RequestDevicePropValue(0xd1af)`
   and what it answered, then `0xd1af (serial number): reported`, without the
   number.
-- `tool/mac/openshuttercounter` stays committed, so building the app on the Mac
+- `tool/mac/openshuttercount` stays committed, so building the app on the Mac
   needs only Python (Q31).
 - Old branches are gone (2026-11-05): GitHub has only `main`, and the local
   copy of the branch from before the readings were taken out of the history is
   deleted. The local `upstream` remote, which pointed at mvisonneau's
-  repository, is removed. GitHub still lists this repository as a fork of his.
+  repository, is removed. The repository is standalone since 2026-11-07: the maintainer
+  renamed it `DigitalN/Open-Shutter-Count` and left GitHub's fork network.
 - On macOS, if another app (the Camera Shutter Count app, on the maintainer's
   Mac) is using the camera, ptpcamerad holds it and won't exit when stopped.
   The tool then names the app to quit; see `darwinBusyHint`.

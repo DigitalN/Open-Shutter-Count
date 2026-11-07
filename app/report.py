@@ -5,12 +5,12 @@ It holds the app's name and version, the repository, when the camera was read, t
 model and macOS version, which list of tested cameras counted, the camera's model,
 firmware and USB IDs, the commands it lists,
 each step and what the camera answered, the result, and at the end the whole exchange
-with the camera as openshuttercounter's trace. The tool leaves the camera's serial number
+with the camera as openshuttercount's trace. The tool leaves the camera's serial number
 out of all of it.
 
 Open an Issue fills in a new GitHub issue with the log, all but the camera exchange.
 
-`openshuttercounter decode <log>` reads the trace at the end of a saved log.
+`openshuttercount decode <log>` reads the trace at the end of a saved log.
 """
 
 import platform
@@ -20,10 +20,10 @@ import textwrap
 from camera import count_text
 
 # Must match tool/pkg/trace's LogBegin and LogEnd, so `decode` finds the trace in a log.
-TRACE_BEGIN = "-----BEGIN OPENSHUTTERCOUNTER TRACE-----"
-TRACE_END = "-----END OPENSHUTTERCOUNTER TRACE-----"
+TRACE_BEGIN = "-----BEGIN OPENSHUTTERCOUNT TRACE-----"
+TRACE_END = "-----END OPENSHUTTERCOUNT TRACE-----"
 # Starts the last part of the log, the camera exchange, which the issue leaves out.
-TRACE_HEADING = "The whole exchange with the camera. To read it: openshuttercounter decode <this file>"
+TRACE_HEADING = "The whole exchange with the camera. To read it: openshuttercount decode <this file>"
 
 
 def mac_info():

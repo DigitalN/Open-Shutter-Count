@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
 )
 
 // The captures this decoder was built against are not distributed, so the

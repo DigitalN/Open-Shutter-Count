@@ -9,10 +9,10 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/DigitalN/openshuttercounter/tool/internal/logs"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers/canon"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/internal/logs"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers/canon"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 // List reports the cameras currently attached.
@@ -168,7 +168,7 @@ const modelsFooter = `
 
   Whether it worked or not, a trace makes the answer useful to everyone else:
 
-    openshuttercounter --trace mycamera.json
+    openshuttercount --trace mycamera.json
 
   docs/CONTRIBUTING.md explains what to do with it.
 

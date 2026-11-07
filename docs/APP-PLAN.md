@@ -19,7 +19,9 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
   Go tool and libusb inside it. The Go code stays; neither the camera code nor
   the updater is rewritten.
 - Name **Open Shutter Count**, bundle ID `com.digitaln.openshuttercount`.
-  The repo keeps its name. Apple silicon only.
+  The repo keeps its name. (Changed by the maintainer on 2026-11-07: the
+  repository is now `DigitalN/Open-Shutter-Count`, standalone, and the tool is
+  `openshuttercount`.) Apple silicon only.
 - App source goes in a new `app/` folder.
 - Mac Engine Room's look (fonts, colours, light and dark mode).
 - Icon: a simple aperture, drawn by a script so it can be rebuilt.
@@ -191,8 +193,8 @@ camera tested no longer needs a release.
 
 - Delete `.github/workflows/release.yml`, `.github/release.sh` and
   `Read Shutter Count.command`.
-- Keep `tool/mac/Find Shutter Counter.command` and `tool/mac/launcher.sh` (for working
-  out new cameras), and keep committing `tool/mac/openshuttercounter` (built on Linux
+- Keep `tool/mac/Find Shutter Count.command` and `tool/mac/launcher.sh` (for working
+  out new cameras), and keep committing `tool/mac/openshuttercount` (built on Linux
   by `tool/mac/build.sh`), so the Mac needs only Python, not Go.
 - Keep `test.yml` and add the Python tests to it. (Changed by the maintainer on
   2026-11-05: no CI and no Linux or Windows support, so releases follow Mac
@@ -245,11 +247,11 @@ Copy from it:
   channel model, `Confirmed: true`.
 - `tool/pkg/ptp/dataset.go`: `DeviceInfo` has `Model` and `SerialNumber`.
 - `tool/internal/cmd/utils.go`: `darwinBusyHint`.
-- `openshuttercounter --json` gives each count's range (`min` and `value`);
+- `openshuttercount --json` gives each count's range (`min` and `value`);
   `--trace` writes the camera exchange.
 - `tool/pkg/usb/usb_darwin.go` looks for `libusb-1.0.dylib` next to the executable
   first, so keep them side by side in the bundle.
-- Check that `openshuttercounter list` sends nothing to the camera before
+- Check that `openshuttercount list` sends nothing to the camera before
   polling with it every second.
 
 ## Order of work

@@ -3,7 +3,7 @@
 The window is a pywebview page (index.html) that talks to Python over pywebview's
 in-process bridge, so the app opens no network ports. Its only network requests are made
 at launch: the update check (updater.py) and the list of tested cameras (tested_list.py).
-The camera is read by the openshuttercounter tool in the app bundle (camera.py).
+The camera is read by the openshuttercount tool in the app bundle (camera.py).
 
 Nothing is left behind: no log file, no preferences, no window state, and a web view
 that stores nothing (cleanup.py). Python's own messages go to stderr only.

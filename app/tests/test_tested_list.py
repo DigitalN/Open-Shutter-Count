@@ -251,7 +251,7 @@ def test_read_again_reuses_the_list(fixture):
 def make(fixture, listed, outcome=Outcome("current"), **camera_kwargs):
     clock = Clock()
     w = Inline(FakeUpdater(outcome), FakeCamera(fixture, **camera_kwargs), app_name="Open Shutter Count",
-               version="0.5.5", repository_url="https://github.com/DigitalN/openshuttercounter",
+               version="0.5.5", repository_url="https://github.com/DigitalN/Open-Shutter-Count",
                mac_info=lambda: {"model": "MacBookPro18,1", "macos": "27.2"}, clock=clock, sleep=clock.sleep,
                tested_list=listed)
     return w
@@ -321,7 +321,7 @@ class Printing(FakeCamera):
 
 
 def issue_log(w):
-    url = report.issue_url("https://github.com/DigitalN/openshuttercounter", w.state()["result"], w.log()[1])
+    url = report.issue_url("https://github.com/DigitalN/Open-Shutter-Count", w.state()["result"], w.log()[1])
     return parse_qs(urlparse(url).query)["log"][0]
 
 

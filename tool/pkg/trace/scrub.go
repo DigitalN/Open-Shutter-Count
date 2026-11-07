@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode/utf16"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
 )
 
 // A Scrubber blanks, in place, whatever in one data phase identifies the

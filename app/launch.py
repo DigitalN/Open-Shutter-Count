@@ -21,7 +21,7 @@ from pathlib import Path
 log = logging.getLogger("openshuttercount")
 
 APP_NAME = "Open Shutter Count"
-REPOSITORY = "DigitalN/openshuttercounter"
+REPOSITORY = "DigitalN/Open-Shutter-Count"
 REPOSITORY_URL = f"https://github.com/{REPOSITORY}"
 RELEASES_URL = f"{REPOSITORY_URL}/releases/latest"
 

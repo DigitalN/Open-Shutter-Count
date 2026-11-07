@@ -3,8 +3,8 @@ package cli
 import (
 	"github.com/urfave/cli/v3"
 
-	"github.com/DigitalN/openshuttercounter/tool/internal/app"
-	"github.com/DigitalN/openshuttercounter/tool/internal/cmd"
+	"github.com/DigitalN/Open-Shutter-Count/tool/internal/app"
+	"github.com/DigitalN/Open-Shutter-Count/tool/internal/cmd"
 )
 
 // NewApp configures the CLI application.
@@ -41,13 +41,13 @@ camera, and refuses to build one; see docs/PROTOCOL.md for why that matters.`,
 		Flags: append([]cli.Flag{
 			&cli.StringFlag{
 				Name:    "log-level",
-				Sources: cli.EnvVars("OPENSHUTTERCOUNTER_LOG_LEVEL"),
+				Sources: cli.EnvVars("OPENSHUTTERCOUNT_LOG_LEVEL"),
 				Usage:   "log `level` (debug,info,warn,error,fatal,panic)",
 				Value:   "info",
 			},
 			&cli.StringFlag{
 				Name:    "log-format",
-				Sources: cli.EnvVars("OPENSHUTTERCOUNTER_LOG_FORMAT"),
+				Sources: cli.EnvVars("OPENSHUTTERCOUNT_LOG_FORMAT"),
 				Usage:   "log `format` (json,text)",
 				Value:   "text",
 			},
@@ -138,7 +138,7 @@ show whether anything is the shutter count.`,
 				Description: `Prints the PTP conversation a trace file contains, with each manufacturer's
 commands decoded.
 
-Traces written by openshuttercounter itself are the usual input. USB captures
+Traces written by openshuttercount itself are the usual input. USB captures
 in pcap or pcapng format are read too, for anyone who already has one.
 
 Comparing two traces taken a known number of frames apart is how a camera gets

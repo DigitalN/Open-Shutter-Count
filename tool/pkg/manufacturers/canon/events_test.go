@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 // eosD167 is property 0xD167 as libgphoto2's EOS R dump shows it.

@@ -5,25 +5,25 @@
 // be decoded, compared against a second trace taken a known number of frames
 // later, and confirmed without the camera being anywhere nearby.
 //
-// Traces are written by openshuttercounter itself, so contributing support for
+// Traces are written by openshuttercount itself, so contributing support for
 // a new camera needs no capture tooling. USB captures in pcap or pcapng format
 // are read as well, for anyone who already has one.
 package trace
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"runtime"
 	"sync"
 	"time"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/pcap"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/pcap"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 // FormatVersion is the trace file schema version. It goes in every file so a
@@ -138,7 +138,7 @@ func NewRecorder(toolVersion string, scrubbers ...Scrubber) *Recorder {
 	return &Recorder{
 		scrubbers: append([]Scrubber{ScrubDeviceInfo, ScrubProperties(PropArtist, PropCopyrightInfo)}, scrubbers...),
 		file: File{
-			Tool:          "openshuttercounter",
+			Tool:          "openshuttercount",
 			ToolVersion:   toolVersion,
 			FormatVersion: FormatVersion,
 			Host:          Host{OS: runtime.GOOS, Arch: runtime.GOARCH},
@@ -233,7 +233,7 @@ func (r *Recorder) WriteFile(path string) error {
 
 // ReadFile reads a trace back.
 //
-// Both openshuttercounter's own format and USB captures in pcap or pcapng
+// Both openshuttercount's own format and USB captures in pcap or pcapng
 // format are accepted, so a contributor can send whichever they have.
 func ReadFile(path string) (File, error) {
 	raw, err := os.ReadFile(path) //nolint:gosec // reading the file the user named is the point
@@ -247,17 +247,24 @@ func ReadFile(path string) (File, error) {
 // The lines a saved log wraps its trace in. Read finds the trace between them,
 // so a log can be decoded like a trace file.
 const (
-	LogBegin = "-----BEGIN OPENSHUTTERCOUNTER TRACE-----"
-	LogEnd   = "-----END OPENSHUTTERCOUNTER TRACE-----"
+	LogBegin = "-----BEGIN OPENSHUTTERCOUNT TRACE-----"
+	LogEnd   = "-----END OPENSHUTTERCOUNT TRACE-----"
+)
+
+// Logs saved before the project was renamed have the tool's former name between the
+// dashes, so Read takes any one-word name there and those logs still decode.
+var (
+	logBeginLine = regexp.MustCompile(`-----BEGIN [A-Z]+ TRACE-----`)
+	logEndLine   = regexp.MustCompile(`-----END [A-Z]+ TRACE-----`)
 )
 
 // Read parses a trace from bytes, detecting which format it is in: a trace
 // file, a log with a trace in it, or a USB capture.
 func Read(raw []byte) (File, error) {
-	if begin := bytes.Index(raw, []byte(LogBegin)); begin >= 0 && !looksLikeJSON(raw) {
-		raw = raw[begin+len(LogBegin):]
-		if end := bytes.Index(raw, []byte(LogEnd)); end >= 0 {
-			raw = raw[:end]
+	if begin := logBeginLine.FindIndex(raw); begin != nil && !looksLikeJSON(raw) {
+		raw = raw[begin[1]:]
+		if end := logEndLine.FindIndex(raw); end != nil {
+			raw = raw[:end[0]]
 		}
 	}
 

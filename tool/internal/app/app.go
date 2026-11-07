@@ -1,7 +1,7 @@
 package app
 
 // Name is the binary's name.
-const Name string = "openshuttercounter"
+const Name string = "openshuttercount"
 
 // Version is dynamically set at build time.
 var Version = "v0.0.0-dev"

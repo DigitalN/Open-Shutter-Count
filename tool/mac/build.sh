@@ -2,7 +2,7 @@
 # Rebuilds the two binaries in this folder, which the Open Shutter Count app
 # bundles:
 #
-#   openshuttercounter   the tool, for Apple silicon Macs, with app/version.py's
+#   openshuttercount     the tool, for Apple silicon Macs, with app/version.py's
 #                        version
 #   libusb-1.0.dylib     libusb 1.0.30, from the libusb-package wheel on PyPI
 #                        (github.com/pyocd/libusb-package), checked against a
@@ -31,13 +31,13 @@ fi
 libusb_wheel_url="https://files.pythonhosted.org/packages/52/6f/26de4e9f858ab50e87931f0be268f3c1bbfce33e8584add60da857632142/libusb_package-1.0.30.0-py3-none-macosx_11_0_arm64.whl"
 libusb_wheel_sha256="4ad25f8d254bbbdd234446d5580b24d62d59bb0e690d8090457dac347f044437"
 
-echo "==> building openshuttercounter $version for darwin/arm64"
+echo "==> building openshuttercount $version for darwin/arm64"
 (
     cd "$tool"
     GOTOOLCHAIN="$go_version" CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build \
         -trimpath -buildvcs=false \
-        -ldflags "-s -w -X github.com/DigitalN/openshuttercounter/tool/internal/app.Version=$version" \
-        -o "$here/openshuttercounter" ./cmd/openshuttercounter
+        -ldflags "-s -w -X github.com/DigitalN/Open-Shutter-Count/tool/internal/app.Version=$version" \
+        -o "$here/openshuttercount" ./cmd/openshuttercount
 )
 
 echo "==> fetching libusb"
@@ -59,11 +59,11 @@ fi
 
 unzip -p "$tmp/libusb.whl" libusb_package/libusb-1.0.dylib > "$here/libusb-1.0.dylib"
 chmod 644 "$here/libusb-1.0.dylib"
-chmod 755 "$here/openshuttercounter"
+chmod 755 "$here/openshuttercount"
 
 echo "==> done"
 if command -v sha256sum >/dev/null; then
-    (cd "$here" && sha256sum openshuttercounter libusb-1.0.dylib)
+    (cd "$here" && sha256sum openshuttercount libusb-1.0.dylib)
 else
-    (cd "$here" && shasum -a 256 openshuttercounter libusb-1.0.dylib)
+    (cd "$here" && shasum -a 256 openshuttercount libusb-1.0.dylib)
 fi

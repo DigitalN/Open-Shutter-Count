@@ -1,9 +1,9 @@
 dist
 vendor
 .bin
-openshuttercounter
-!tool/cmd/openshuttercounter
-!tool/mac/openshuttercounter
+openshuttercount
+!tool/cmd/openshuttercount
+!tool/mac/openshuttercount
 helpers
 coverage.out
 

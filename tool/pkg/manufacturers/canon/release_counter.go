@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/manufacturers"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
 )
 
 // MethodEventChannel is property 0xD167 on Canon's event channel, which

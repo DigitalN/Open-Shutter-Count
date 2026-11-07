@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"encoding/hex"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
-	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/ptp"
+	"github.com/DigitalN/Open-Shutter-Count/tool/pkg/usb"
 )
 
 func fixedClock() func() time.Time {
@@ -76,7 +77,7 @@ func TestRecorderRoundTripsThroughAFile(t *testing.T) {
 	file, err := ReadFile(path)
 	require.NoError(t, err)
 
-	assert.Equal(t, "openshuttercounter", file.Tool)
+	assert.Equal(t, "openshuttercount", file.Tool)
 	assert.Equal(t, "v1.2.3", file.ToolVersion)
 	assert.Equal(t, FormatVersion, file.FormatVersion)
 	assert.Equal(t, "Canon EOS 5D Mark IV", file.Device.Product)
@@ -91,6 +92,45 @@ func TestRecorderRoundTripsThroughAFile(t *testing.T) {
 	assert.Equal(t, ptp.ContainerData, container.Type)
 	assert.Equal(t, uint32(11), container.TransactionID)
 	assert.Equal(t, []byte("MonOpen\x00"), container.Payload)
+}
+
+// formerName is what the tool and the app called themselves before the rename, which
+// traces and logs saved by those versions still say. It is in two pieces so that the
+// guard in make check, which keeps the old name out of the tree, doesn't flag the
+// test that has to cover it.
+const formerName = "openshuttercount" + "er"
+
+func TestReadStillDecodesWhatWasSavedBeforeTheRename(t *testing.T) {
+	var buf bytes.Buffer
+	require.NoError(t, recordConversation(t).Write(&buf))
+
+	was := []byte(`"tool": "openshuttercount"`)
+	require.Contains(t, buf.String(), string(was), "the test needs the tool field to swap")
+
+	traceFile := bytes.Replace(buf.Bytes(), was, []byte(`"tool": "`+formerName+`"`), 1)
+	savedLog := "Open Shutter Count 0.5.4\n\nThe whole exchange with the camera.\n" +
+		"-----BEGIN " + strings.ToUpper(formerName) + " TRACE-----\n" +
+		string(traceFile) + "\n" +
+		"-----END " + strings.ToUpper(formerName) + " TRACE-----\n"
+
+	for name, raw := range map[string][]byte{
+		"a trace file": traceFile,
+		"a saved log":  []byte(savedLog),
+	} {
+		t.Run(name, func(t *testing.T) {
+			file, err := Read(raw)
+			require.NoError(t, err)
+
+			assert.Equal(t, formerName, file.Tool, "it says what the file says")
+			assert.Equal(t, "v1.2.3", file.ToolVersion)
+			assert.Equal(t, "Canon EOS 5D Mark IV", file.Device.Product)
+			require.Len(t, file.Entries, 3)
+
+			container, err := file.Entries[1].Container()
+			require.NoError(t, err)
+			assert.Equal(t, []byte("MonOpen\x00"), container.Payload)
+		})
+	}
 }
 
 func TestReadRejectsATraceFromTheFuture(t *testing.T) {

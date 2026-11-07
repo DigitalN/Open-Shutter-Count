@@ -97,7 +97,7 @@ Argument record, 20 bytes:
 The first word is a **type tag**, not a constant. `MonReadAndGetData` passes
 the integer `2`, but `FA_GetProperty` tags its records with the ASCII string
 `"CSC"` (`43 53 43 00`) and puts a structured value in the second word. Both
-encodings have been observed on the wire, and `openshuttercounter decode`
+encodings have been observed on the wire, and `openshuttercount decode`
 renders them as `MonReadAndGetData(0x2, 0x100b, 0xa)` and
 `FA_GetProperty(CSC=0x2000001, CSC=0x0)` respectively.
 
@@ -225,7 +225,7 @@ Everything above is from **one body at one firmware version**. The MPU address
 map in particular should not be assumed to hold elsewhere. Extending it to
 another body is the same experiment that produced it: read the camera, take an
 exact number of frames, read it again, and keep whatever advanced by exactly
-that number. `openshuttercounter --trace` and `openshuttercounter decode` exist
+that number. `openshuttercount --trace` and `openshuttercount decode` exist
 for precisely this, and CONTRIBUTING.md walks through it.
 
 The channel itself is transport independent. Open Shutter Count reads it on

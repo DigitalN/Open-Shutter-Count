@@ -1,5 +1,5 @@
 {
-  "tool": "openshuttercounter",
+  "tool": "openshuttercount",
   "tool_version": "0.5.0",
   "format_version": 1,
   "host": {
