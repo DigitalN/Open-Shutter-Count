@@ -23,6 +23,10 @@
     "GetDevicePropValue(0xd1ac): OperationNotSupported",
     "it lists neither Canon's factory channel nor its event channel: nothing else is sent"
   ],
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  },
   "error": {
     "kind": "not_supported",
     "message": "this camera can't be read yet: the PowerShot G7 X Mark III doesn't answer the standard shutter count property, and lists neither Canon's factory channel nor its event channel"

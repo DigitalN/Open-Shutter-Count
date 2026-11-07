@@ -2,7 +2,8 @@
 identifies the camera or its owner.
 
 It holds the app's name and version, the repository, when the camera was read, the Mac's
-model and macOS version, the camera's model, firmware and USB IDs, the commands it lists,
+model and macOS version, which list of tested cameras counted, the camera's model,
+firmware and USB IDs, the commands it lists,
 each step and what the camera answered, the result, and at the end the whole exchange
 with the camera as openshuttercounter's trace. The tool leaves the camera's serial number
 out of all of it.
@@ -46,9 +47,10 @@ def file_name(read_at):
 
 
 def build_log(*, app_name, version, repository_url, read_at, mac, summary, output, tool_messages="",
-              trace="", update_note="", usb_devices=None):
+              trace="", update_note="", usb_devices=None, tested_list=""):
     """The log, as text. `output` is what `read --json` printed, `summary` what
-    camera.summarize made of it, and `trace` the trace file's contents."""
+    camera.summarize made of it, and `trace` the trace file's contents. `tested_list` is
+    the line saying which list of tested cameras counted (tested_list.log_line)."""
     lines = [
         f"{app_name} {version}",
         repository_url,
@@ -60,6 +62,8 @@ def build_log(*, app_name, version, repository_url, read_at, mac, summary, outpu
     ]
     if update_note:
         lines.append(f"Update: {update_note}")
+    if tested_list:
+        lines.append(tested_list)
 
     device = output.get("device") or {}
     camera = output.get("camera") or {}

@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/DigitalN/openshuttercounter/tool/internal/logs"
 	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers/canon"
 	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
 )
 
@@ -96,9 +98,11 @@ func describeDevice(reg *manufacturers.Registry, d usb.DeviceInfo) string {
 	return reader.Name() + " camera"
 }
 
-// Models lists the cameras this build knows how to read.
+// Models lists the cameras this build knows how to read. Which say confirmed
+// is up to the tested list: the one --tested-list names, or the one built in.
 func Models(ctx context.Context, cmd *cli.Command) error {
-	reg := registry(logs.LoggerFromContext(ctx), false)
+	tested, listed := testedList(cmd)
+	reg := registry(logs.LoggerFromContext(ctx), false, canon.WithTestedList(tested))
 
 	type manufacturerOutput struct {
 		Manufacturer string                `json:"manufacturer"`
@@ -116,6 +120,10 @@ func Models(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if cmd.Bool("json") {
+		// The JSON stays a list of manufacturers; the log says which tested
+		// list was used.
+		logTestedList(ctx, listed)
+
 		encoder := json.NewEncoder(os.Stdout)
 		encoder.SetIndent("", "  ")
 
@@ -129,9 +137,6 @@ func Models(ctx context.Context, cmd *cli.Command) error {
 			status := "not confirmed by anyone yet"
 			if model.Confirmed {
 				status = "confirmed"
-				if model.ConfirmedOn != "" {
-					status += " on " + model.ConfirmedOn
-				}
 			}
 
 			fmt.Printf("  %-20s USB %s:%04x  (%s)\n", model.Name, m.VendorID, model.ProductID, status)
@@ -139,6 +144,14 @@ func Models(ctx context.Context, cmd *cli.Command) error {
 			for _, c := range model.Counters {
 				fmt.Printf("      %-24s %s\n", c.Location, c.Label)
 			}
+		}
+	}
+
+	if steps := listed.Steps(); len(steps) > 0 {
+		fmt.Println()
+
+		for _, step := range steps {
+			fmt.Println("  " + strings.ToUpper(step[:1]) + step[1:])
 		}
 	}
 
@@ -151,7 +164,7 @@ const modelsFooter = `
   Older bodies need no entry here: they still answer the standard PTP shutter
   counter property, which is tried first on every camera. Other bodies are read
   the way the 5D Mark IV or the R8 is, by what they list, and the reading says
-  it's not fully tested.
+  it's not fully tested unless the tested list has the body, read that way.
 
   Whether it worked or not, a trace makes the answer useful to everyone else:
 

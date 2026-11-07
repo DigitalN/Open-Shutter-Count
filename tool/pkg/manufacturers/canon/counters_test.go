@@ -94,17 +94,16 @@ func TestLookupModel(t *testing.T) {
 	m, ok := LookupModel(0x3281)
 	require.True(t, ok)
 	assert.Equal(t, "EOS 5D Mark IV", m.Name)
-	assert.True(t, m.Confirmed)
 	assert.Len(t, m.Counters, 3)
 
 	_, ok = LookupModel(0xffff)
 	assert.False(t, ok)
 }
 
-func TestGuessModelIsNotClaimedAsConfirmed(t *testing.T) {
+func TestGuessModelUsesThe5DMarkIVsAddresses(t *testing.T) {
 	m := GuessModel(0x3294)
-	assert.False(t, m.Confirmed)
 	assert.Equal(t, models[0].Counters, m.Counters, "the 5D Mark IV's addresses")
+	assert.Zero(t, m.RatedLife, "the 5D Mark IV's rating isn't another body's")
 }
 
 func mustHex(t *testing.T, s string) []byte {

@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers"
+	"github.com/DigitalN/openshuttercounter/tool/pkg/manufacturers/canon"
 	"github.com/DigitalN/openshuttercounter/tool/pkg/ptp"
 	"github.com/DigitalN/openshuttercounter/tool/pkg/usb"
 )
@@ -32,6 +33,10 @@ type readOutput struct {
 
 	// Steps says what was sent to the camera and what it answered.
 	Steps []string `json:"steps,omitempty"`
+
+	// TestedList says which tested list decided whether the reading says
+	// tested: the one given with --tested-list, or the one built in.
+	TestedList *testedListOutput `json:"tested_list,omitempty"`
 
 	Error *errorOutput `json:"error,omitempty"`
 }
@@ -91,24 +96,19 @@ const (
 
 // Read reports the actuation counters of the connected camera.
 func Read(ctx context.Context, cmd *cli.Command) error {
-	session, err := openSession(ctx, cmd)
-	if err != nil {
-		out := readOutput{}
-		if session != nil {
-			out.Device, out.Steps = describeUSB(session.info), session.steps
-		}
+	tested, listed := testedList(cmd)
+	if !cmd.Bool("json") {
+		logTestedList(ctx, listed)
+	}
 
-		return fail(cmd, out, err)
+	session, err := openSession(ctx, cmd, canon.WithTestedList(tested))
+	if err != nil {
+		return fail(cmd, unopened(listed, session), err)
 	}
 
 	defer session.close()
 
-	camera, readErr := session.deviceInfo()
-
-	var reading manufacturers.Reading
-	if readErr == nil {
-		reading, readErr = session.reader.Read(ctx, session.device, session.info, camera)
-	}
+	out, readErr := readCamera(ctx, session, listed, cmd.Bool("raw"), cmd.Bool("serial"))
 
 	// The trace is worth keeping even when the read failed. A trace of a
 	// camera that did not answer is exactly what makes a bug report useful.
@@ -116,16 +116,47 @@ func Read(ctx context.Context, cmd *cli.Command) error {
 		return err
 	}
 
-	out := buildOutput(session.info, camera, reading, cmd.Bool("raw"), cmd.Bool("serial"))
-	out.Steps = slices.Concat(session.steps, reading.Steps)
-
 	if readErr != nil {
-		out.Reading, out.Counters = nil, nil
-
 		return fail(cmd, out, readErr)
 	}
 
 	return render(cmd, out)
+}
+
+// unopened is what Read says when it couldn't open a camera: which tested list
+// it would have used, and, if it picked a camera (s isn't nil), which one and
+// what it tried.
+func unopened(listed canon.TestedListReport, s *session) readOutput {
+	out := readOutput{Steps: listed.Steps(), TestedList: describeTestedList(listed)}
+	if s != nil {
+		out.Device, out.Steps = describeUSB(s.info), slices.Concat(out.Steps, s.steps)
+	}
+
+	return out
+}
+
+// readCamera reads the camera an open session is talking to, with the tested
+// list its reader was given, and says what it found. A failed read's output
+// has the steps and no reading.
+func readCamera(
+	ctx context.Context, s *session, listed canon.TestedListReport, withRaw, withSerial bool,
+) (readOutput, error) {
+	camera, err := s.deviceInfo()
+
+	var reading manufacturers.Reading
+	if err == nil {
+		reading, err = s.reader.Read(ctx, s.device, s.info, camera)
+	}
+
+	out := buildOutput(s.info, camera, reading, withRaw, withSerial)
+	out.Steps = slices.Concat(listed.Steps(), s.steps, reading.Steps)
+	out.TestedList = describeTestedList(listed)
+
+	if err != nil {
+		out.Reading, out.Counters = nil, nil
+	}
+
+	return out, err
 }
 
 // fail reports a failed read. With --json it goes in the output, which then

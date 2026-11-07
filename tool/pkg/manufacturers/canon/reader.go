@@ -22,7 +22,8 @@ const (
 	MethodStandardProperty = "ptp-property-0xd1ac"
 
 	// MethodFactoryChannel is the maker specific channel that reaches the
-	// MPU's own memory. Only the EOS 5D Mark IV is read this way.
+	// MPU's own memory, read at a body's own address map or, on a body that
+	// lists it and has none, at the 5D Mark IV's.
 	MethodFactoryChannel = "canon-factory-channel"
 )
 
@@ -34,6 +35,10 @@ type Reader struct {
 	// factory channel. Useful when comparing the two on a body that
 	// answers both.
 	factoryOnly bool
+
+	// tested decides which readings say tested, and which failed reads are
+	// ones that can't be read yet. Nothing else.
+	tested TestedList
 }
 
 // Option configures a Reader.
@@ -53,9 +58,16 @@ func WithFactoryOnly(only bool) Option {
 	return func(r *Reader) { r.factoryOnly = only }
 }
 
-// New builds a Canon reader.
+// WithTestedList uses list instead of the built-in tested list. It changes
+// which readings say tested, and nothing that's sent to the camera.
+func WithTestedList(list TestedList) Option {
+	return func(r *Reader) { r.tested = list }
+}
+
+// New builds a Canon reader. Without WithTestedList it uses the tested list
+// built in.
 func New(opts ...Option) *Reader {
-	r := &Reader{logger: zap.NewNop()}
+	r := &Reader{logger: zap.NewNop(), tested: BuiltInTestedList()}
 
 	for _, o := range opts {
 		o(r)
@@ -85,21 +97,19 @@ func (r *Reader) Models() []manufacturers.Model {
 		}
 
 		out = append(out, manufacturers.Model{
-			Name:        m.Name,
-			ProductID:   m.ProductID,
-			Confirmed:   m.Confirmed,
-			ConfirmedOn: m.ConfirmedOn,
-			RatedLife:   m.RatedLife,
-			Counters:    counters,
+			Name:      m.Name,
+			ProductID: m.ProductID,
+			Confirmed: r.tested.Has(m.Name, MethodFactoryChannel),
+			RatedLife: m.RatedLife,
+			Counters:  counters,
 		})
 	}
 
 	for _, m := range eventModels {
 		out = append(out, manufacturers.Model{
-			Name:        m.Name,
-			ProductID:   m.ProductID,
-			Confirmed:   true,
-			ConfirmedOn: m.ConfirmedOn,
+			Name:      m.Name,
+			ProductID: m.ProductID,
+			Confirmed: r.tested.Has(m.Name, MethodEventChannel),
 			Counters: []manufacturers.CounterSpec{
 				{Label: "Mechanical shutter, in thousands", Location: "0xd167 word 3"},
 				{Label: "All photos, in thousands", Location: "0xd167 word 4"},
@@ -123,8 +133,9 @@ func (r *Reader) Models() []manufacturers.Model {
 //     that lists both is tried here when the factory channel gave nothing.
 //
 // Anything else gets manufacturers.ErrNotSupported, having been sent nothing
-// but the standard property read. Only the EOS R8, R7, R6 Mark II,
-// R5 Mark II, R3 and 5D Mark IV are marked tested.
+// but the standard property read. A reading says tested when the tested list
+// has its model and the method it was read with; the list changes nothing
+// above.
 func (r *Reader) Read(
 	_ context.Context, device *ptp.Device, info usb.DeviceInfo, camera ptp.DeviceInfo,
 ) (manufacturers.Reading, error) {
@@ -147,7 +158,7 @@ func (r *Reader) Read(
 			model = GuessModel(info.ProductID)
 		}
 
-		err := r.readFactoryChannel(device, model, &reading)
+		err := r.readFactoryChannel(device, model, known, &reading)
 
 		// Only a factory channel that answered but gave nothing is worth
 		// following with the event channel: a camera that has stopped
@@ -192,10 +203,11 @@ func ListsEventChannel(camera ptp.DeviceInfo) bool {
 // errNoCounters means the factory channel opened but no counter could be read.
 var errNoCounters = errors.New("the factory channel gave none of the counters")
 
-// notYet marks a failure on an untested body as one that can't be read yet:
-// the way it was read is a guess there, so the log is what's needed.
-func notYet(model string, err error) error {
-	if tested[model] {
+// notYet marks a failure as one that can't be read yet, unless the tested list
+// has the body with the method that was being tried: on any other body that
+// way of reading it is a guess, so the log is what's needed.
+func (r *Reader) notYet(model, method string, err error) error {
+	if r.tested.Has(model, method) {
 		return err
 	}
 
@@ -235,16 +247,17 @@ func (r *Reader) readStandardProperty(device *ptp.Device, camera ptp.DeviceInfo,
 	}
 
 	reading.Steps = append(reading.Steps, fmt.Sprintf("%s: OK, %d", name, count))
-	reading.Confirmed = tested[reading.Model]
+	reading.Confirmed = r.tested.Has(reading.Model, MethodStandardProperty)
 	reading.Method = MethodStandardProperty
 	reading.Counters = []manufacturers.Counter{{Label: "Shutter actuations", Location: "0xd1ac", Value: count}}
 
 	return true, nil
 }
 
-// readFactoryChannel reads the counters out of MPU memory.
-func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, reading *manufacturers.Reading) error {
-	if model.Confirmed {
+// readFactoryChannel reads the counters out of MPU memory. known says model is
+// the body's own address map (LookupModel found it), not GuessModel's.
+func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, known bool, reading *manufacturers.Reading) error {
+	if known {
 		reading.Steps = append(reading.Steps, "the "+model.Name+" is read through the factory channel")
 	} else {
 		reading.Steps = append(reading.Steps, fmt.Sprintf(
@@ -271,21 +284,21 @@ func (r *Reader) readFactoryChannel(device *ptp.Device, model Model, reading *ma
 		reading.Steps = append(reading.Steps, "factory channel: "+err.Error())
 
 		if isRefusal(err) {
-			return notYet(reading.Model, err)
+			return r.notYet(reading.Model, MethodFactoryChannel, err)
 		}
 
 		return err
 	}
 
 	if failed == len(readings) {
-		return notYet(reading.Model, errNoCounters)
+		return r.notYet(reading.Model, MethodFactoryChannel, errNoCounters)
 	}
 
-	if model.Confirmed && strings.HasPrefix(reading.Model, "Canon camera") {
+	if known && strings.HasPrefix(reading.Model, "Canon camera") {
 		reading.Model = model.Name // GetDeviceInfo gave no name
 	}
 
-	reading.Confirmed = model.Confirmed && tested[reading.Model]
+	reading.Confirmed = r.tested.Has(reading.Model, MethodFactoryChannel)
 	reading.Method = MethodFactoryChannel
 	reading.RatedLife = model.RatedLife
 	reading.Counters = make([]manufacturers.Counter, 0, len(readings))

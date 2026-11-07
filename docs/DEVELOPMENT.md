@@ -13,12 +13,17 @@ the app was built to is [APP-PLAN.md](APP-PLAN.md).
   - `camera.py`: runs the `openshuttercounter` tool inside the app (`list --json` while
     waiting, `read --json --serial --trace` to read) and says what the result screen
     shows. The serial number is for the screen only; `report.py` never uses it.
+  - `tested_list.py`: fetches the tested list from `main` at every launch, which a read
+    passes to the tool with `--tested-list` (see *How the tested list works*).
   - `report.py`: the log Save Log writes, and the Open an Issue link.
   - `cleanup.py`: what makes sure nothing is left behind.
   - `version.py`: the version, for the app and the tool.
 - `tool/`: the `openshuttercounter` command line tool, a Go module of its own.
   - `cmd/`, `internal/` and `pkg/`: its Go code. The reading rule is in
     `pkg/manufacturers/canon/reader.go`.
+  - `pkg/manufacturers/canon/tested.json`: the tested list, the one list of cameras whose
+    readings say tested. It's built into the tool, and installed copies of the app fetch
+    it from `main` at launch, so its path is permanent.
   - `mac/openshuttercounter` and `mac/libusb-1.0.dylib`: the tool and libusb, built on
     Linux or a Mac by `mac/build.sh` and committed, so the Mac needs only Python. The
     app bundle has them side by side in `Contents/MacOS`.
@@ -151,6 +156,27 @@ Run the steps one at a time, and read each result before a step that can't be un
   and a release whose tag is newer than the app inside it, and still lets you read.
 - [ ] Afterwards, the test copy and the test disk images are deleted.
 
+### Check the tested list, if its code changed
+
+None of these needs a camera. Leave the camera unplugged.
+
+- [ ] The tool shows a stand-in list's marks, and the built-in marks, with a note, for
+  a broken one. A broken list never fails a read:
+  ```bash
+  mkdir -p /tmp/osc-list
+  echo '{"tested": [{"model": "EOS 5D Mark IV", "method": "canon-factory-channel"}]}' > /tmp/osc-list/stand-in.json
+  echo '{"tested": [' > /tmp/osc-list/broken.json
+  tool/mac/openshuttercounter models --tested-list /tmp/osc-list/stand-in.json  # the R8 isn't confirmed
+  tool/mac/openshuttercounter models --tested-list /tmp/osc-list/broken.json    # both are, with a note
+  tool/mac/openshuttercounter read --json --tested-list /tmp/osc-list/broken.json  # the usual no_camera
+  ```
+- [ ] The built app fetches from a stand-in: open it with
+  `open -n --env OPENSHUTTERCOUNT_TESTED_LIST=file:///tmp/osc-list/stand-in.json "$APP"`,
+  click Continue, then wait for (or stop looking and go to) *No camera found*, click
+  **Save Log**, and check the log says
+  `Tested list: from file:///tmp/osc-list/stand-in.json (1 entries)`.
+- [ ] Afterwards, `/tmp/osc-list` is deleted.
+
 ### Publish
 
 - [ ] On GitHub: Releases › Draft a new release. Tag `v<version>` on `main`, title
@@ -174,6 +200,9 @@ Run the steps one at a time, and read each result before a step that can't be un
   (`shasum -a 256`).
 - [ ] An older installed copy updates when opened: it says *Updating to version …*,
   then reopens in the new version (the footer shows it).
+- [ ] If the tested list's code changed: with no camera plugged in, the installed copy
+  ends on *No camera found*, and the log **Save Log** writes says
+  `Tested list: from GitHub (<entries in tested.json> entries)`.
 
 ### Signing
 
@@ -205,6 +234,75 @@ before the old one expires.
   didn't work. A newer release that this copy can't install (not in Applications, or
   can't replace itself) blocks reading, with a button that opens the releases page.
 - **Off** for copies run from source or signed ad hoc. The footer says so.
+
+## How the tested list works
+
+`tool/pkg/manufacturers/canon/tested.json` is the one list of cameras whose readings say
+tested, one entry on each line:
+
+```json
+{"model": "EOS R8", "method": "canon-event-channel-0xd167", "note": "firmware 1.5.0; docs/R8-PROGRESS.md"},
+```
+
+- **What it decides:** a reading says tested when an entry has its model (exactly as
+  the camera reports it, as `"model"` in `read --json`) and the method it was read with
+  (`ptp-property-0xd1ac`, `canon-factory-channel` or `canon-event-channel-0xd167`). The
+  same match decides whether a failed read says *Couldn't read the X* or *Can't read
+  the X yet*. Nothing else: never what's sent to the camera, the reading rule, or how
+  counts are worked out. The file isn't signed, and that limit is what makes it
+  acceptable.
+- **In the tool:** built in with `go:embed`. `read` and `models` take
+  `--tested-list <file>`; a usable list replaces the built-in one entirely. One that
+  can't be read, doesn't parse, or has no usable entry is ignored, entries with no model
+  or an unknown method are skipped, and the steps say so. It never fails a read.
+  `read --json` reports which list it used in `tested_list`. `note`, and any field the
+  tool doesn't know, are ignored, so a field added later doesn't make older copies skip
+  entries. There's no version field: a camera that needs a code fix gets its entry in
+  the pull request with the fix, released at the same time.
+- **In the app** (`app/tested_list.py`): once per launch, on its own thread alongside the
+  update check, it fetches
+  `https://raw.githubusercontent.com/DigitalN/openshuttercounter/main/tool/pkg/manufacturers/canon/tested.json`
+  through `/usr/bin/curl`, with the update check's 15-second limit. Not GitHub's API,
+  which the update check uses and which allows 60 requests an hour from one address.
+  The update step doesn't wait for it; a read does, for no longer than that limit, and
+  Read Again reuses it. It's accepted if it's a JSON object whose `tested` is a non-empty
+  list, and then written into the read's temporary folder (beside the trace) and passed
+  with `--tested-list`. Otherwise (offline, an error, anything else) the read runs
+  without it, on the tool's built-in list. Nothing is saved between launches, and nothing
+  new appears on screen.
+- **The log:** every log has one line saying which list counted, in the part Open an
+  Issue fills in: `Tested list: from GitHub (8 entries)`, `Tested list: built in
+  (couldn't get GitHub's: …)`, `Tested list: built in (development copy)`. After a read
+  it follows what the tool says it used; with no read, what the app fetched.
+- **Off** for copies run from source or signed ad hoc, by the updater's rule.
+  `OPENSHUTTERCOUNT_TESTED_LIST` (a URL; `file://` works) makes any copy fetch from there
+  instead, development copies included.
+- **Safe to break:** `updater.py` doesn't depend on it, so a bug here can always be
+  fixed by the next release.
+
+## Marking a camera tested
+
+No release is needed: installed copies pick it up the next time they open.
+
+1. Add an entry to `tool/pkg/manufacturers/canon/tested.json`, on a line of its own,
+   taking `model` and `method` from the log: `Camera:` is the model with `Canon ` in
+   front (`Canon EOS R7` is `EOS R7`), and `read with` under `Result:` is the method.
+   Say in `note` how and when it was tested.
+2. Add the camera to the README's **Tested** table.
+3. Open a pull request and merge it once `make check` passes. Or edit the file on
+   github.com.
+4. It's live within about five minutes, as GitHub's raw files are cached. Check:
+   ```bash
+   curl -s https://raw.githubusercontent.com/DigitalN/openshuttercounter/main/tool/pkg/manufacturers/canon/tested.json
+   ```
+
+`tool/mac/openshuttercounter` has the list built in, so `make check` remakes it after any
+change to the file. After a direct edit on github.com the next `make check` remakes it:
+commit it with that pull request. Merging a list-only change isn't a release, and
+doesn't leave anything merged but unreleased.
+
+A camera whose reading needed a code fix gets its entry in the same pull request as the
+fix, and both go out in the release.
 
 ## Testing the updater
 

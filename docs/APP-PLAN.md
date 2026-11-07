@@ -39,6 +39,10 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
   new version" button that opens the releases page.
 - Copies run from source or signed ad hoc skip the check (development).
 
+(Changed by the maintainer on 2026-11-07: each launch also fetches the tested
+list from `main`, on its own thread alongside the update check, which doesn't
+wait for it; a read does. See "Tested list" below.)
+
 ### Wizard
 
 1. Checking for updates, or updating.
@@ -70,6 +74,10 @@ the way Mac Engine Room does. It replaces `Read Shutter Count.command`.
    that won't give it, shows no serial number. It's only on the screen: the log
    and the issue still leave it out. The R8 didn't report it unasked, so the
    maintainer approved asking for it with RequestDevicePropValue the same day.)
+   (Changed by the maintainer on 2026-11-07: which bodies say "tested" is no
+   longer named here or in the code. A reading says tested when the tested list,
+   `tool/pkg/manufacturers/canon/tested.json`, has its model and the method it
+   was read with; see "Tested list" below.)
 
 Every outcome ends on the result screen, including no camera found and failed
 reads.
@@ -139,6 +147,45 @@ own records (the USB accessory approval, "Open Anyway"), which is accepted.
   after `v0.5.9`). One version for the app and the Go tool inside it.
 - Fixes are tested by making a new release; there's no separate test-build
   launcher.
+
+(Changed by the maintainer on 2026-11-07: marking a camera tested is a change
+to the tested list, live once merged, and not a release. Releases stay for code
+changes; a camera that needs a code fix gets its entry with the fix, released at
+the same time. See "Tested list" below.)
+
+### Tested list
+
+Agreed with the maintainer on 2026-11-06 and 2026-11-07, so that marking a
+camera tested no longer needs a release.
+
+- One list, `tool/pkg/manufacturers/canon/tested.json`, built into the tool and
+  fetched from `main` by the app at every launch. Its path is permanent. It
+  replaces the tool's `tested` map and the `Confirmed`/`ConfirmedOn` fields.
+- It only changes the "tested" label and the failure headline (*Couldn't read*
+  or *Can't read … yet*), never what's sent to the camera, the reading rule, or
+  how counts are worked out. The file isn't signed; this limit is why that's
+  acceptable.
+- An entry matches on the model name the camera reports plus the method the
+  reading used (`ptp-property-0xd1ac`, `canon-factory-channel`,
+  `canon-event-channel-0xd167`). That covers bodies read at the 5D Mark IV's
+  addresses too. `note` is never read by code; unknown fields are ignored.
+- A fetched list replaces the built-in one rather than adding to it, so
+  cameras can be taken off as well as added. No version field.
+- The tool never fails because of the list: `read` and `models` take
+  `--tested-list <file>`, and one that can't be used gives the built-in list,
+  with the steps saying why. `read --json` reports which list it used.
+- The app fetches it with `/usr/bin/curl` from raw.githubusercontent.com (not
+  GitHub's API) with the update check's 15-second limit. The update step doesn't
+  wait for it; a read does, at most that long, and Read Again reuses it. Nothing
+  is saved, and nothing new is on screen. Anything wrong, and the read runs on
+  the built-in list. Development copies skip it, by the updater's rule;
+  `OPENSHUTTERCOUNT_TESTED_LIST` points any copy elsewhere.
+- Every log says which list counted, in the part Open an Issue fills in.
+- `updater.py` is left alone, apart from its docstring, so a bug in the list
+  can always be fixed by the next release.
+- Direct edits on github.com are allowed. Claude merges list-only pull requests
+  once `make check` passes; they're live once merged, aren't a release, and
+  don't count as merged but unreleased.
 
 ### Repo changes
 

@@ -1,4 +1,8 @@
 {
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  },
   "error": {
     "kind": "no_camera",
     "message": "no camera found",

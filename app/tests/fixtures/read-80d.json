@@ -57,5 +57,9 @@
     "MonReadAndGetData(0x1001, 10): 00660000000000f20000",
     "MonReadAndGetData(0x100b, 10): 0066000000000000f200",
     "MonReadAndGetData(0x1015, 10): 00670000000000000001"
-  ]
+  ],
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  }
 }

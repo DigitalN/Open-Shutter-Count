@@ -1,0 +1,12 @@
+{
+  "tested": [
+    {"model": "EOS 5D Mark IV", "method": "canon-factory-channel", "note": "firmware 1.2.1"},
+    {"model": "EOS R8", "method": "canon-event-channel-0xd167", "note": "firmware 1.5.0; docs/R8-PROGRESS.md"},
+    {"model": "EOS R3", "method": "canon-event-channel-0xd167", "note": "a user read it successfully, 2026-11-05"},
+    {"model": "EOS R5 Mark II", "method": "canon-event-channel-0xd167", "note": "a user read it successfully, 2026-11-05; both spellings until a log shows which Canon reports"},
+    {"model": "EOS R5m2", "method": "canon-event-channel-0xd167", "note": "the other spelling of the R5 Mark II"},
+    {"model": "EOS R6 Mark II", "method": "canon-event-channel-0xd167", "note": "marked tested 2026-11-06; both spellings until a log shows which Canon reports"},
+    {"model": "EOS R6m2", "method": "canon-event-channel-0xd167", "note": "the other spelling of the R6 Mark II; libgphoto2's dump uses this one"},
+    {"model": "EOS R7", "method": "canon-event-channel-0xd167", "note": "marked tested 2026-11-06"}
+  ]
+}

@@ -4,6 +4,10 @@
     "product_id": "32a6",
     "path": "usb:001:003"
   },
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  },
   "error": {
     "kind": "wrong_usb_mode",
     "message": "usb:001:003: the device offers no still image (PTP) interface; it offers: interface 0 class 0xff/0xf0",

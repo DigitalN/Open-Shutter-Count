@@ -46,6 +46,13 @@ is also how a fix gets tested on the camera.
   whole release checklist in docs/DEVELOPMENT.md straight away, without asking.
   Merging isn't a release: if user-facing changes are merged but unreleased,
   say so.
+- A change to only the tested list (`tool/pkg/manufacturers/canon/tested.json`,
+  plus the README, docs, and the tool that make check remakes) is live once
+  merged: installed copies fetch the list from `main` at launch. It isn't a
+  release, doesn't start the release checklist, and doesn't count as merged but
+  unreleased. A camera that needed a code fix gets its entry in the same pull
+  request as the fix, released at the same time. docs/DEVELOPMENT.md has
+  "Marking a camera tested".
 - Building, signing and publishing need the certificate in the Mac's keychain.
   A session on the Mac (`uname` says `Darwin`) does all of it. A cloud session
   says so as soon as a release comes up, does the steps before the build, and
@@ -100,8 +107,10 @@ is also how a fix gets tested on the camera.
   including 0x9108 GetDeviceInfoEx.
 - No guessing in what the tool prints, except where the guess is labelled as
   not fully tested: a value isn't named (mechanical, electronic, total) as fact
-  until a test proves what it counts. Only the EOS R8, R7, R6 Mark II, R5 Mark II,
-  R3 and 5D Mark IV are tested; a reading from any other body says it's not fully tested.
+  until a test proves what it counts. A reading is tested when
+  `tool/pkg/manufacturers/canon/tested.json` lists its model with the method used
+  for the reading; any other reading says it's not fully tested. The tested list
+  never changes what's sent to the camera.
 - No serial number in anything the tool or the app writes: traces blank it, and
   Canon's owner, nickname, artist and copyright properties too (`tool/pkg/trace`,
   `canon.ScrubEvents`). The one exception is the result screen, which shows the

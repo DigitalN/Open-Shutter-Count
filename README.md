@@ -46,7 +46,8 @@ The first time you open it, macOS may say it can't verify Open Shutter Count. Cl
 developer account so this step is required.
 
 Each time it opens it installs a new version if there is one, and reopens.
-This allows us to quickly test new cameras as they are added.
+This allows us to quickly test new cameras as they are added. Each launch also picks up
+cameras newly marked tested, without a new version.
 
 ## Reading a camera
 
@@ -65,9 +66,10 @@ a new GitHub issue with the log filled in, for you to look over before you submi
 
 ## Privacy
 
-- **The only connection is the update check**: each time it opens, it asks GitHub for
-  the latest release. It only installs updates signed by the same developer. No
-  analytics, crash reports or web servers.
+- **The only connections are to GitHub, at launch**: each time it opens, it asks GitHub
+  for the latest release and the list of tested cameras, and sends nothing about you or
+  the camera. It only installs updates signed by the same developer. No analytics, crash
+  reports or web servers.
 - **The log only goes where you send it**: Save Log saves it where you choose, and Open an
   Issue sends it to GitHub to fill in a new issue, which isn't posted until you submit it. It
   has the camera's model, firmware and what it answered, your Mac's model and macOS
