@@ -27,6 +27,10 @@ the app was built to is [APP-PLAN.md](APP-PLAN.md).
   - `mac/openshuttercount` and `mac/libusb-1.0.dylib`: the tool and libusb, built on
     Linux or a Mac by `mac/build.sh` and committed, so the Mac needs only Python. The
     app bundle has them side by side in `Contents/MacOS`.
+  - `mac/libusb-1.0.30.tar.bz2`: libusb's release tarball, the source of that library,
+    which is LGPL-2.1. `mac/build.sh` fetches it against a pinned SHA-256 and it's
+    committed, so the source ships with the repository and each release's source
+    download. It isn't inside the app.
 - `docs/`: these pages, and `THIRD-PARTY-NOTICES`, the licenses of what the app bundles.
 
 ## Build from source
@@ -68,8 +72,9 @@ make check
 
 runs everything that has to pass before a push: `go vet`, the Go tests and the linter,
 here and for the Mac, and the app's tests (`pip install pytest` off a Mac). It also
-remakes `tool/mac/openshuttercount` and the app's fixtures, which come out the same
-every time, and fails if either was stale: commit what it remade, then run it again.
+remakes `tool/mac/` (the tool, libusb and libusb's source) and the app's fixtures,
+which come out the same every time, and fails if any was stale: commit what it
+remade, then run it again.
 
 It needs Go (`brew install go` on a Mac), and runs Go 1.27.0 whatever's installed:
 the Makefile and `tool/mac/build.sh` pin it, and Go fetches it the first time. The tool's
@@ -181,7 +186,9 @@ None of these needs a camera. Leave the camera unplugged.
 
 - [ ] On GitHub: Releases › Draft a new release. Tag `v<version>` on `main`, title
   `Open Shutter Count <version>`, the DMG as the only file. Notes: what's new, then the
-  README's Install section. Or:
+  README's Install section, then the line
+  `Source code: the v<version> tag, attached below.` (GitHub attaches the source download
+  to every release.) Or:
   ```bash
   gh release create v0.5.0 dist/Open-Shutter-Count-0.5.0.dmg --title "Open Shutter Count 0.5.0" --notes-file notes.md
   ```

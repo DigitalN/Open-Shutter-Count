@@ -59,7 +59,7 @@ build: ## Build the binary using local GOOS
 	$(GO) build -o $(CURDIR)/$(NAME) ./cmd/$(NAME)
 
 .PHONY: build-mac
-build-mac: ## Build the Mac binary and libusb into tool/mac/ (see tool/mac/build.sh)
+build-mac: ## Build the Mac binary, fetch libusb and its source into tool/mac/ (see tool/mac/build.sh)
 	bash tool/mac/build.sh
 
 .PHONY: clean
@@ -74,13 +74,14 @@ is-git-dirty: ## Tests if git is in a dirty state
 .PHONY: all
 all: lint lint-mac test coverage ## Lint here and for the Mac, and test
 
-# The Mac binary and the app's fixtures, which are made from the Go code and
-# committed. Both come out byte for byte the same every time they're made.
-GENERATED := tool/mac/openshuttercount tool/mac/libusb-1.0.dylib app/tests/fixtures
+# The Mac binary, libusb and its source, and the app's fixtures, which are made from the
+# Go code or fetched against a pinned hash, and committed. All come out byte for byte the
+# same every time they're made.
+GENERATED := tool/mac/openshuttercount tool/mac/libusb-1.0.dylib tool/mac/libusb-1.0.30.tar.bz2 app/tests/fixtures
 GENERATED_SUM = find $(GENERATED) -type f -exec cksum {} + | sort
 
 .PHONY: generated
-generated: ## Remake the Mac binary and the app's fixtures; fail if they were stale
+generated: ## Remake the Mac binary, libusb, its source and the app's fixtures; fail if they were stale
 	@command -v go >/dev/null || { echo "make check needs Go: https://go.dev/dl/"; exit 1; }
 	@before="$$($(GENERATED_SUM))"; \
 	bash tool/mac/build.sh >/dev/null && \

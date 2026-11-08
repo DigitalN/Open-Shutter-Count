@@ -18,7 +18,8 @@ a = Analysis(
     binaries=[],
     datas=[
         ('index.html', '.'),
-        # The licenses of what's inside: Contents/Resources in the app.
+        # Open Shutter Count's license and the licenses of what's inside: Contents/Resources
+        # in the app.
         (os.path.join(SPECPATH, '..', 'LICENSE'), '.'),
         (os.path.join(SPECPATH, '..', 'docs', 'THIRD-PARTY-NOTICES'), '.'),
     ],
@@ -84,6 +85,6 @@ app = BUNDLE(
         'LSMinimumSystemVersion': '12.0',
         'LSArchitecturePriority': ['arm64'],
         'NSHighResolutionCapable': True,
-        'NSHumanReadableCopyright': 'MIT License. Includes code from Mac Engine Room.',
+        'NSHumanReadableCopyright': 'Copyright © 2026 DigitalN. GNU GPL v3 or later.',
     },
 )
