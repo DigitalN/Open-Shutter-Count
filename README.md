@@ -92,4 +92,11 @@ bundled with it, and their licenses, are in [THIRD-PARTY-NOTICES](docs/THIRD-PAR
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Copyright (C) 2026 DigitalN
+
+Open Shutter Count is free software, under the GNU General Public License, version 3 or
+(at your option) any later version. It comes with no warranty. See [LICENSE](LICENSE).
+
+Parts that came from other projects keep their own licenses, listed in
+[THIRD-PARTY-NOTICES](docs/THIRD-PARTY-NOTICES), among them Maxime Visonneau's original
+code, under the MIT license.

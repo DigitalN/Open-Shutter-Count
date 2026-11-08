@@ -12,6 +12,9 @@ labelled not fully tested. Everything else can't be read yet. The
 only way that changes is people running this on their own gear and saying what
 happened.
 
+Code you contribute is under GPL-3.0-or-later, the project's license (see
+[LICENSE](../LICENSE)). There's no contributor agreement.
+
 ## Telling us about your camera
 
 In the Open Shutter Count app, click **Save Log** on the result screen, then
@@ -158,7 +161,7 @@ bodies also advertise `UpdateFirmware`, `FormatStore` and `DeleteObject`.
 ```bash
 make check       # everything that has to pass before a push
 make test        # the Go tests, with the race detector
-make build-mac   # rebuild tool/mac/openshuttercount and libusb
+make build-mac   # rebuild tool/mac/openshuttercount, fetch libusb and its source
 ```
 
 Two things are worth knowing before changing anything under

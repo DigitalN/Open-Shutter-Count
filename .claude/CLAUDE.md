@@ -1,8 +1,9 @@
 # Open Shutter Count
 
 An independent project that started from Maxime Visonneau's openshuttercounter.
-Don't point anything at mvisonneau's repositories or accounts; LICENSE keeps his
-copyright line because MIT requires it. The goal here is reading the shutter
+Don't point anything at mvisonneau's repositories or accounts; THIRD-PARTY-NOTICES
+keeps his MIT notice because MIT requires it. The project is GPL-3.0-or-later
+(`LICENSE`); releases up to v0.5.6 are MIT. The goal here is reading the shutter
 count of the maintainer's Canon EOS R8 on their Mac (MacBookPro18,1, M1 Pro,
 macOS 27.2) without using Terminal. That's the Open Shutter Count app.
 
@@ -38,7 +39,8 @@ prefix: `/mattpocock-skills:<name>` is `/<name>`, so read
   `tests/` and `preview/` are below.
 - `tool/`: the tool, a Go module of its own
   (`github.com/DigitalN/Open-Shutter-Count/tool`; the Makefile runs Go there).
-  `tool/mac/` has the tool and libusb the app bundles, `launcher.sh` and
+  `tool/mac/` has the tool and libusb the app bundles, libusb's source tarball
+  (LGPL source, kept here and not in the app), `launcher.sh` and
   `Find Shutter Count.command` (for working out new cameras).
 - `docs/`: CONTRIBUTING.md, DEVELOPMENT.md, PROTOCOL.md (5D Mark IV factory
   channel), R8-PROGRESS.md, APP-PLAN.md, USAGE.md, THIRD-PARTY-NOTICES.
@@ -79,9 +81,9 @@ is also how a fix gets tested on the camera.
   camera's serial number. Earlier readings were taken out of the repo and its
   history for privacy; docs/R8-PROGRESS.md quotes what they showed.
 - Run `make check` before every push; the pre-push hook runs it too. It also
-  remakes `tool/mac/openshuttercount` and the app's fixtures, and fails if either
-  was stale: commit what it remade. The tool only reads cameras on macOS: off a
-  Mac, `tool/pkg/usb` is a stub that finds none.
+  remakes `tool/mac/` (the tool, libusb and its source) and the app's fixtures, and
+  fails if any was stale: commit what it remade. The tool only reads cameras on
+  macOS: off a Mac, `tool/pkg/usb` is a stub that finds none.
 - The page can be checked on Linux with `python3 app/preview/serve.py` and a
   browser (scenarios at the top of `app/preview/stub.js`). The rest of the app
   (AppKit, the updater, signing) is checked by the maintainer's release run.

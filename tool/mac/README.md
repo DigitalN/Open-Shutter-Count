@@ -1,16 +1,17 @@
 # Mac support files
 
 The tool and libusb, which the Open Shutter Count app bundles (see
-`docs/DEVELOPMENT.md`), and a launcher for working out cameras that can't be read
-yet.
+`docs/DEVELOPMENT.md`), libusb's source, and a launcher for working out cameras that
+can't be read yet.
 
 | File | What it is |
 |---|---|
 | `openshuttercount` | The tool, for Apple silicon Macs, built by `build.sh` with `app/version.py`'s version |
 | `libusb-1.0.dylib` | libusb 1.0.30 from the [libusb-package](https://github.com/pyocd/libusb-package) wheel on PyPI, checked against a pinned SHA-256 |
+| `libusb-1.0.30.tar.bz2` | libusb's own [release tarball](https://github.com/libusb/libusb/releases/tag/v1.0.30), the source of that library, checked against a pinned SHA-256. libusb is LGPL-2.1: this is its source, kept here and so in each release's source download. It isn't bundled in the app. |
 | `launcher.sh` | What `Find Shutter Count.command` uses: the camera setup check, logging, closing the window |
 | `Find Shutter Count.command` | For a camera that can't be read yet: reads everything it reports, asks for an exact number of photos with each shutter mode, reads again, and shows what went up by those numbers |
-| `build.sh` | Rebuilds both binaries (macOS or Linux, needs Go) |
+| `build.sh` | Rebuilds both binaries and fetches libusb's source (macOS or Linux, needs Go) |
 | `readings/` | Created on the first run. Each run saves what it printed, with debug logs, and a trace of everything sent to and from the camera. Probes include the camera's serial number, so git ignores the `.json` files and only the `.txt` logs can be committed. |
 
 The tool stops `ptpcamerad`, the macOS service that grabs cameras as they're
