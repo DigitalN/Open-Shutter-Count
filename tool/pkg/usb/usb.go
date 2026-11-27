@@ -38,6 +38,12 @@ var (
 	// timeout. Backends that can tell a timeout apart wrap it.
 	ErrTimeout = errors.New("transfer timed out")
 
+	// ErrIO is returned when a transfer failed in the USB connection itself:
+	// libusb's LIBUSB_ERROR_IO. On macOS that is any error from IOKit other
+	// than a timeout, a stall or an overrun, or a transfer that was aborted.
+	// Backends that can tell it apart wrap it.
+	ErrIO = errors.New("USB input/output error")
+
 	// ErrNoStillImage is returned when a device offers no still image (PTP)
 	// interface, which is how a camera in a webcam or other USB mode looks.
 	ErrNoStillImage = errors.New("the device offers no still image (PTP) interface")

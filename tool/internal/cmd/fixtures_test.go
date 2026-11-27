@@ -196,7 +196,7 @@ func fakeCamera(
 
 // readFixture reads a scripted camera the way Read does, with the built-in
 // tested list, recording a trace.
-func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
+func readFixture(t *testing.T, cam usb.Device) (readOutput, trace.File) {
 	t.Helper()
 
 	return readFixtureWith(t, cam, "")
@@ -204,17 +204,18 @@ func readFixture(t *testing.T, cam *scriptedCamera) (readOutput, trace.File) {
 
 // readFixtureWith reads a scripted camera the way Read does, as if
 // --tested-list named testedListPath (none if it's empty).
-func readFixtureWith(t *testing.T, cam *scriptedCamera, testedListPath string) (readOutput, trace.File) {
+func readFixtureWith(t *testing.T, cam usb.Device, testedListPath string) (readOutput, trace.File) {
 	t.Helper()
 
 	recorder := trace.NewRecorder("0.5.0", canon.ScrubEvents, trace.ScrubProperties(canon.IdentifyingProperties...))
 	recorder.Annotate("Open Shutter Count 0.5.0")
-	recorder.Describe(cam.info)
+	recorder.Describe(cam.Info())
 
 	tested, listed := canon.LoadTestedList(testedListPath)
 
 	s := &session{
-		info: cam.info, reader: canon.New(canon.WithTestedList(tested)), device: ptp.New(cam, ptp.WithRecorder(recorder)),
+		info: cam.Info(), reader: canon.New(canon.WithTestedList(tested)),
+		device: ptp.New(cam, ptp.WithRecorder(recorder)), transport: cam,
 	}
 	require.NoError(t, s.device.OpenSession())
 	s.steps = append(s.steps, "OpenSession: OK")
@@ -269,6 +270,12 @@ func TestAppFixtures(t *testing.T) {
 	d80Out, d80Trace := readFixture(t, d80)
 	require.Nil(t, d80Out.Error)
 
+	// Issue 39: a 5D Mark IV whose USB connection fails GetDeviceInfo's
+	// reply, and again after a reset.
+	usbErrorOut, _ := readFixture(t, flaky(fakeCamera(t, "Canon EOS 5D Mark IV", 0x3281, factoryChannel, nil),
+		ptp.OpGetDeviceInfo, ptp.OpGetDeviceInfo))
+	require.Equal(t, kindUSBError, usbErrorOut.Error.Kind)
+
 	powershot := fakeCamera(t, "Canon PowerShot G7 X Mark III", 0x32f4, nil, nil)
 	powershotOut, powershotTrace := readFixture(t, powershot)
 	require.NotNil(t, powershotOut.Error)
@@ -300,6 +307,7 @@ func TestAppFixtures(t *testing.T) {
 		"read-wrong-usb-mode.json": failureOutput(unopened(builtIn, wrongModeCamera), wrongMode),
 		"read-no-camera.json":      failureOutput(unopened(builtIn, nil), noDeviceError{}),
 		"read-no-answer.json":      failed(fmt.Errorf("the camera didn't answer, even after a reset: %w", usb.ErrTimeout)),
+		"read-usb-error.json":      usbErrorOut,
 		"list-r8.json":             listOutput(registry(nil, false), []usb.DeviceInfo{r8Listed}),
 		"trace-r8.json":            r8Trace,
 		"trace-80d.json":           d80Trace,

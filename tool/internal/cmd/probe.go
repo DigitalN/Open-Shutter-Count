@@ -196,7 +196,7 @@ func probe(s *session) (probeFile, error) {
 		Device:      s.info,
 	}
 
-	info, raw, err := s.device.GetDeviceInfo()
+	info, raw, err := s.deviceInfo()
 	if err != nil {
 		return file, err
 	}

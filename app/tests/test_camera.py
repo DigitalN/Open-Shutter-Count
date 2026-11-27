@@ -158,6 +158,20 @@ def test_no_camera_and_no_answer(fixture):
     assert summarize(fixture("read-no-answer.json"))["headline"] == "The camera stopped answering"
 
 
+def test_a_failed_usb_connection_says_what_to_try(fixture):
+    s = summarize(fixture("read-usb-error.json"))
+    assert not s["ok"]
+    assert s["kind"] == camera.USB_ERROR
+    assert s["headline"] == "The USB connection to the camera failed"
+    assert s["detail"] == (
+        "Plug the camera straight into the Mac, not through a hub or dock. Try another cable, a USB 2 one if "
+        "you have it: these cameras are more reliable on USB 2, and on the 5D Mark IV a USB 2 Micro-B plug fits "
+        "its port. Make sure built-in Wi-Fi is off. Switch the camera off and on, then click Read Again. If it "
+        "still fails, please open an issue.")
+    assert s["hint"] == "", "the tool's hint says the same, so it isn't said twice"
+    assert "LIBUSB_ERROR_IO (-1); libusb said: transfer error: device not responding" in s["message"]
+
+
 def test_unwrap():
     assert camera.unwrap("Quit it completely: it may\nstill be running.\n\nThen try again.") == (
         "Quit it completely: it may still be running.\n\nThen try again.")

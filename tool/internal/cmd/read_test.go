@@ -23,6 +23,7 @@ func TestErrorKinds(t *testing.T) {
 		withHint(fmt.Errorf("libusb_open: %w", usb.ErrBusy), "quit it"):   kindBusy,
 		fmt.Errorf("%w: the EOS 90D", manufacturers.ErrNotSupported):      kindNotSupported,
 		fmt.Errorf("the camera didn't answer: %w", usb.ErrTimeout):        kindNoAnswer,
+		fmt.Errorf("bulk read: %w", errIssue39):                           kindUSBError,
 		errors.New("something else"):                                      kindFailed,
 	} {
 		assert.Equal(t, want, errorKind(err), err.Error())

@@ -31,7 +31,7 @@ RESULTS = {
     "r8": "read-r8.json", "untested": "read-r6.json", "ef": "read-80d.json", "90d": "read-90d.json",
     "not-supported": "read-powershot.json",
     "busy": "read-busy.json", "wrong-mode": "read-wrong-usb-mode.json", "no-camera": "read-no-camera.json",
-    "no-answer": "read-no-answer.json",
+    "no-answer": "read-no-answer.json", "usb-error": "read-usb-error.json",
 }
 
 

@@ -220,3 +220,25 @@ func TestReadContainerGivesUpOnAnEndlesslyEmptyDevice(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "stopped responding")
 }
+
+func TestClearHaltDropsWhatTheFailedTransactionLeft(t *testing.T) {
+	// The camera sent the start of a data container, then the connection
+	// failed. After the endpoints are cleared, the next container is read
+	// from the start, not after the leftover.
+	data := container(t, Container{Type: ContainerData, Code: OpGetDeviceInfo, TransactionID: 1, Payload: make([]byte, 40)})
+	tr := &fakeTransport{reads: [][]byte{data[:HeaderLen+4]}}
+	dev := New(tr)
+
+	_, err := dev.ReadContainer()
+	require.Error(t, err)
+
+	require.NoError(t, dev.ClearHalt())
+	assert.Equal(t, 1, tr.halts)
+
+	tr.reads = [][]byte{container(t, Container{Type: ContainerResponse, Code: RCOK, TransactionID: 2})}
+
+	c, err := dev.ReadContainer()
+	require.NoError(t, err)
+	assert.Equal(t, ContainerResponse, c.Type)
+	assert.Equal(t, uint32(2), c.TransactionID)
+}

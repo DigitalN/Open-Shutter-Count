@@ -186,6 +186,14 @@ const noDeviceHint = `Check that:
 If your camera is from a manufacturer this build does not know yet, it will
 not be listed at all. Adding one is welcome; see docs/CONTRIBUTING.md.`
 
+// usbErrorHint is the app's advice for a USB connection that failed (issue 39),
+// for the command line.
+const usbErrorHint = `The USB connection to the camera failed. Plug the camera straight into the
+Mac, not through a hub or dock. Try another cable, a USB 2 one if you have it:
+these cameras are more reliable on USB 2, and on the 5D Mark IV a USB 2 Micro-B
+plug fits its port. Make sure built-in Wi-Fi is off. Switch the camera off and
+on, then try again. If it still fails, please open an issue.`
+
 const noStillImageHint = `The camera is connected, but its USB connection is in a mode that can't be
 read, such as webcam. No commands were sent to it. Switch it to photo transfer,
 then unplug it and plug it back in. On Canon mirrorless bodies that is the
@@ -325,7 +333,12 @@ another camera app. ` + quit
 // session is an open conversation with a camera, plus the reader that knows
 // how to ask it for a count.
 type session struct {
-	device   *ptp.Device
+	device *ptp.Device
+
+	// transport is the claimed camera the device talks through, for the
+	// class reset.
+	transport usb.Device
+
 	info     usb.DeviceInfo
 	reader   manufacturers.Reader
 	recorder *trace.Recorder
@@ -384,7 +397,7 @@ func openSession(ctx context.Context, cmd *cli.Command, readerOpts ...canon.Opti
 		opts = append(opts, ptp.WithRecorder(s.recorder))
 	}
 
-	s.device = ptp.New(transport, opts...)
+	s.device, s.transport = ptp.New(transport, opts...), transport
 
 	s.close = func() {
 		if err := s.device.CloseSession(); err != nil {
@@ -429,19 +442,62 @@ func openSession(ctx context.Context, cmd *cli.Command, readerOpts ...canon.Opti
 	return s, nil
 }
 
-// deviceInfo asks the camera what it is and what it supports.
-func (s *session) deviceInfo() (ptp.DeviceInfo, error) {
-	info, _, err := s.device.GetDeviceInfo()
+// deviceInfo asks the camera what it is and what it supports, returning the
+// raw dataset too.
+//
+// If the USB connection fails (usb.ErrIO), it resets the camera, opens the
+// session again and asks once more. A 5D Mark IV answered OpenSession and
+// then failed GetDeviceInfo's reply that way (issue 39). The steps have both
+// tries. A timeout isn't retried here: openPTPSession has already reset a
+// camera that didn't answer.
+func (s *session) deviceInfo() (ptp.DeviceInfo, []byte, error) {
+	info, raw, err := s.device.GetDeviceInfo()
+	if err != nil && errors.Is(err, usb.ErrIO) {
+		s.steps = append(s.steps, "GetDeviceInfo: "+err.Error())
+
+		if err := s.reopen(); err != nil {
+			s.steps = append(s.steps, "Reset the camera and opened the session again: "+err.Error())
+
+			return ptp.DeviceInfo{}, nil, err
+		}
+
+		s.steps = append(s.steps, "Reset the camera and opened the session again: OK")
+
+		info, raw, err = s.device.GetDeviceInfo()
+	}
+
 	if err != nil {
 		s.steps = append(s.steps, "GetDeviceInfo: "+err.Error())
 
-		return info, err
+		return info, raw, err
 	}
 
 	s.steps = append(s.steps, fmt.Sprintf("GetDeviceInfo: OK, %s, firmware %s, %d operations",
 		info.Model, info.DeviceVersion, len(info.Operations)))
 
-	return info, nil
+	return info, raw, nil
+}
+
+// reopen sends the still image class reset, clears both endpoints and opens
+// the PTP session again, which the reset closed. None of them is new:
+// openPTPSession sends the first two to a camera that didn't answer, and every
+// read opens a session. None changes a setting or a file.
+func (s *session) reopen() error {
+	if resetter, ok := s.transport.(usb.Resetter); ok {
+		if err := resetter.ResetPTP(); err != nil {
+			return fmt.Errorf("PTP device reset: %w", err)
+		}
+	}
+
+	if err := s.device.ClearHalt(); err != nil {
+		return fmt.Errorf("clearing the endpoints: %w", err)
+	}
+
+	if err := s.device.OpenSession(); err != nil {
+		return fmt.Errorf("OpenSession: %w", err)
+	}
+
+	return nil
 }
 
 // openPTPSession opens the PTP session, resetting the camera and trying once
