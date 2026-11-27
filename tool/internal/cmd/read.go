@@ -91,6 +91,7 @@ const (
 	kindBusy           = "busy"
 	kindNotSupported   = "not_supported"
 	kindNoAnswer       = "no_answer"
+	kindUSBError       = "usb_error"
 	kindFailed         = "failed"
 )
 
@@ -141,7 +142,7 @@ func unopened(listed canon.TestedListReport, s *session) readOutput {
 func readCamera(
 	ctx context.Context, s *session, listed canon.TestedListReport, withRaw, withSerial bool,
 ) (readOutput, error) {
-	camera, err := s.deviceInfo()
+	camera, _, err := s.deviceInfo()
 
 	var reading manufacturers.Reading
 	if err == nil {
@@ -163,7 +164,7 @@ func readCamera(
 // says what kind of failure it was.
 func fail(cmd *cli.Command, out readOutput, err error) error {
 	if !cmd.Bool("json") {
-		return err
+		return hintUSBError(err)
 	}
 
 	if err := printJSON(failureOutput(out, err)); err != nil {
@@ -175,6 +176,7 @@ func fail(cmd *cli.Command, out readOutput, err error) error {
 
 // failureOutput is out with err in it, and what to do about it.
 func failureOutput(out readOutput, err error) readOutput {
+	err = hintUSBError(err)
 	out.Error = &errorOutput{Kind: errorKind(err), Message: err.Error()}
 
 	if hinted, ok := errors.AsType[hintedError](err); ok {
@@ -186,6 +188,16 @@ func failureOutput(out readOutput, err error) readOutput {
 	}
 
 	return out
+}
+
+// hintUSBError gives a failed USB connection, at whichever step it failed,
+// what to do about it, unless the error already has a hint.
+func hintUSBError(err error) error {
+	if _, hinted := errors.AsType[hintedError](err); hinted || !errors.Is(err, usb.ErrIO) {
+		return err
+	}
+
+	return withHint(err, usbErrorHint)
 }
 
 func errorKind(err error) string {
@@ -202,6 +214,8 @@ func errorKind(err error) string {
 		return kindNotSupported
 	case errors.Is(err, usb.ErrTimeout):
 		return kindNoAnswer
+	case errors.Is(err, usb.ErrIO):
+		return kindUSBError
 	default:
 		return kindFailed
 	}

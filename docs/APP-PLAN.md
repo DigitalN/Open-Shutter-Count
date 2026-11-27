@@ -84,6 +84,18 @@ wait for it; a read does. See "Tested list" below.)
 Every outcome ends on the result screen, including no camera found and failed
 reads.
 
+(Added by the maintainer on 2026-11-27, after issue 39, where a 5D Mark IV's USB
+connection failed GetDeviceInfo's reply: a USB I/O error, at whichever step, is
+a failure of its own, `usb_error`, with its own screen. The headline is "The
+USB connection to the camera failed", and under it: "Plug the camera straight
+into the Mac, not through a hub or dock. Try another cable, a USB 2 one if you
+have it: these cameras are more reliable on USB 2, and on the 5D Mark IV a USB
+2 Micro-B plug fits its port. Make sure built-in Wi-Fi is off. Switch the
+camera off and on, then click Read Again. If it still fails, please open an
+issue." The tool's hint says the same for the command line, so the screen
+leaves it out. Before failing, a read whose GetDeviceInfo gets an I/O error
+resets the camera, opens the session again and asks once more.)
+
 ### Reading rule (Go changes)
 
 Changed by the maintainer on 2026-11-04, after the build: split EF bodies from

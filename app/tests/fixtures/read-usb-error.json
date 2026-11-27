@@ -1,0 +1,23 @@
+{
+  "device": {
+    "vendor_id": "04a9",
+    "product_id": "3281",
+    "product": "Canon Digital Camera",
+    "path": "usb:001:002"
+  },
+  "steps": [
+    "OpenSession: OK",
+    "GetDeviceInfo: bulk read: libusb_bulk_transfer (endpoint 0x81): LIBUSB_ERROR_IO (-1); libusb said: transfer error: device not responding (value = 0xe00002ed)",
+    "Reset the camera and opened the session again: OK",
+    "GetDeviceInfo: bulk read: libusb_bulk_transfer (endpoint 0x81): LIBUSB_ERROR_IO (-1); libusb said: transfer error: device not responding (value = 0xe00002ed)"
+  ],
+  "tested_list": {
+    "source": "built in",
+    "entries": 8
+  },
+  "error": {
+    "kind": "usb_error",
+    "message": "bulk read: libusb_bulk_transfer (endpoint 0x81): LIBUSB_ERROR_IO (-1); libusb said: transfer error: device not responding (value = 0xe00002ed)",
+    "hint": "The USB connection to the camera failed. Plug the camera straight into the\nMac, not through a hub or dock. Try another cable, a USB 2 one if you have it:\nthese cameras are more reliable on USB 2, and on the 5D Mark IV a USB 2 Micro-B\nplug fits its port. Make sure built-in Wi-Fi is off. Switch the camera off and\non, then try again. If it still fails, please open an issue."
+  }
+}

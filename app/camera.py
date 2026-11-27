@@ -28,6 +28,7 @@ WRONG_USB_MODE = "wrong_usb_mode"
 BUSY = "busy"
 NOT_SUPPORTED = "not_supported"
 NO_ANSWER = "no_answer"
+USB_ERROR = "usb_error"
 FAILED = "failed"
 
 USB_MODE_SETTING = ("MENU > Setup (wrench) > Choose USB connection app > Photo Import/Remote Control. "
@@ -42,6 +43,10 @@ RESTART_CAMERA = ("Switch the camera off and on again (take the battery out if i
                   "then click Read Again.")
 OPEN_AN_ISSUE = "Please open an issue, so it can be worked out."
 READ_IT = "Success! We've read your shutter count."
+USB_ERROR_HELP = ("Plug the camera straight into the Mac, not through a hub or dock. Try another cable, a USB 2 "
+                  "one if you have it: these cameras are more reliable on USB 2, and on the 5D Mark IV a USB 2 "
+                  "Micro-B plug fits its port. Make sure built-in Wi-Fi is off. Switch the camera off and on, then "
+                  "click Read Again. If it still fails, please open an issue.")
 
 
 class ToolError(Exception):
@@ -246,10 +251,11 @@ def summarize(output, devices=(), read_at=None):
         BUSY: ("Another app is using the camera", ""),
         NOT_SUPPORTED: (f"Can't read {the_camera} yet", OPEN_AN_ISSUE),
         NO_ANSWER: ("The camera stopped answering", RESTART_CAMERA),
+        USB_ERROR: ("The USB connection to the camera failed", USB_ERROR_HELP),
     }.get(kind, (f"Couldn't read {the_camera}", OPEN_AN_ISSUE))
 
-    if kind == WRONG_USB_MODE:
-        hint = ""  # the detail names the setting
+    if kind in (WRONG_USB_MODE, USB_ERROR):
+        hint = ""  # the detail says it
     elif kind == NO_CAMERA:
         hint, message = NO_CAMERA_HELP, ""  # the tool's are for its command line
     return {

@@ -302,8 +302,11 @@ func (d *Device) CloseSession() error {
 	return nil
 }
 
-// ClearHalt clears a stall on the bulk endpoints.
+// ClearHalt clears a stall on the bulk endpoints. Anything read but not yet
+// used is dropped: it belonged to the transaction that failed.
 func (d *Device) ClearHalt() error {
+	d.pending = nil
+
 	return d.transport.ClearHalt()
 }
 

@@ -64,6 +64,7 @@ var libusbCandidates = []string{
 // libusb error codes we treat specially.
 const (
 	libusbSuccess      int32 = 0
+	libusbErrorIO      int32 = -1
 	libusbErrorAccess  int32 = -3
 	libusbErrorBusy    int32 = -6
 	libusbErrorTimeout int32 = -7
@@ -88,9 +89,26 @@ type libusbDeviceDescriptor struct {
 	NumConfigurations uint8
 }
 
+// libusb's options and log callback modes (libusb.h).
+const (
+	libusbOptionLogLevel int32 = 0 // LIBUSB_OPTION_LOG_LEVEL
+	libusbLogCBGlobal    int32 = 1 // LIBUSB_LOG_CB_GLOBAL
+)
+
+// libusbInitOption mirrors struct libusb_init_option: an enum, then a union of
+// an int and a function pointer, which puts the union at offset 8 on 64-bit
+// Macs. An int in the union is its low four bytes, which on a little endian
+// Mac are value's.
+type libusbInitOption struct {
+	option int32
+	_      [4]byte
+	value  uintptr
+}
+
 type libusbAPI struct {
-	initialize func(ctx *uintptr) int32
-	exit       func(ctx uintptr)
+	initContext func(ctx *uintptr, options *libusbInitOption, numOptions int32) int32
+	setLogCB    func(ctx uintptr, cb uintptr, mode int32)
+	exit        func(ctx uintptr)
 
 	getDeviceList    func(ctx uintptr, list **uintptr) int64
 	freeDeviceList   func(list *uintptr, unref int32)
@@ -109,6 +127,14 @@ type libusbAPI struct {
 	stringDescriptor func(handle uintptr, index uint8, data unsafe.Pointer, length int32) int32
 	autoDetachDriver func(handle uintptr, enable int32) int32
 	errorName        func(code int32) string
+
+	// said is what libusb has said during the current transfer.
+	said *libusbLog
+
+	// echo is whether libusb's log also goes to stderr, as it would have
+	// without the callback: only when LIBUSB_DEBUG asks for it, which the app
+	// never sets.
+	echo bool
 }
 
 var (
@@ -150,7 +176,8 @@ func loadLibusb() (*libusbAPI, uintptr, error) {
 			}
 		}()
 
-		purego.RegisterLibFunc(&api.initialize, handle, "libusb_init")
+		purego.RegisterLibFunc(&api.initContext, handle, "libusb_init_context")
+		purego.RegisterLibFunc(&api.setLogCB, handle, "libusb_set_log_cb")
 		purego.RegisterLibFunc(&api.exit, handle, "libusb_exit")
 		purego.RegisterLibFunc(&api.getDeviceList, handle, "libusb_get_device_list")
 		purego.RegisterLibFunc(&api.freeDeviceList, handle, "libusb_free_device_list")
@@ -168,9 +195,22 @@ func loadLibusb() (*libusbAPI, uintptr, error) {
 		purego.RegisterLibFunc(&api.autoDetachDriver, handle, "libusb_set_auto_detach_kernel_driver")
 		purego.RegisterLibFunc(&api.errorName, handle, "libusb_error_name")
 
+		// libusb's log goes to the callback, which keeps what's said during
+		// a transfer (libusblog.go). It's the global handler, set before the
+		// context exists: a context's handler alone still has libusb print
+		// every message to stderr, which the app saves in its log.
+		//
+		// libusb_set_option takes variable arguments, which purego can't
+		// pass reliably on Apple silicon, so the level goes in
+		// libusb_init_context's options.
+		api.said, api.echo = &libusbLog{}, os.Getenv("LIBUSB_DEBUG") != ""
+		api.setLogCB(0, purego.NewCallback(api.logged), libusbLogCBGlobal)
+
+		options := [...]libusbInitOption{{option: libusbOptionLogLevel, value: libusbLogLevelWarning}}
+
 		var ctx uintptr
-		if rc := api.initialize(&ctx); rc != libusbSuccess {
-			errLibusb = fmt.Errorf("libusb_init: %s", api.errorName(rc))
+		if rc := api.initContext(&ctx, &options[0], int32(len(options))); rc != libusbSuccess {
+			errLibusb = fmt.Errorf("libusb_init_context: %s", api.errorName(rc))
 
 			return
 		}
@@ -181,8 +221,42 @@ func loadLibusb() (*libusbAPI, uintptr, error) {
 	return libusbLib, libusbCtx, errLibusb
 }
 
+// logged is libusb's log callback. libusb may call it from a thread of its
+// own, which purego supports; a.said is safe for that.
+func (a *libusbAPI) logged(_ uintptr, level int32, message *byte) {
+	text := cString(message, libusbMaxLogLen)
+
+	if a.echo {
+		_, _ = os.Stderr.WriteString(text)
+	}
+
+	a.said.add(level, text)
+}
+
+// libusbMaxLogLen is the longest message libusb logs (USBI_MAX_LOG_LEN).
+const libusbMaxLogLen = 1024
+
+// cString copies a NUL-terminated C string of up to limit bytes.
+func cString(p *byte, limit int) string {
+	if p == nil {
+		return ""
+	}
+
+	b := unsafe.Slice(p, limit)
+
+	for i, c := range b {
+		if c == 0 {
+			return string(b[:i])
+		}
+	}
+
+	return string(b)
+}
+
 func (a *libusbAPI) err(op string, rc int32) error {
 	switch rc {
+	case libusbErrorIO:
+		return &codeError{text: fmt.Sprintf("%s: %s (%d)", op, a.errorName(rc), rc), sentinel: ErrIO}
 	case libusbErrorBusy, libusbErrorAccess:
 		return fmt.Errorf("%s: %s: %w", op, a.errorName(rc), ErrBusy)
 	case libusbErrorTimeout:
@@ -349,11 +423,15 @@ func (d *darwinDevice) ResetPTP() error {
 		controlTimeoutMS             uint32 = 1000
 	)
 
+	d.api.said.start()
+
 	//nolint:gosec // interface numbers come from a uint8 descriptor field
 	rc := d.api.controlTransfer(d.handle, requestTypeClassInterfaceOut, requestDeviceReset,
 		0, uint16(d.iface), nil, 0, controlTimeoutMS)
+
+	said := d.api.said.stop()
 	if rc < 0 {
-		return d.api.err("libusb_control_transfer (PTP device reset)", rc)
+		return explain(d.api.err("libusb_control_transfer (PTP device reset)", rc), said)
 	}
 
 	return nil
@@ -520,8 +598,14 @@ func (d *darwinDevice) bulk(endpoint uint8, p []byte, timeout time.Duration) (in
 
 	var transferred int32
 
+	// What libusb says during the transfer is the only place it says why
+	// one failed.
+	d.api.said.start()
+
 	rc := d.api.bulkTransfer(d.handle, endpoint, unsafe.Pointer(&p[0]), clampInt32(int64(len(p))),
 		&transferred, clampUint32(timeout.Milliseconds()))
+
+	said := d.api.said.stop()
 
 	// A timeout that still moved bytes is a completed short transfer as far
 	// as PTP is concerned, so it is only an error when nothing arrived.
@@ -530,7 +614,7 @@ func (d *darwinDevice) bulk(endpoint uint8, p []byte, timeout time.Duration) (in
 	}
 
 	if rc != libusbSuccess {
-		return int(transferred), d.api.err(fmt.Sprintf("libusb_bulk_transfer (endpoint %#02x)", endpoint), rc)
+		return int(transferred), explain(d.api.err(fmt.Sprintf("libusb_bulk_transfer (endpoint %#02x)", endpoint), rc), said)
 	}
 
 	return int(transferred), nil

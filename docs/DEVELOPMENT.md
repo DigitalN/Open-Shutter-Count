@@ -105,6 +105,31 @@ serves it at `http://127.0.0.1:8766/` with a stand-in for the app. `?s=r8` and t
 scenarios at the top of `app/preview/stub.js` show each screen; add `&theme=dark` for
 dark mode. The result screens come from the fixtures, through the app's own code.
 
+## USB errors in a log
+
+Issue 39: a 5D Mark IV on macOS 27.2 answered OpenSession, then its USB connection
+failed GetDeviceInfo's reply with `LIBUSB_ERROR_IO (-1)`, before anything Canon's own was
+sent. That code covers any error IOKit gives other than a timeout, a stall or an overrun,
+and an aborted transfer too, so it doesn't say what went wrong. libusb only says that in
+its own log, which was off.
+
+Now the tool turns libusb's log on at warning level and keeps what libusb says during each
+transfer (`tool/pkg/usb/libusblog.go`). A failed transfer's error ends with one of:
+
+- `; libusb said: …`: libusb's own reason, such as `transfer error: device not
+  responding (value = 0xe00002ed)`. The value is IOKit's `IOReturn` code, which
+  `IOKit/IOReturn.h` and `IOKit/usb/USB.h` name.
+- `; libusb gave no reason`: libusb logged nothing during the transfer. For
+  `LIBUSB_ERROR_IO` on macOS that most likely means the transfer was aborted
+  (`kIOReturnAborted`), the one IOKit answer libusb 1.0.30 turns into an I/O error
+  without a word.
+
+Nothing else libusb says reaches the log: it warns on every open and claim that fails,
+and while ptpcamerad has the camera those are retried every few milliseconds. A read
+whose GetDeviceInfo gets an I/O error resets the camera, opens the session again and asks
+once more, and the steps show both tries. If that fails too, the app shows its "The USB
+connection to the camera failed" screen (APP-PLAN.md).
+
 ## Release checklist
 
 Releases are public, and installed copies update themselves from the latest one at
